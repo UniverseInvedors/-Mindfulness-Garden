@@ -1,0 +1,829 @@
+// ignore_for_file: deprecated_member_use
+import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import 'package:go_router/go_router.dart';
+import 'package:mindfulness_garden/core/widgets/meditation_scene_widget.dart';
+import 'package:mindfulness_garden/presentation/providers/user_provider.dart';
+import 'package:mindfulness_garden/core/services/ad_service.dart';
+import 'package:mindfulness_garden/core/services/voice_service.dart';
+import 'package:mindfulness_garden/data/local_storage/local_storage_service.dart';
+
+// ─────────────────────────────────────────────────────────────────────────────
+// MainMenuScreen — Modern redesign
+//
+// Layout:
+//   • Full-screen 2.5D garden scene as hero background
+//   • Frosted-glass header with greeting + stats
+//   • Horizontal feature rows (Breathe, Meditate, Yoga, Wellness, Community)
+//   • "Begin Today" featured CTA
+//   • Bottom nav bar (Home, Garden, Progress, Profile)
+// ─────────────────────────────────────────────────────────────────────────────
+
+class MainMenuScreen extends StatefulWidget {
+  const MainMenuScreen({super.key});
+
+  @override
+  State<MainMenuScreen> createState() => _MainMenuScreenState();
+}
+
+class _MainMenuScreenState extends State<MainMenuScreen>
+    with TickerProviderStateMixin {
+  late AnimationController _ambientCtrl;
+  int _tapCount = 0;
+  int _selectedNav = 0;
+
+  // ── Feature rows ────────────────────────────────────────────────────────────
+  static const _rows = [
+    _FeatureRow(
+      label: 'BREATHE',
+      emoji: '🌬️',
+      color: Color(0xFF00b4d8),
+      items: [
+        _FeatureItem('Zeno Breathing', Icons.air, '/breathing/zeno',
+            Color(0xFF00b4d8), 'Stress relief'),
+        _FeatureItem('Box Breathing', Icons.crop_square, '/breathing/box',
+            Color(0xFF4361ee), 'Focus & calm'),
+        _FeatureItem('4-7-8 Breathing', Icons.nightlight_round,
+            '/breathing/478', Color(0xFF9d4edd), 'Sleep & anxiety'),
+        _FeatureItem('Breath Awareness', Icons.self_improvement,
+            '/breathing/awareness', Color(0xFFffb700), 'Mindfulness'),
+        _FeatureItem('Alternate Nostril', Icons.air_outlined,
+            '/breathing/alternate', Color(0xFFf72585), 'Balance'),
+        _FeatureItem('Diaphragmatic', Icons.waves_outlined,
+            '/breathing/diaphragmatic', Color(0xFF38b000), 'Deep relax'),
+      ],
+    ),
+    _FeatureRow(
+      label: 'MEDITATE',
+      emoji: '🧘',
+      color: Color(0xFF9d4edd),
+      items: [
+        _FeatureItem('Guided Meditation', Icons.headphones,
+            '/guided-meditation', Color(0xFF9d4edd), 'Expert-led'),
+        _FeatureItem('Audio Meditation', Icons.music_note, '/audio-meditation',
+            Color(0xFF4361ee), 'Immersive sound'),
+        _FeatureItem('Meditation Scenes', Icons.landscape, '/scenes',
+            Color(0xFF00b4d8), '5 environments'),
+        _FeatureItem('AI Coach', Icons.psychology, '/ai-coach',
+            Color(0xFF7209b7), 'Personalised'),
+        _FeatureItem('Binaural Beats', Icons.waves, '/binaural-beats',
+            Color(0xFF3a86ff), 'Brainwaves'),
+        _FeatureItem('Sound Therapy', Icons.spa, '/sound-therapy',
+            Color(0xFF4cc9f0), 'Frequencies'),
+      ],
+    ),
+    _FeatureRow(
+      label: 'YOGA',
+      emoji: '🏯',
+      color: Color(0xFFe9c46a),
+      items: [
+        _FeatureItem('Yoga with Zeno', Icons.self_improvement, '/yoga',
+            Color(0xFFe9c46a), '2.5D immersive'),
+        _FeatureItem('Meditation Music', Icons.library_music, '/music',
+            Color(0xFF4361ee), 'Curated tracks'),
+      ],
+    ),
+    _FeatureRow(
+      label: 'WELLNESS',
+      emoji: '🌿',
+      color: Color(0xFF38b000),
+      items: [
+        _FeatureItem('My Garden', Icons.spa, '/garden', Color(0xFF38b000),
+            'Grow & harvest'),
+        _FeatureItem('Mood Tracker', Icons.emoji_emotions, '/mood-tracker',
+            Color(0xFFf72585), 'Daily logging'),
+        _FeatureItem('Sleep Tracker', Icons.bedtime, '/sleep',
+            Color(0xFF3a0ca3), 'Sleep analysis'),
+        _FeatureItem('Heart Rate', Icons.favorite, '/heart-rate',
+            Color(0xFFe63946), 'Biometrics'),
+        _FeatureItem('Progress', Icons.insights, '/progress', Color(0xFF9d4edd),
+            'Your journey'),
+      ],
+    ),
+    _FeatureRow(
+      label: 'COMMUNITY',
+      emoji: '👥',
+      color: Color(0xFFffb700),
+      items: [
+        _FeatureItem('Daily Challenges', Icons.emoji_events, '/challenges',
+            Color(0xFFffb700), 'Daily missions'),
+        _FeatureItem('Friends', Icons.people, '/friends', Color(0xFFf48c06),
+            'Meditate together'),
+        _FeatureItem('Achievements', Icons.stars, '/achievements',
+            Color(0xFFe85d04), 'Badges & rewards'),
+        _FeatureItem('Dashboard', Icons.dashboard, '/dashboard',
+            Color(0xFF4361ee), 'Overview'),
+      ],
+    ),
+  ];
+
+  @override
+  void initState() {
+    super.initState();
+    _ambientCtrl = AnimationController(
+      vsync: this,
+      duration: const Duration(seconds: 20),
+    )..repeat();
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      context.read<UserProvider>().loadUser();
+      VoiceService().initialize();
+    });
+  }
+
+  @override
+  void dispose() {
+    _ambientCtrl.dispose();
+    super.dispose();
+  }
+
+  // ── Navigation ──────────────────────────────────────────────────────────────
+
+  void _navigate(String route) {
+    _tapCount++;
+    if (_tapCount % 3 == 0) AdService().showInterstitial();
+
+    const valid = [
+      '/breathing',
+      '/breathing/zeno',
+      '/breathing/box',
+      '/breathing/478',
+      '/breathing/awareness',
+      '/breathing/alternate',
+      '/breathing/diaphragmatic',
+      '/guided-meditation',
+      '/audio-meditation',
+      '/meditation',
+      '/scenes',
+      '/ai-coach',
+      '/binaural-beats',
+      '/sound-therapy',
+      '/music',
+      '/yoga',
+      '/garden',
+      '/mood-tracker',
+      '/sleep',
+      '/heart-rate',
+      '/progress',
+      '/challenges',
+      '/friends',
+      '/achievements',
+      '/dashboard',
+      '/subscription',
+      '/settings',
+      '/profile',
+    ];
+
+    if (valid.contains(route)) {
+      context.push(route);
+    } else {
+      _showComingSoon(route);
+    }
+  }
+
+  void _showComingSoon(String route) {
+    showDialog(
+      context: context,
+      builder: (_) => AlertDialog(
+        backgroundColor: const Color(0xFF1a1a2e),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: const Text('Coming Soon', style: TextStyle(color: Colors.white)),
+        content: Text('$route is coming soon!',
+            style: const TextStyle(color: Colors.white70)),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('OK', style: TextStyle(color: Color(0xFF00b4d8))),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // ── Helpers ─────────────────────────────────────────────────────────────────
+
+  String _greeting() {
+    final h = DateTime.now().hour;
+    if (h < 12) return 'Good morning';
+    if (h < 17) return 'Good afternoon';
+    return 'Good evening';
+  }
+
+  // ── Build ────────────────────────────────────────────────────────────────────
+
+  @override
+  Widget build(BuildContext context) {
+    final user = context.watch<UserProvider>();
+    final size = MediaQuery.of(context).size;
+
+    return Scaffold(
+      backgroundColor: const Color(0xFF0a0a1a),
+      extendBody: false,
+      body: Stack(
+        children: [
+          // ── Hero: live 2.5D scene ──────────────────────────────────────────
+          Positioned(
+            top: 0,
+            left: 0,
+            right: 0,
+            height: size.height * 0.42,
+            child: MeditationSceneWidget(
+              breathPhase: BreathPhase.idle,
+              pose: ZenoPose.sitting,
+              environment: SceneEnvironment.forest,
+              timeOfDay: _currentTimeOfDay(),
+              instruction: '',
+              isActive: true,
+              height: size.height * 0.42,
+            ),
+          ),
+
+          // ── Gradient fade from scene to content ────────────────────────────
+          Positioned(
+            top: size.height * 0.28,
+            left: 0,
+            right: 0,
+            height: size.height * 0.16,
+            child: Container(
+              decoration: const BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topCenter,
+                  end: Alignment.bottomCenter,
+                  colors: [Colors.transparent, Color(0xFF0a0a1a)],
+                ),
+              ),
+            ),
+          ),
+
+          // ── Scrollable content ─────────────────────────────────────────────
+          SafeArea(
+            bottom: false,
+            child: CustomScrollView(
+              physics: const BouncingScrollPhysics(),
+              slivers: [
+                // Space for the hero scene
+                SliverToBoxAdapter(child: SizedBox(height: size.height * 0.30)),
+
+                // ── Greeting + stats card ──────────────────────────────────
+                SliverToBoxAdapter(child: _buildGreetingCard(user)),
+
+                // ── Featured CTA ───────────────────────────────────────────
+                SliverToBoxAdapter(child: _buildFeaturedCTA()),
+
+                // ── Feature rows ───────────────────────────────────────────
+                for (final row in _rows) ...[
+                  SliverToBoxAdapter(child: _buildRowHeader(row)),
+                  SliverToBoxAdapter(child: _buildFeatureRow(row)),
+                ],
+
+                // Bottom padding for nav bar
+                const SliverToBoxAdapter(child: SizedBox(height: 100)),
+              ],
+            ),
+          ),
+
+          // ── Top bar (transparent, over scene) ─────────────────────────────
+          Positioned(
+            top: 0,
+            left: 0,
+            right: 0,
+            child: SafeArea(
+              bottom: false,
+              child: _buildTopBar(user),
+            ),
+          ),
+        ],
+      ),
+
+      // ── Bottom nav bar ─────────────────────────────────────────────────────
+      bottomNavigationBar: _buildBottomNav(),
+    );
+  }
+
+  // ── Top bar ─────────────────────────────────────────────────────────────────
+  Widget _buildTopBar(UserProvider user) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
+      child: Row(
+        children: [
+          // App name
+          const Text(
+            'Mindfulness Garden',
+            style: TextStyle(
+              color: Colors.white,
+              fontSize: 16,
+              fontWeight: FontWeight.w700,
+              shadows: [Shadow(color: Colors.black54, blurRadius: 8)],
+            ),
+          ),
+          const Spacer(),
+          // Settings
+          _glassIconBtn(
+              Icons.settings_outlined, () => context.push('/settings')),
+          const SizedBox(width: 8),
+          // Subscription
+          _glassIconBtn(Icons.workspace_premium_outlined,
+              () => context.push('/subscription')),
+        ],
+      ),
+    );
+  }
+
+  Widget _glassIconBtn(IconData icon, VoidCallback onTap) => GestureDetector(
+        onTap: onTap,
+        child: Container(
+          width: 38,
+          height: 38,
+          decoration: BoxDecoration(
+            color: Colors.black.withAlpha(100),
+            shape: BoxShape.circle,
+            border: Border.all(color: Colors.white.withAlpha(40)),
+          ),
+          child: Icon(icon, color: Colors.white, size: 18),
+        ),
+      );
+
+  // ── Greeting + stats card ────────────────────────────────────────────────────
+  Widget _buildGreetingCard(UserProvider user) {
+    final avatar =
+        LocalStorageService.getSetting('profile_avatar') as String? ?? '🧘';
+    final sessions = LocalStorageService.getSessions();
+    final totalMin = sessions.fold(0, (s, e) => s + e.durationMinutes);
+
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+      child: Container(
+        padding: const EdgeInsets.all(20),
+        decoration: BoxDecoration(
+          color: Colors.white.withAlpha(12),
+          borderRadius: BorderRadius.circular(24),
+          border: Border.all(color: Colors.white.withAlpha(25)),
+          boxShadow: [
+            BoxShadow(color: Colors.black.withAlpha(60), blurRadius: 20),
+          ],
+        ),
+        child: Column(
+          children: [
+            Row(
+              children: [
+                // Avatar
+                GestureDetector(
+                  onTap: () => context.push('/profile'),
+                  child: Container(
+                    width: 56,
+                    height: 56,
+                    decoration: BoxDecoration(
+                      gradient: const LinearGradient(
+                        colors: [Color(0xFF9d4edd), Color(0xFF00b4d8)],
+                      ),
+                      shape: BoxShape.circle,
+                      boxShadow: [
+                        BoxShadow(
+                          color: const Color(0xFF9d4edd).withAlpha(100),
+                          blurRadius: 12,
+                          spreadRadius: 2,
+                        ),
+                      ],
+                    ),
+                    child: Center(
+                        child:
+                            Text(avatar, style: const TextStyle(fontSize: 26))),
+                  ),
+                ),
+                const SizedBox(width: 14),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(_greeting(),
+                          style: TextStyle(
+                              color: Colors.white.withAlpha(160),
+                              fontSize: 13)),
+                      const SizedBox(height: 2),
+                      Text(user.userName,
+                          style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 20,
+                              fontWeight: FontWeight.w800)),
+                    ],
+                  ),
+                ),
+                // Streak badge
+                Container(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                  decoration: BoxDecoration(
+                    color: Colors.orange.withAlpha(40),
+                    borderRadius: BorderRadius.circular(16),
+                    border: Border.all(color: Colors.orange.withAlpha(80)),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const Icon(Icons.local_fire_department,
+                          color: Colors.orange, size: 18),
+                      const SizedBox(width: 4),
+                      Text('${user.currentStreak}',
+                          style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 16,
+                              fontWeight: FontWeight.w800)),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+
+            const SizedBox(height: 16),
+
+            // Stats strip
+            Row(
+              children: [
+                _statChip(
+                    '${sessions.length}', 'Sessions', const Color(0xFF9d4edd)),
+                const SizedBox(width: 10),
+                _statChip('$totalMin', 'Minutes', const Color(0xFF00b4d8)),
+                const SizedBox(width: 10),
+                _statChip('${user.gardenLevel}', 'Garden Lv',
+                    const Color(0xFF38b000)),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _statChip(String value, String label, Color color) => Expanded(
+        child: Container(
+          padding: const EdgeInsets.symmetric(vertical: 10),
+          decoration: BoxDecoration(
+            color: color.withAlpha(25),
+            borderRadius: BorderRadius.circular(14),
+            border: Border.all(color: color.withAlpha(60)),
+          ),
+          child: Column(
+            children: [
+              Text(value,
+                  style: TextStyle(
+                      color: color, fontSize: 18, fontWeight: FontWeight.w800)),
+              Text(label,
+                  style: TextStyle(
+                      color: Colors.white.withAlpha(140), fontSize: 10)),
+            ],
+          ),
+        ),
+      );
+
+  // ── Featured CTA ─────────────────────────────────────────────────────────────
+  Widget _buildFeaturedCTA() {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 0, 16, 20),
+      child: GestureDetector(
+        onTap: () {
+          VoiceService().speakBreathingIntro();
+          _navigate('/breathing/zeno');
+        },
+        child: Container(
+          height: 90,
+          decoration: BoxDecoration(
+            gradient: const LinearGradient(
+              colors: [Color(0xFF9d4edd), Color(0xFF00b4d8)],
+              begin: Alignment.centerLeft,
+              end: Alignment.centerRight,
+            ),
+            borderRadius: BorderRadius.circular(22),
+            boxShadow: [
+              BoxShadow(
+                color: const Color(0xFF9d4edd).withAlpha(100),
+                blurRadius: 20,
+                spreadRadius: 2,
+                offset: const Offset(0, 6),
+              ),
+            ],
+          ),
+          child: Stack(
+            children: [
+              // Decorative circles
+              Positioned(
+                right: -20,
+                top: -20,
+                child: Container(
+                  width: 100,
+                  height: 100,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: Colors.white.withAlpha(15),
+                  ),
+                ),
+              ),
+              Positioned(
+                right: 30,
+                bottom: -30,
+                child: Container(
+                  width: 80,
+                  height: 80,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: Colors.white.withAlpha(10),
+                  ),
+                ),
+              ),
+              // Content
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 22),
+                child: Row(
+                  children: [
+                    Container(
+                      width: 52,
+                      height: 52,
+                      decoration: BoxDecoration(
+                        color: Colors.white.withAlpha(30),
+                        shape: BoxShape.circle,
+                      ),
+                      child: const Icon(Icons.play_arrow_rounded,
+                          color: Colors.white, size: 30),
+                    ),
+                    const SizedBox(width: 16),
+                    const Expanded(
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text('Begin Today',
+                              style: TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 20,
+                                  fontWeight: FontWeight.w800)),
+                          Text('Start a 2-min Zeno breathing session',
+                              style: TextStyle(
+                                  color: Colors.white70, fontSize: 12)),
+                        ],
+                      ),
+                    ),
+                    const Icon(Icons.arrow_forward_ios,
+                        color: Colors.white70, size: 16),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  // ── Row header ───────────────────────────────────────────────────────────────
+  Widget _buildRowHeader(_FeatureRow row) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(20, 8, 20, 10),
+      child: Row(
+        children: [
+          Text(row.emoji, style: const TextStyle(fontSize: 18)),
+          const SizedBox(width: 8),
+          Text(row.label,
+              style: TextStyle(
+                color: row.color,
+                fontSize: 12,
+                fontWeight: FontWeight.w700,
+                letterSpacing: 1.8,
+              )),
+          const Spacer(),
+          Container(
+            width: 4,
+            height: 4,
+            decoration: BoxDecoration(color: row.color, shape: BoxShape.circle),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // ── Feature row (horizontal scroll) ─────────────────────────────────────────
+  Widget _buildFeatureRow(_FeatureRow row) {
+    return SizedBox(
+      height: 120,
+      child: ListView.separated(
+        scrollDirection: Axis.horizontal,
+        padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
+        itemCount: row.items.length,
+        separatorBuilder: (_, __) => const SizedBox(width: 12),
+        itemBuilder: (_, i) => _buildFeatureCard(row.items[i]),
+      ),
+    );
+  }
+
+  Widget _buildFeatureCard(_FeatureItem item) {
+    return GestureDetector(
+      onTap: () => _navigate(item.route),
+      child: Container(
+        width: 110,
+        decoration: BoxDecoration(
+          color: Colors.white.withAlpha(8),
+          borderRadius: BorderRadius.circular(18),
+          border: Border.all(color: item.color.withAlpha(50)),
+          boxShadow: [
+            BoxShadow(
+              color: item.color.withAlpha(30),
+              blurRadius: 12,
+              offset: const Offset(0, 4),
+            ),
+          ],
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Container(
+              width: 46,
+              height: 46,
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  colors: [item.color.withAlpha(180), item.color.withAlpha(80)],
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                ),
+                shape: BoxShape.circle,
+                boxShadow: [
+                  BoxShadow(
+                    color: item.color.withAlpha(80),
+                    blurRadius: 10,
+                    spreadRadius: 1,
+                  ),
+                ],
+              ),
+              child: Icon(item.icon, color: Colors.white, size: 22),
+            ),
+            const SizedBox(height: 8),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 6),
+              child: Text(item.title,
+                  textAlign: TextAlign.center,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 11,
+                      fontWeight: FontWeight.w600,
+                      height: 1.2)),
+            ),
+            const SizedBox(height: 3),
+            Text(item.subtitle,
+                style:
+                    TextStyle(color: item.color.withAlpha(200), fontSize: 9)),
+          ],
+        ),
+      ),
+    );
+  }
+
+  // ── Bottom nav bar ───────────────────────────────────────────────────────────
+  Widget _buildBottomNav() {
+    const items = [
+      _NavItem(Icons.home_rounded, 'Home'),
+      _NavItem(Icons.spa_rounded, 'Garden'),
+      _NavItem(Icons.insights_rounded, 'Progress'),
+      _NavItem(Icons.person_rounded, 'Profile'),
+    ];
+    const routes = ['/main', '/garden', '/progress', '/profile'];
+
+    return Container(
+      decoration: BoxDecoration(
+        color: const Color(0xFF0d0d1f),
+        border: Border(top: BorderSide(color: Colors.white.withAlpha(20))),
+        boxShadow: [
+          BoxShadow(color: Colors.black.withAlpha(80), blurRadius: 20),
+        ],
+      ),
+      // Use SafeArea to handle system nav bar — no extendBody so this is clean
+      child: SafeArea(
+        top: false,
+        child: Padding(
+          padding: const EdgeInsets.symmetric(vertical: 8),
+          child: Row(
+            children: List.generate(items.length, (i) {
+              final selected = _selectedNav == i;
+              return Expanded(
+                child: GestureDetector(
+                  behavior: HitTestBehavior.opaque,
+                  onTap: () {
+                    setState(() => _selectedNav = i);
+                    if (i != 0) context.push(routes[i]);
+                  },
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      AnimatedContainer(
+                        duration: const Duration(milliseconds: 200),
+                        width: selected ? 38 : 32,
+                        height: selected ? 38 : 32,
+                        decoration: BoxDecoration(
+                          color: selected
+                              ? const Color(0xFF9d4edd).withAlpha(40)
+                              : Colors.transparent,
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: Icon(
+                          items[i].icon,
+                          color: selected
+                              ? const Color(0xFF9d4edd)
+                              : Colors.white.withAlpha(100),
+                          size: selected ? 20 : 18,
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Flexible(
+                        child: FittedBox(
+                          fit: BoxFit.scaleDown,
+                          child: Text(items[i].label,
+                              style: TextStyle(
+                                color: selected
+                                    ? const Color(0xFF9d4edd)
+                                    : Colors.white.withAlpha(80),
+                                fontSize: 10,
+                                fontWeight: selected
+                                    ? FontWeight.w700
+                                    : FontWeight.normal,
+                              )),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              );
+            }),
+          ),
+        ),
+      ),
+    );
+  }
+
+  // ── Time of day for scene ────────────────────────────────────────────────────
+  SceneTimeOfDay _currentTimeOfDay() {
+    final h = DateTime.now().hour;
+    if (h >= 5 && h < 8) return SceneTimeOfDay.dawn;
+    if (h >= 8 && h < 17) return SceneTimeOfDay.morning;
+    if (h >= 17 && h < 19) return SceneTimeOfDay.dusk;
+    if (h >= 19 && h < 21) return SceneTimeOfDay.afternoon;
+    return SceneTimeOfDay.night;
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Data classes
+// ─────────────────────────────────────────────────────────────────────────────
+
+class _FeatureRow {
+  final String label, emoji;
+  final Color color;
+  final List<_FeatureItem> items;
+  const _FeatureRow(
+      {required this.label,
+      required this.emoji,
+      required this.color,
+      required this.items});
+}
+
+class _FeatureItem {
+  final String title, route, subtitle;
+  final IconData icon;
+  final Color color;
+  const _FeatureItem(
+      this.title, this.icon, this.route, this.color, this.subtitle);
+}
+
+class _NavItem {
+  final IconData icon;
+  final String label;
+  const _NavItem(this.icon, this.label);
+}
+
+// Keep old data classes for backward compatibility
+class MenuCategory {
+  final String title;
+  final IconData icon;
+  final Color color;
+  final List<Color> gradient;
+  final List<MenuItem> screens;
+  const MenuCategory(
+      {required this.title,
+      required this.icon,
+      required this.color,
+      required this.gradient,
+      required this.screens});
+}
+
+class MenuItem {
+  final String title;
+  final IconData icon;
+  final String route;
+  final String description;
+  final Color color;
+  const MenuItem(
+      {required this.title,
+      required this.icon,
+      required this.route,
+      required this.description,
+      required this.color});
+}

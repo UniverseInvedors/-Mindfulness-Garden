@@ -1,0 +1,205 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024" width="1024" height="1024">
+  <!-- Background gradient - deep forest green to sky -->
+  <defs>
+    <radialGradient id="bgGrad" cx="50%" cy="60%" r="70%">
+      <stop offset="0%" stop-color="#1a6b3c"/>
+      <stop offset="100%" stop-color="#0d3320"/>
+    </radialGradient>
+    <radialGradient id="skyGrad" cx="50%" cy="0%" r="80%">
+      <stop offset="0%" stop-color="#1a3a5c"/>
+      <stop offset="100%" stop-color="#0d1f2d"/>
+    </radialGradient>
+    <radialGradient id="glowAura" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#7fffd4" stop-opacity="0.4"/>
+      <stop offset="100%" stop-color="#00ff88" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="moonGlow" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#fffde7"/>
+      <stop offset="100%" stop-color="#fff9c4"/>
+    </radialGradient>
+    <filter id="glow">
+      <feGaussianBlur stdDeviation="8" result="coloredBlur"/>
+      <feMerge><feMergeNode in="coloredBlur"/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+    <filter id="softGlow">
+      <feGaussianBlur stdDeviation="4" result="coloredBlur"/>
+      <feMerge><feMergeNode in="coloredBlur"/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+  </defs>
+
+  <!-- Sky background -->
+  <rect width="1024" height="1024" fill="url(#skyGrad)" rx="120"/>
+
+  <!-- Stars -->
+  <circle cx="150" cy="80" r="3" fill="white" opacity="0.9"/>
+  <circle cx="280" cy="50" r="2" fill="white" opacity="0.7"/>
+  <circle cx="420" cy="90" r="2.5" fill="white" opacity="0.8"/>
+  <circle cx="600" cy="60" r="2" fill="white" opacity="0.6"/>
+  <circle cx="750" cy="100" r="3" fill="white" opacity="0.9"/>
+  <circle cx="870" cy="70" r="2" fill="white" opacity="0.7"/>
+  <circle cx="950" cy="120" r="2.5" fill="white" opacity="0.8"/>
+  <circle cx="100" cy="180" r="2" fill="white" opacity="0.5"/>
+  <circle cx="320" cy="150" r="1.5" fill="white" opacity="0.6"/>
+  <circle cx="680" cy="140" r="2" fill="white" opacity="0.7"/>
+  <circle cx="820" cy="160" r="1.5" fill="white" opacity="0.5"/>
+
+  <!-- Moon -->
+  <circle cx="820" cy="130" r="55" fill="url(#moonGlow)" filter="url(#glow)" opacity="0.95"/>
+  <circle cx="845" cy="115" r="45" fill="#1a3a5c"/>
+
+  <!-- Ground -->
+  <ellipse cx="512" cy="820" rx="480" ry="120" fill="#0d3320"/>
+  <rect x="32" y="780" width="960" height="244" fill="#0d3320" rx="0"/>
+  <rect x="32" y="780" width="960" height="244" fill="url(#bgGrad)" rx="0"/>
+
+  <!-- Grass ground line -->
+  <ellipse cx="512" cy="790" rx="460" ry="40" fill="#1a6b3c"/>
+
+  <!-- Tree trunk - thick anime style -->
+  <rect x="440" y="300" width="80" height="500" rx="40" fill="#5d3a1a"/>
+  <rect x="455" y="300" width="20" height="500" rx="10" fill="#7a4f2a" opacity="0.5"/>
+
+  <!-- Tree roots -->
+  <path d="M440 760 Q380 790 340 810" stroke="#5d3a1a" stroke-width="25" fill="none" stroke-linecap="round"/>
+  <path d="M520 770 Q580 790 620 815" stroke="#5d3a1a" stroke-width="22" fill="none" stroke-linecap="round"/>
+  <path d="M460 775 Q430 810 410 830" stroke="#5d3a1a" stroke-width="18" fill="none" stroke-linecap="round"/>
+
+  <!-- Tree branches -->
+  <path d="M480 420 Q350 350 250 380" stroke="#5d3a1a" stroke-width="30" fill="none" stroke-linecap="round"/>
+  <path d="M480 480 Q600 400 720 430" stroke="#5d3a1a" stroke-width="28" fill="none" stroke-linecap="round"/>
+  <path d="M480 360 Q420 280 380 260" stroke="#5d3a1a" stroke-width="22" fill="none" stroke-linecap="round"/>
+  <path d="M500 340 Q560 260 600 240" stroke="#5d3a1a" stroke-width="20" fill="none" stroke-linecap="round"/>
+
+  <!-- Tree foliage - anime style big round clusters -->
+  <!-- Main canopy -->
+  <circle cx="480" cy="220" r="180" fill="#1a7a3c" opacity="0.95"/>
+  <circle cx="320" cy="300" r="140" fill="#1a7a3c" opacity="0.95"/>
+  <circle cx="650" cy="310" r="135" fill="#1a7a3c" opacity="0.95"/>
+  <circle cx="480" cy="160" r="130" fill="#22a050" opacity="0.9"/>
+  <circle cx="350" cy="230" r="110" fill="#22a050" opacity="0.85"/>
+  <circle cx="620" cy="240" r="105" fill="#22a050" opacity="0.85"/>
+  <!-- Highlight on leaves -->
+  <circle cx="420" cy="150" r="70" fill="#2ecc71" opacity="0.5"/>
+  <circle cx="560" cy="170" r="60" fill="#2ecc71" opacity="0.4"/>
+  <circle cx="300" cy="260" r="55" fill="#2ecc71" opacity="0.35"/>
+
+  <!-- Fireflies / sparkles around tree -->
+  <circle cx="220" cy="450" r="5" fill="#7fffd4" filter="url(#glow)" opacity="0.9"/>
+  <circle cx="760" cy="420" r="4" fill="#7fffd4" filter="url(#glow)" opacity="0.8"/>
+  <circle cx="180" cy="550" r="3.5" fill="#90ee90" filter="url(#glow)" opacity="0.7"/>
+  <circle cx="800" cy="500" r="4" fill="#7fffd4" filter="url(#glow)" opacity="0.85"/>
+  <circle cx="250" cy="620" r="3" fill="#90ee90" filter="url(#glow)" opacity="0.6"/>
+  <circle cx="730" cy="580" r="3.5" fill="#7fffd4" filter="url(#glow)" opacity="0.75"/>
+
+  <!-- Meditation aura glow behind kid -->
+  <ellipse cx="512" cy="700" rx="160" ry="80" fill="url(#glowAura)" filter="url(#glow)"/>
+  <ellipse cx="512" cy="700" rx="120" ry="60" fill="#00ff88" opacity="0.08"/>
+
+  <!-- Floating lotus petals -->
+  <ellipse cx="380" cy="730" rx="18" ry="8" fill="#ff9eb5" opacity="0.7" transform="rotate(-20 380 730)"/>
+  <ellipse cx="640" cy="720" rx="16" ry="7" fill="#ffb3c6" opacity="0.6" transform="rotate(15 640 720)"/>
+  <ellipse cx="430" cy="760" rx="14" ry="6" fill="#ffc8d5" opacity="0.5" transform="rotate(-10 430 760)"/>
+
+  <!-- KID BODY - Anime style sitting in lotus pose -->
+  <!-- Legs in lotus position -->
+  <ellipse cx="512" cy="760" rx="130" ry="35" fill="#4a90d9" opacity="0.95"/>
+  <!-- Left leg -->
+  <path d="M390 755 Q420 780 480 770 Q510 765 512 760" fill="#4a90d9"/>
+  <!-- Right leg -->
+  <path d="M634 755 Q604 780 544 770 Q514 765 512 760" fill="#4a90d9"/>
+  <!-- Feet -->
+  <ellipse cx="400" cy="762" rx="28" ry="14" fill="#f5c5a3" transform="rotate(-10 400 762)"/>
+  <ellipse cx="624" cy="762" rx="28" ry="14" fill="#f5c5a3" transform="rotate(10 624 762)"/>
+
+  <!-- Body / torso - white robe anime style -->
+  <path d="M430 680 Q420 720 390 755 Q450 770 512 768 Q574 770 634 755 Q604 720 594 680 Q560 660 512 658 Q464 660 430 680Z" fill="#f0f8ff"/>
+  <!-- Robe shading -->
+  <path d="M430 680 Q425 710 400 745 Q440 755 480 752 Q490 720 488 685 Q460 670 430 680Z" fill="#dce8f5" opacity="0.6"/>
+
+  <!-- Arms in meditation mudra -->
+  <!-- Left arm resting on knee -->
+  <path d="M435 695 Q410 720 395 748" stroke="#f5c5a3" stroke-width="22" fill="none" stroke-linecap="round"/>
+  <!-- Right arm resting on knee -->
+  <path d="M589 695 Q614 720 629 748" stroke="#f5c5a3" stroke-width="22" fill="none" stroke-linecap="round"/>
+  <!-- Hands in gyan mudra (thumb+index touching) -->
+  <circle cx="393" cy="752" r="16" fill="#f5c5a3"/>
+  <circle cx="631" cy="752" r="16" fill="#f5c5a3"/>
+  <!-- Mudra detail -->
+  <circle cx="388" cy="748" r="6" fill="#e8a882"/>
+  <circle cx="626" cy="748" r="6" fill="#e8a882"/>
+
+  <!-- Neck -->
+  <rect x="494" y="635" width="36" height="35" rx="18" fill="#f5c5a3"/>
+
+  <!-- HEAD - Big anime style -->
+  <!-- Head base -->
+  <ellipse cx="512" cy="580" rx="95" ry="100" fill="#f5c5a3"/>
+  <!-- Cheek blush - anime style -->
+  <ellipse cx="445" cy="600" rx="22" ry="12" fill="#ffb3ba" opacity="0.6"/>
+  <ellipse cx="579" cy="600" rx="22" ry="12" fill="#ffb3ba" opacity="0.6"/>
+
+  <!-- Hair - anime spiky/cute style -->
+  <!-- Main hair mass -->
+  <ellipse cx="512" cy="530" rx="100" ry="75" fill="#2c1810"/>
+  <!-- Hair spikes -->
+  <path d="M430 510 Q415 460 440 440 Q450 480 460 500Z" fill="#2c1810"/>
+  <path d="M470 495 Q465 440 490 420 Q495 465 500 490Z" fill="#2c1810"/>
+  <path d="M510 490 Q515 435 535 418 Q538 462 540 488Z" fill="#2c1810"/>
+  <path d="M548 498 Q560 445 580 435 Q575 475 568 500Z" fill="#2c1810"/>
+  <path d="M580 515 Q600 468 618 462 Q608 498 598 520Z" fill="#2c1810"/>
+  <!-- Hair highlight -->
+  <ellipse cx="480" cy="510" rx="30" ry="18" fill="#5c3820" opacity="0.6" transform="rotate(-20 480 510)"/>
+
+  <!-- Side hair strands -->
+  <path d="M420 555 Q400 580 405 610 Q415 590 425 570Z" fill="#2c1810"/>
+  <path d="M604 555 Q624 580 619 610 Q609 590 599 570Z" fill="#2c1810"/>
+
+  <!-- EYES - Big anime eyes, closed in meditation (peaceful) -->
+  <!-- Left eye closed - curved line with lashes -->
+  <path d="M460 578 Q475 568 490 578" stroke="#2c1810" stroke-width="4" fill="none" stroke-linecap="round"/>
+  <!-- Left eye lashes -->
+  <line x1="462" y1="577" x2="458" y2="570" stroke="#2c1810" stroke-width="2.5" stroke-linecap="round"/>
+  <line x1="475" y1="570" x2="474" y2="563" stroke="#2c1810" stroke-width="2.5" stroke-linecap="round"/>
+  <line x1="488" y1="577" x2="492" y2="570" stroke="#2c1810" stroke-width="2.5" stroke-linecap="round"/>
+
+  <!-- Right eye closed -->
+  <path d="M534 578 Q549 568 564 578" stroke="#2c1810" stroke-width="4" fill="none" stroke-linecap="round"/>
+  <!-- Right eye lashes -->
+  <line x1="536" y1="577" x2="532" y2="570" stroke="#2c1810" stroke-width="2.5" stroke-linecap="round"/>
+  <line x1="549" y1="570" x2="548" y2="563" stroke="#2c1810" stroke-width="2.5" stroke-linecap="round"/>
+  <line x1="562" y1="577" x2="566" y2="570" stroke="#2c1810" stroke-width="2.5" stroke-linecap="round"/>
+
+  <!-- Eyebrows - gentle relaxed -->
+  <path d="M455 562 Q475 556 492 560" stroke="#2c1810" stroke-width="3.5" fill="none" stroke-linecap="round"/>
+  <path d="M532 560 Q549 556 569 562" stroke="#2c1810" stroke-width="3.5" fill="none" stroke-linecap="round"/>
+
+  <!-- Nose - small anime dot -->
+  <ellipse cx="512" cy="600" rx="5" ry="4" fill="#e8a882" opacity="0.8"/>
+
+  <!-- Mouth - small peaceful smile -->
+  <path d="M495 618 Q512 628 529 618" stroke="#c47a5a" stroke-width="3" fill="none" stroke-linecap="round"/>
+
+  <!-- Third eye / meditation dot on forehead -->
+  <circle cx="512" cy="548" r="7" fill="#9b59b6" filter="url(#softGlow)" opacity="0.9"/>
+  <circle cx="512" cy="548" r="4" fill="#d7bde2"/>
+
+  <!-- Energy/chakra orb floating above head -->
+  <circle cx="512" cy="490" r="22" fill="#7fffd4" filter="url(#glow)" opacity="0.7"/>
+  <circle cx="512" cy="490" r="14" fill="#00ff88" filter="url(#glow)" opacity="0.5"/>
+  <circle cx="512" cy="490" r="7" fill="white" opacity="0.8"/>
+
+  <!-- Small floating sparkles around the kid -->
+  <path d="M350 620 L354 610 L358 620 L368 624 L358 628 L354 638 L350 628 L340 624Z" fill="#ffd700" filter="url(#softGlow)" opacity="0.8" transform="scale(0.7) translate(150 260)"/>
+  <path d="M650 640 L654 630 L658 640 L668 644 L658 648 L654 658 L650 648 L640 644Z" fill="#7fffd4" filter="url(#softGlow)" opacity="0.7" transform="scale(0.6) translate(430 400)"/>
+
+  <!-- Grass tufts at bottom -->
+  <path d="M100 790 Q110 760 120 790" stroke="#2ecc71" stroke-width="6" fill="none" stroke-linecap="round"/>
+  <path d="M115 790 Q125 755 135 790" stroke="#27ae60" stroke-width="5" fill="none" stroke-linecap="round"/>
+  <path d="M850 790 Q860 762 870 790" stroke="#2ecc71" stroke-width="6" fill="none" stroke-linecap="round"/>
+  <path d="M865 790 Q875 758 885 790" stroke="#27ae60" stroke-width="5" fill="none" stroke-linecap="round"/>
+  <path d="M200 785 Q210 758 220 785" stroke="#2ecc71" stroke-width="5" fill="none" stroke-linecap="round"/>
+  <path d="M750 785 Q760 760 770 785" stroke="#2ecc71" stroke-width="5" fill="none" stroke-linecap="round"/>
+
+  <!-- App name subtle glow at bottom -->
+  <text x="512" y="960" text-anchor="middle" font-family="Arial, sans-serif" font-size="42" font-weight="bold" fill="#7fffd4" opacity="0.85" filter="url(#softGlow)">Mindful Garden</text>
+</svg>

@@ -1,0 +1,228 @@
+import 'package:flutter_tts/flutter_tts.dart';
+import 'package:mindfulness_garden/core/services/localization_service.dart';
+import 'package:mindfulness_garden/data/local_storage/local_storage_service.dart';
+
+// ─────────────────────────────────────────────────────────────────────────────
+// VoiceService — app-wide TTS singleton
+//
+// Speaks throughout the app. Carries Buddha-style wisdom phrases for the
+// AI tutor. Call VoiceService().speak(...) from anywhere.
+// ─────────────────────────────────────────────────────────────────────────────
+
+enum VoicePersonality { buddha, zeno, monk }
+
+class VoiceService {
+  static final VoiceService _instance = VoiceService._internal();
+  factory VoiceService() => _instance;
+  VoiceService._internal();
+
+  final FlutterTts _tts = FlutterTts();
+  bool _initialized = false;
+  bool _enabled = true;
+  double _rate = 0.42;
+  final double _pitch = 0.85; // Slightly lower = more serene / authoritative
+  final double _volume = 0.9;
+  String _language = 'en-US';
+  AppLanguage _appLanguage = AppLanguage.english;
+  VoicePersonality _personality = VoicePersonality.buddha;
+
+  VoicePersonality get personality => _personality;
+  AppLanguage get appLanguage => _appLanguage;
+
+  Future<void> setPersonality(VoicePersonality p) async {
+    _personality = p;
+    await LocalStorageService.saveSetting('voice_personality', p.name);
+  }
+
+  // ── Init ──────────────────────────────────────────────────────────────────
+
+  Future<void> initialize() async {
+    if (_initialized) return;
+    _initialized = true;
+
+    // Load preferences
+    final enabled = LocalStorageService.getSetting('voice_enabled');
+    if (enabled is bool) _enabled = enabled;
+    final rate = LocalStorageService.getSetting('voice_rate');
+    if (rate is double) _rate = rate;
+    final lang = LocalStorageService.getSetting('voice_language');
+    if (lang is String) {
+      _language = lang;
+      _appLanguage = LocalizationService.languageFromCode(lang);
+    }
+
+    final appLangSetting = LocalStorageService.getSetting('app_language');
+    if (appLangSetting is String) {
+      _appLanguage = LocalizationService.languageFromName(appLangSetting);
+      _language = _appLanguage.localeCode;
+    }
+
+    final p = LocalStorageService.getSetting('voice_personality');
+    if (p is String) {
+      try {
+        _personality = VoicePersonality.values.firstWhere((v) => v.name == p);
+      } catch (_) {}
+    }
+
+    await _tts.setLanguage(_language);
+    await _tts.setSpeechRate(_rate);
+    await _tts.setPitch(_pitch);
+    await _tts.setVolume(_volume);
+    await _tts.awaitSpeakCompletion(false); // non-blocking by default
+  }
+
+  // ── Public API ────────────────────────────────────────────────────────────
+
+  /// Speak any text. Silently skips if voice is disabled.
+  Future<void> speak(String text, {bool await_ = false}) async {
+    if (!_enabled || text.isEmpty) return;
+    await initialize();
+    await _tts.stop();
+    if (await_) {
+      await _tts.awaitSpeakCompletion(true);
+      await _tts.speak(text);
+      await _tts.awaitSpeakCompletion(false);
+    } else {
+      await _tts.speak(text);
+    }
+  }
+
+  Future<void> stop() async => _tts.stop();
+
+  Future<void> setEnabled(bool value) async {
+    _enabled = value;
+    await LocalStorageService.saveSetting('voice_enabled', value);
+    if (!value) await stop();
+  }
+
+  Future<void> setRate(double rate) async {
+    _rate = rate.clamp(0.1, 1.0);
+    await _tts.setSpeechRate(_rate);
+    await LocalStorageService.saveSetting('voice_rate', _rate);
+  }
+
+  Future<void> setLanguage(String lang) async {
+    _language = lang;
+    await _tts.setLanguage(lang);
+    await LocalStorageService.saveSetting('voice_language', lang);
+  }
+
+  Future<void> setAppLanguage(AppLanguage language) async {
+    _appLanguage = language;
+    await setLanguage(language.localeCode);
+    await LocalStorageService.saveSetting('app_language', language.displayName);
+  }
+
+  bool get isEnabled => _enabled;
+  double get rate => _rate;
+  String get language => _language;
+
+  // ── Buddha wisdom phrases ─────────────────────────────────────────────────
+  // Used by the AI tutor throughout the app.
+
+  static const List<String> breathingIntro = [
+    "Welcome, seeker. I am here to guide you. Let us begin with the breath — the bridge between body and mind.",
+    "Peace be with you. The breath is your anchor. Let us breathe together and find stillness.",
+    "Greetings. The mind is like water — when still, it reflects all things clearly. Let us still the waters.",
+  ];
+
+  static const List<String> inhalePrompts = [
+    "Breathe in... draw life into every cell.",
+    "Inhale... feel the universe filling you.",
+    "Breathe in deeply... you are receiving.",
+  ];
+
+  static const List<String> holdPrompts = [
+    "Hold... rest in this moment of fullness.",
+    "Be still... this is the space between worlds.",
+    "Hold gently... neither grasping nor releasing.",
+  ];
+
+  static const List<String> exhalePrompts = [
+    "Release... let go of all that does not serve you.",
+    "Exhale... surrender what you cannot control.",
+    "Breathe out... return to emptiness, which is fullness.",
+  ];
+
+  static const List<String> poseTransitions = [
+    "Now we move into the next posture. Let the body follow the breath.",
+    "Transition with awareness. Each movement is a meditation.",
+    "Shift gently. The body is a temple — move within it with reverence.",
+  ];
+
+  static const List<String> sessionCompleteLines = [
+    "You have done well, seeker. Carry this stillness into your day.",
+    "The practice is complete. Remember — the peace you found here lives within you always.",
+    "Well done. The lotus grows from mud, yet remains unstained. So too shall you.",
+  ];
+
+  static const List<String> encouragement = [
+    "The mind wanders — this is its nature. Gently return, without judgment.",
+    "There is no failure in practice. Only returning, again and again.",
+    "You are exactly where you need to be.",
+  ];
+
+  static const Map<String, String> yogaPoseInstructions = {
+    'Mountain Pose':
+        "Stand as a mountain — rooted, immovable, yet open to the sky.",
+    'Warrior I':
+        "Be the warrior of peace. Ground your feet. Reach toward the heavens.",
+    'Tree Pose':
+        "Find your centre. The tree bends in the wind but its roots hold firm.",
+    "Child's Pose":
+        "Return to the earth. Rest here. You need not strive in this moment.",
+    'Downward Dog':
+        "Lengthen the spine. Let gravity do the work. Surrender to the pose.",
+    'Lotus Meditation':
+        "Sit in stillness. The lotus blooms in muddy water — so does wisdom.",
+  };
+
+  /// Speak a random phrase from a category.
+  Future<void> speakRandom(List<String> phrases) async {
+    if (phrases.isEmpty) return;
+    final idx = DateTime.now().millisecond % phrases.length;
+    await speak(phrases[idx]);
+  }
+
+  Future<void> speakBreathingIntro() => speakRandom(
+      LocalizationService.translateList('breathingIntro', _appLanguage));
+  Future<void> speakInhale() => speakRandom(
+      LocalizationService.translateList('inhalePrompts', _appLanguage));
+  Future<void> speakHold() => speakRandom(
+      LocalizationService.translateList('holdPrompts', _appLanguage));
+  Future<void> speakExhale() => speakRandom(
+      LocalizationService.translateList('exhalePrompts', _appLanguage));
+  Future<void> speakPoseTransition() => speakRandom(
+      LocalizationService.translateList('poseTransitions', _appLanguage));
+  Future<void> speakComplete() => speakRandom(
+      LocalizationService.translateList('sessionCompleteLines', _appLanguage));
+  Future<void> speakEncouragement() => speakRandom(
+      LocalizationService.translateList('encouragement', _appLanguage));
+
+  Future<void> sessionStart(String sessionType) async {
+    final greeting = _timeGreeting();
+    final startText =
+        LocalizationService.translate('session_start', _appLanguage);
+    await speak('$greeting. $startText $sessionType practice begins.');
+  }
+
+  Future<void> sessionComplete(int minutes) async {
+    final completeText =
+        LocalizationService.translate('session_complete', _appLanguage);
+    await speak(
+        'You have sat with yourself for $minutes minutes. $completeText');
+  }
+
+  String _timeGreeting() {
+    final hour = DateTime.now().hour;
+    if (hour < 12) return 'Good morning';
+    if (hour < 17) return 'Good afternoon';
+    return 'Good evening';
+  }
+
+  Future<void> speakPoseInstruction(String poseName) async {
+    final instruction =
+        LocalizationService.translatePoseInstruction(poseName, _appLanguage);
+    await speak(instruction);
+  }
+}
