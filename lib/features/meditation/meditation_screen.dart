@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:audioplayers/audioplayers.dart';
+import 'package:mindfulness_garden/core/services/localization_service.dart';
+import 'package:mindfulness_garden/core/services/voice_service.dart';
 import 'package:mindfulness_garden/core/widgets/exercise_scene_shell.dart';
 import 'package:mindfulness_garden/core/widgets/meditation_scene_widget.dart';
 
@@ -15,9 +17,11 @@ class _MeditationScreenState extends State<MeditationScreen>
   final AudioPlayer _audioPlayer = AudioPlayer();
   late AnimationController _animationController;
   late Animation<double> _breathAnimation;
+  // color animation previously unused; keep for future visual refinements
   late Animation<Color?> _colorAnimation;
 
   bool _isPlaying = false;
+  // total duration placeholder (not used in compact UI)
   final Duration _duration = const Duration(minutes: 10);
   final Duration _position = Duration.zero;
   int _breathCycle = 0;
@@ -128,6 +132,37 @@ class _MeditationScreenState extends State<MeditationScreen>
     return '$minutes:$seconds';
   }
 
+  void _showBenefits() {
+    final lang = VoiceService().appLanguage;
+    final text = LocalizationService.translate('benefits_meditation', lang);
+    VoiceService().speak(text);
+    showDialog(
+      context: context,
+      builder: (_) => Dialog(
+        backgroundColor: const Color(0xFF1a1a2e),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+        child: Padding(
+          padding: const EdgeInsets.all(18),
+          child: Column(mainAxisSize: MainAxisSize.min, children: [
+            const Text('Benefits',
+                style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 18,
+                    fontWeight: FontWeight.w800)),
+            const SizedBox(height: 12),
+            Text(text,
+                style: const TextStyle(color: Colors.white70, fontSize: 14)),
+            const SizedBox(height: 12),
+            TextButton(
+                onPressed: () => Navigator.pop(context),
+                child: const Text('Close',
+                    style: TextStyle(color: Colors.white70)))
+          ]),
+        ),
+      ),
+    );
+  }
+
   @override
   void dispose() {
     _animationController.dispose();
@@ -149,6 +184,21 @@ class _MeditationScreenState extends State<MeditationScreen>
       initialTimeOfDay: SceneTimeOfDay.morning,
       onBack: () => Navigator.of(context).pop(),
       headerActions: [
+        GestureDetector(
+          onTap: _showBenefits,
+          child: Container(
+            width: 40,
+            height: 40,
+            decoration: BoxDecoration(
+              color: Colors.black.withAlpha(120),
+              shape: BoxShape.circle,
+              border: Border.all(color: Colors.white.withAlpha(40)),
+            ),
+            child:
+                const Icon(Icons.help_outline, color: Colors.white, size: 18),
+          ),
+        ),
+        const SizedBox(width: 4),
         GestureDetector(
           onTap: _togglePlayback,
           child: Container(
@@ -214,6 +264,21 @@ class _MeditationScreenState extends State<MeditationScreen>
             ],
           ),
 
+          const SizedBox(height: 16),
+          ElevatedButton.icon(
+            onPressed: _showBenefits,
+            icon: const Icon(Icons.help_outline, size: 18),
+            label: const Text('Benefits'),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.white24,
+              foregroundColor: Colors.white,
+              padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 12),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+            ),
+          ),
+          const SizedBox(height: 12),
           const SizedBox(height: 14),
 
           // Breathing visualizer (compact)
@@ -353,5 +418,3 @@ class _MeditationScreenState extends State<MeditationScreen>
         ),
       );
 }
-
-

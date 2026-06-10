@@ -29,10 +29,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
     AppLanguage.english,
     AppLanguage.hindi,
     AppLanguage.bengali,
-    AppLanguage.spanish,
-    AppLanguage.french,
-    AppLanguage.german,
-    AppLanguage.chinese,
   ];
 
   final List<String> _themes = ['System', 'Light', 'Dark'];

@@ -139,6 +139,15 @@ class _MeditationSceneWidgetState extends State<MeditationSceneWidget>
         .animate(CurvedAnimation(parent: _poseCtrl, curve: Curves.easeInOut));
     _currentPose = widget.pose;
     _targetPose = widget.pose;
+    // Ensure we update the current pose when the transition completes to avoid
+    // lingering double-poses or stuck transitions.
+    _poseCtrl.addStatusListener((status) {
+      if (status == AnimationStatus.completed) {
+        setState(() {
+          _currentPose = _targetPose;
+        });
+      }
+    });
 
     _faceCtrl = AnimationController(
         vsync: this, duration: const Duration(milliseconds: 520));
@@ -176,7 +185,11 @@ class _MeditationSceneWidgetState extends State<MeditationSceneWidget>
     }
 
     if (widget.pose != old.pose) {
-      _currentPose = old.pose;
+      if (_poseCtrl.isAnimating) {
+        _currentPose = _targetPose;
+      } else {
+        _currentPose = old.pose;
+      }
       _targetPose = widget.pose;
       _poseCtrl.forward(from: 0);
     }
@@ -1374,30 +1387,29 @@ class _ScenePainter extends CustomPainter {
       legShadow,
     );
 
+    // Cross-legged sitting: left leg rests over right with gentle arcs
     _drawLimb(
       canvas,
-      const [Offset(-10, -8), Offset(-43, 7), Offset(-66, 22), Offset(-29, 26)],
+      const [Offset(-6, -6), Offset(-34, 2), Offset(-12, 22), Offset(14, 26)],
       robeDark,
-      width: 15,
+      width: 14,
     );
+    // Right leg tucked under and slightly behind (drawn second so overlap reads)
     _drawLimb(
       canvas,
-      const [Offset(10, -8), Offset(43, 7), Offset(66, 22), Offset(29, 26)],
-      robeDark,
-      width: 15,
-    );
-    _drawLimb(
-      canvas,
-      const [Offset(-5, -5), Offset(-36, 16), Offset(1, 27)],
-      robeMid,
+      const [Offset(6, -6), Offset(28, 2), Offset(12, 22), Offset(-18, 26)],
+      robeDark.withAlpha(230),
       width: 13,
     );
+    // subtle overlap highlight on the upper left thigh
     _drawLimb(
       canvas,
-      const [Offset(5, -5), Offset(36, 16), Offset(-1, 27)],
-      robeMid,
-      width: 13,
+      const [Offset(-12, 0), Offset(-22, 8), Offset(-6, 18)],
+      Colors.white.withOpacity(0.06),
+      width: 8,
     );
+    // Simplified sitting limbs so Zeno reads as a clear cross-legged instructor
+    // instead of showing extra overlapping leg strokes.
 
     final torsoPath = Path()
       ..moveTo(-22, -66 + chestLift)
@@ -1477,22 +1489,22 @@ class _ScenePainter extends CustomPainter {
   void _drawWarriorPose(Canvas canvas) {
     final bodyPaint = Paint()..color = phaseColor.withAlpha(220);
 
-    // Back leg
+    // Back leg - improved proportions
     canvas.save();
     canvas.translate(20, 0);
     canvas.rotate(-0.3);
     canvas.drawRRect(
         RRect.fromRectAndRadius(
-            const Rect.fromLTWH(-7, 0, 14, 50), const Radius.circular(7)),
+            const Rect.fromLTWH(-9, 0, 18, 56), const Radius.circular(9)),
         bodyPaint);
     canvas.restore();
-    // Front leg (bent)
+    // Front leg (bent) - improved proportions
     canvas.save();
     canvas.translate(-15, 0);
     canvas.rotate(0.2);
     canvas.drawRRect(
         RRect.fromRectAndRadius(
-            const Rect.fromLTWH(-7, 0, 14, 40), const Radius.circular(7)),
+            const Rect.fromLTWH(-9, 0, 18, 48), const Radius.circular(9)),
         bodyPaint);
     canvas.restore();
 
@@ -1527,18 +1539,18 @@ class _ScenePainter extends CustomPainter {
   void _drawTreePose(Canvas canvas) {
     final bodyPaint = Paint()..color = phaseColor.withAlpha(220);
 
-    // Standing leg
+    // Standing leg - improved proportions for better realism
     canvas.drawRRect(
         RRect.fromRectAndRadius(
-            const Rect.fromLTWH(-8, 0, 16, 55), const Radius.circular(8)),
+            const Rect.fromLTWH(-10, 0, 20, 58), const Radius.circular(10)),
         bodyPaint);
-    // Raised leg (bent at knee, foot on inner thigh)
+    // Raised leg (bent at knee, foot on inner thigh) - improved proportions
     canvas.save();
     canvas.translate(8, 20);
     canvas.rotate(0.7);
     canvas.drawRRect(
         RRect.fromRectAndRadius(
-            const Rect.fromLTWH(-6, 0, 12, 30), const Radius.circular(6)),
+            const Rect.fromLTWH(-7, 0, 14, 35), const Radius.circular(7)),
         bodyPaint);
     canvas.restore();
 
@@ -1578,10 +1590,10 @@ class _ScenePainter extends CustomPainter {
         RRect.fromRectAndRadius(
             const Rect.fromLTWH(-40, -18, 80, 18), const Radius.circular(9)),
         bodyPaint);
-    // Legs folded under
+    // Legs folded under - improved proportions
     canvas.drawRRect(
         RRect.fromRectAndRadius(
-            const Rect.fromLTWH(-20, -8, 40, 14), const Radius.circular(7)),
+            const Rect.fromLTWH(-24, 0, 48, 20), const Radius.circular(8)),
         bodyPaint);
     // Arms stretched forward
     canvas.save();
@@ -1625,13 +1637,13 @@ class _ScenePainter extends CustomPainter {
             const Rect.fromLTWH(-7, 0, 14, 40), const Radius.circular(7)),
         bodyPaint);
     canvas.restore();
-    // Back legs
+    // Back legs - improved proportions
     canvas.save();
     canvas.translate(20, -5);
     canvas.rotate(-0.3);
     canvas.drawRRect(
         RRect.fromRectAndRadius(
-            const Rect.fromLTWH(-7, 0, 14, 45), const Radius.circular(7)),
+            const Rect.fromLTWH(-9, 0, 18, 52), const Radius.circular(9)),
         bodyPaint);
     canvas.restore();
     // Head
@@ -1642,14 +1654,14 @@ class _ScenePainter extends CustomPainter {
   void _drawMountainPose(Canvas canvas) {
     final bodyPaint = Paint()..color = phaseColor.withAlpha(220);
 
-    // Legs straight
+    // Legs straight - improved proportions for better realism
     canvas.drawRRect(
         RRect.fromRectAndRadius(
-            const Rect.fromLTWH(-18, 0, 14, 50), const Radius.circular(7)),
+            const Rect.fromLTWH(-20, 0, 16, 55), const Radius.circular(8)),
         bodyPaint);
     canvas.drawRRect(
         RRect.fromRectAndRadius(
-            const Rect.fromLTWH(4, 0, 14, 50), const Radius.circular(7)),
+            const Rect.fromLTWH(4, 0, 16, 55), const Radius.circular(8)),
         bodyPaint);
     // Torso
     canvas.drawRRect(

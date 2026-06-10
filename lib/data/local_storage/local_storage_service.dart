@@ -1071,6 +1071,13 @@ class LocalStorageService {
 
   /// ⚙️ Save a garden setting
   static Future<void> saveSetting(String key, dynamic value) async {
+    if (!_isInitialized) {
+      if (kDebugMode) {
+        print('⚠️ saveSetting called before storage initialized: $key');
+      }
+      return;
+    }
+
     try {
       await _settingsBoxInstance.put(key, value);
 
@@ -1086,6 +1093,13 @@ class LocalStorageService {
 
   /// 🌙 Get a garden setting
   static dynamic getSetting(String key, {dynamic defaultValue}) {
+    if (!_isInitialized) {
+      if (kDebugMode) {
+        print('⚠️ getSetting called before storage initialized: $key');
+      }
+      return defaultValue;
+    }
+
     try {
       return _settingsBoxInstance.get(key, defaultValue: defaultValue);
     } catch (error) {
@@ -1098,6 +1112,13 @@ class LocalStorageService {
 
   /// 🌈 Get all garden settings
   static Map<String, dynamic> getAllSettings() {
+    if (!_isInitialized) {
+      if (kDebugMode) {
+        print('⚠️ getAllSettings called before storage initialized');
+      }
+      return {};
+    }
+
     try {
       final settings = <String, dynamic>{};
       for (final key in _settingsBoxInstance.keys) {
@@ -1114,11 +1135,13 @@ class LocalStorageService {
 
   /// 🍂 Remove a garden setting
   static Future<void> removeSetting(String key) async {
+    if (!_isInitialized) return;
     await deleteSetting(key);
   }
 
   /// 🍂 Delete a setting
   static Future<void> deleteSetting(String key) async {
+    if (!_isInitialized) return;
     try {
       await _settingsBoxInstance.delete(key);
 

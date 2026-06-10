@@ -33,11 +33,11 @@ class _SplashScreenState extends State<SplashScreen>
   Timer? _messageTimer;
 
   final List<String> _loadingMessages = [
-    "Planting seeds of mindfulness...",
-    "Growing your garden...",
-    "Watering positive thoughts...",
-    "Nurturing inner peace...",
-    "Almost ready...",
+    "Planting tiny seeds of joy...",
+    "Growing a playful garden...",
+    "Watering happy thoughts...",
+    "Nurturing calm adventures...",
+    "Almost ready to explore...",
   ];
 
   bool _disposed = false;
@@ -453,62 +453,79 @@ class _SplashScreenState extends State<SplashScreen>
                 ),
               ),
 
-              // Main content
+              // Main content with enhanced layout for new icon
               Center(
                 child: Opacity(
                   opacity: _fadeInAnimation?.value ?? 1.0,
                   child: Transform.scale(
                     scale: _scaleAnimation?.value ?? 1.0,
                     child: Container(
-                      width: size.width * 0.9,
-                      constraints: const BoxConstraints(maxWidth: 500),
-                      padding: const EdgeInsets.all(30),
+                      width: size.width * 0.95,
+                      constraints: const BoxConstraints(maxWidth: 550),
+                      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 40),
                       decoration: BoxDecoration(
-                        borderRadius: BorderRadius.circular(30),
+                        borderRadius: BorderRadius.circular(40),
                         gradient: LinearGradient(
                           begin: Alignment.topLeft,
                           end: Alignment.bottomRight,
                           colors: [
-                            Colors.white.withOpacity(0.1),
-                            Colors.white.withOpacity(0.05),
+                            Colors.white.withOpacity(0.08),
+                            Colors.white.withOpacity(0.03),
                           ],
                         ),
                         border: Border.all(
-                          color: Colors.white.withOpacity(0.15),
-                          width: 1,
+                          color: Colors.white.withOpacity(0.1),
+                          width: 1.5,
                         ),
                       ),
                       child: Column(
                         mainAxisSize: MainAxisSize.min,
                         children: [
+                          // Centered Icon Display - Prominent
                           Transform.scale(
                             scale: _logoScaleAnimation?.value ?? 0.0,
                             child: Container(
-                              width: 160,
-                              height: 160,
+                              width: 240,
+                              height: 240,
                               decoration: BoxDecoration(
                                 shape: BoxShape.circle,
-                                gradient: const LinearGradient(
-                                  begin: Alignment.topLeft,
-                                  end: Alignment.bottomRight,
-                                  colors: [
-                                    Color(0xFF4CAF50),
-                                    Color(0xFF2E7D32),
-                                  ],
-                                ),
                                 boxShadow: [
                                   BoxShadow(
-                                    color: const Color(0xFF4CAF50)
-                                        .withOpacity(0.3),
-                                    blurRadius: 20,
+                                    color: Colors.white.withOpacity(0.1),
+                                    blurRadius: 40,
+                                    spreadRadius: 10,
+                                  ),
+                                  BoxShadow(
+                                    color: const Color(0xFF4CAF50).withOpacity(0.2),
+                                    blurRadius: 30,
                                     spreadRadius: 5,
                                   ),
                                 ],
                               ),
-                              child: Icon(
-                                Icons.spa,
-                                size: 70,
-                                color: Colors.white.withOpacity(0.9),
+                              child: Padding(
+                                padding: const EdgeInsets.all(10),
+                                child: Image.asset(
+                                  'assets/images/mindful_garden_icon.png',
+                                  fit: BoxFit.contain,
+                                  errorBuilder: (_, __, ___) => Container(
+                                    decoration: const BoxDecoration(
+                                      shape: BoxShape.circle,
+                                      gradient: LinearGradient(
+                                        begin: Alignment.topLeft,
+                                        end: Alignment.bottomRight,
+                                        colors: [
+                                          Color(0xFF4CAF50),
+                                          Color(0xFF2E7D32),
+                                        ],
+                                      ),
+                                    ),
+                                    child: Icon(
+                                      Icons.spa,
+                                      size: 100,
+                                      color: Colors.white.withOpacity(0.9),
+                                    ),
+                                  ),
+                                ),
                               ),
                             ),
                           ),
@@ -541,7 +558,7 @@ class _SplashScreenState extends State<SplashScreen>
                             child: Column(
                               children: [
                                 Text(
-                                  'Nurture Your Mind',
+                                  'Playful Garden Journey',
                                   style: TextStyle(
                                     fontSize: 18,
                                     color: _textColorAnimation?.value ??
@@ -553,7 +570,7 @@ class _SplashScreenState extends State<SplashScreen>
                                 ),
                                 const SizedBox(height: 8),
                                 Text(
-                                  'Grow in Peace & Harmony',
+                                  'Grow calm adventures with every step',
                                   style: TextStyle(
                                     fontSize: 14,
                                     color: Colors.white.withOpacity(0.8),

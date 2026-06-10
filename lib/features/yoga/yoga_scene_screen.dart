@@ -4,6 +4,7 @@ import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
 import 'package:mindfulness_garden/core/widgets/meditation_scene_widget.dart';
 import 'package:mindfulness_garden/core/services/voice_service.dart';
+import 'package:mindfulness_garden/core/services/localization_service.dart';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // YogaSceneScreen
@@ -615,7 +616,47 @@ class _YogaSceneScreenState extends State<YogaSceneScreen>
               ),
             ),
           ),
+          const SizedBox(height: 8),
+          SizedBox(
+            width: double.infinity,
+            child: TextButton(
+              onPressed: _showBenefits,
+              child: const Text('Benefits',
+                  style: TextStyle(color: Colors.white70)),
+            ),
+          ),
         ],
+      ),
+    );
+  }
+
+  void _showBenefits() {
+    final lang = VoiceService().appLanguage;
+    final text = LocalizationService.translate('benefits_yoga', lang);
+    VoiceService().speak(text);
+    showDialog(
+      context: context,
+      builder: (_) => Dialog(
+        backgroundColor: const Color(0xFF1a1a2e),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+        child: Padding(
+          padding: const EdgeInsets.all(18),
+          child: Column(mainAxisSize: MainAxisSize.min, children: [
+            const Text('Benefits',
+                style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 18,
+                    fontWeight: FontWeight.w800)),
+            const SizedBox(height: 12),
+            Text(text,
+                style: const TextStyle(color: Colors.white70, fontSize: 14)),
+            const SizedBox(height: 12),
+            TextButton(
+                onPressed: () => Navigator.pop(context),
+                child: const Text('Close',
+                    style: TextStyle(color: Colors.white70)))
+          ]),
+        ),
       ),
     );
   }

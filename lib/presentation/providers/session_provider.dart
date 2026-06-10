@@ -1,6 +1,9 @@
 import 'package:flutter/foundation.dart';
+import 'package:flutter/material.dart';
 import 'package:mindfulness_garden/data/models/session_model.dart';
+import 'package:mindfulness_garden/presentation/routes/app_router.dart';
 import 'package:mindfulness_garden/data/repositories/session_repository.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 
 class SessionProvider with ChangeNotifier {
   final SessionRepository _sessionRepository = SessionRepository();
@@ -46,6 +49,10 @@ class SessionProvider with ChangeNotifier {
     List<String> soundsUsed = const [],
   }) async {
     try {
+      // Check if user is signed in via Firebase
+      final firebaseUser = FirebaseAuth.instance.currentUser;
+      final isSignedIn = firebaseUser != null;
+
       await _sessionRepository.saveSession(
         durationMinutes: durationMinutes,
         meditationType: meditationType,
@@ -61,6 +68,18 @@ class SessionProvider with ChangeNotifier {
 
       // Update user stats through user provider
       notifyListeners();
+
+      // If user is not signed in, warn them that data is saved locally only
+      if (!isSignedIn) {
+        final ctx = AppRouter.rootNavigatorKey.currentContext;
+        if (ctx != null) {
+          ScaffoldMessenger.of(ctx).showSnackBar(SnackBar(
+            content: const Text(
+                'Session saved locally. Sign in to sync across devices.'),
+            duration: const Duration(seconds: 4),
+          ));
+        }
+      }
     } catch (e) {
       if (kDebugMode) {
         print('Error saving session: $e');

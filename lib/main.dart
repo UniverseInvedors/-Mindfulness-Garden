@@ -6,7 +6,7 @@ import 'package:firebase_core/firebase_core.dart';
 import 'firebase_options.dart';
 import 'package:mindfulness_garden/data/repositories/achievement_repository.dart';
 import 'package:mindfulness_garden/core/themes/app_theme.dart';
-import 'package:mindfulness_garden/core/widgets/app_responsive_scaler.dart';
+import 'package:mindfulness_garden/core/responsive/responsive_context.dart';
 import 'package:mindfulness_garden/presentation/providers/app_provider.dart';
 import 'package:mindfulness_garden/presentation/providers/user_provider.dart';
 import 'package:mindfulness_garden/presentation/providers/session_provider.dart';
@@ -15,6 +15,7 @@ import 'package:mindfulness_garden/presentation/providers/achievement_provider.d
 import 'package:mindfulness_garden/presentation/providers/challenge_provider.dart';
 import 'package:mindfulness_garden/presentation/providers/subscription_provider.dart';
 import 'package:mindfulness_garden/presentation/providers/wallet_provider.dart';
+import 'package:mindfulness_garden/presentation/providers/auth_provider.dart';
 import 'package:mindfulness_garden/presentation/routes/app_router.dart';
 import 'package:mindfulness_garden/data/models/achievement_model.dart';
 import 'package:mindfulness_garden/data/models/mood_model.dart';
@@ -23,6 +24,7 @@ import 'package:mindfulness_garden/data/models/user_model.dart';
 import 'package:mindfulness_garden/data/models/wallet_model.dart';
 import 'package:mindfulness_garden/core/services/ad_service.dart';
 import 'package:mindfulness_garden/core/services/wallet_service.dart';
+import 'package:mindfulness_garden/data/local_storage/local_storage_service.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -108,6 +110,14 @@ Future<void> main() async {
       print('⚠️ AdMob initialization failed: $e');
     }
 
+    // Ensure LocalStorageService is initialized so getSetting() is safe
+    try {
+      await LocalStorageService.init();
+      print('🔒 LocalStorageService initialized');
+    } catch (e) {
+      print('⚠️ LocalStorageService initialization failed: $e');
+    }
+
     runApp(const MindfulnessGardenApp());
   } catch (e, s) {
     print('💥 Fatal error during initialization: $e');
@@ -169,6 +179,7 @@ class _MindfulnessGardenAppState extends State<MindfulnessGardenApp> {
     return MultiProvider(
       providers: [
         ChangeNotifierProvider(create: (_) => AppProvider()),
+        ChangeNotifierProvider(create: (_) => AuthProvider()),
         ChangeNotifierProvider(create: (_) => UserProvider()),
         ChangeNotifierProvider(create: (_) => SessionProvider()),
         ChangeNotifierProvider(create: (_) => MoodProvider()),
@@ -218,14 +229,7 @@ class _MindfulnessGardenAppState extends State<MindfulnessGardenApp> {
             themeMode: themeMode,
             routerConfig: AppRouter.router,
             builder: (context, child) {
-              return AppResponsiveScaler(
-                child: MediaQuery(
-                  data: MediaQuery.of(context).copyWith(
-                    textScaler: TextScaler.noScaling,
-                  ),
-                  child: child ?? const SizedBox.shrink(),
-                ),
-              );
+              return ResponsiveScope(child: child ?? const SizedBox.shrink());
             },
           );
         },

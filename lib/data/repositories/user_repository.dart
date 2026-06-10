@@ -1,13 +1,20 @@
 import 'package:mindfulness_garden/data/local_storage/local_storage_service.dart';
 import 'package:mindfulness_garden/data/models/user_model.dart';
+import 'package:mindfulness_garden/data/services/firestore_progress_service.dart';
 
 class UserRepository {
+  final FirestoreProgressService _progressService;
+
+  UserRepository({FirestoreProgressService? progressService})
+      : _progressService = progressService ?? FirestoreProgressService.instance;
+
   Future<UserModel?> getCurrentUser() async {
     return LocalStorageService.getUser();
   }
 
   Future<void> saveUser(UserModel user) async {
     await LocalStorageService.saveUser(user);
+    await _syncUserProgress(user);
   }
 
   Future<void> updateUser({
@@ -24,6 +31,15 @@ class UserRepository {
         lastSessionDate: DateTime.now(),
       );
       await LocalStorageService.updateUser(updatedUser);
+      await _syncUserProgress(updatedUser);
+    }
+  }
+
+  Future<void> _syncUserProgress(UserModel user) async {
+    try {
+      await _progressService.syncUserProgress(user);
+    } catch (_) {
+      // Firestore sync is optional and should not block local progress.
     }
   }
 
@@ -38,7 +54,6 @@ class UserRepository {
   Future<void> completeSession(int durationMinutes) async {
     final currentUser = await getCurrentUser();
     if (currentUser != null) {
-      final currentStreak = await getCurrentStreak();
       final totalMinutes = await getTotalMinutes();
 
       // Calculate garden level (1 level per 60 minutes)

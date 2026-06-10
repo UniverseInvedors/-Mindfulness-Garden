@@ -64,7 +64,14 @@ class VoiceService {
       } catch (_) {}
     }
 
-    await _tts.setLanguage(_language);
+    // Resolve and apply best-available TTS language (with fallbacks)
+    try {
+      await setLanguage(_language);
+    } catch (_) {
+      // If setLanguage fails for any reason, ensure we have a working fallback
+      _language = 'en-US';
+      await _tts.setLanguage(_language);
+    }
     await _tts.setSpeechRate(_rate);
     await _tts.setPitch(_pitch);
     await _tts.setVolume(_volume);
@@ -102,15 +109,75 @@ class VoiceService {
   }
 
   Future<void> setLanguage(String lang) async {
-    _language = lang;
-    await _tts.setLanguage(lang);
-    await LocalStorageService.saveSetting('voice_language', lang);
+    // Try to resolve a suitable TTS language variant supported by the engine.
+    final resolved = await _resolveTtsLanguage(lang);
+    _language = resolved;
+    try {
+      await _tts.setLanguage(resolved);
+    } catch (e) {
+      // As a last resort, fallback to English
+      _language = 'en-US';
+      try {
+        await _tts.setLanguage(_language);
+      } catch (_) {}
+    }
+    await LocalStorageService.saveSetting('voice_language', _language);
   }
 
   Future<void> setAppLanguage(AppLanguage language) async {
     _appLanguage = language;
     await setLanguage(language.localeCode);
     await LocalStorageService.saveSetting('app_language', language.displayName);
+  }
+
+  // Attempt to find a suitable TTS language supported by the platform.
+  Future<String> _resolveTtsLanguage(String lang) async {
+    try {
+      final langs = await _tts.getLanguages;
+      if (langs == null || langs.isEmpty) return lang;
+
+      // Exact match
+      if (langs.contains(lang)) return lang;
+
+      // Try code-only (e.g., "hi" for "hi-IN")
+      final parts = lang.split('-');
+      if (parts.isNotEmpty) {
+        final codeOnly = parts.first;
+        if (langs.contains(codeOnly)) return codeOnly;
+
+        // Find any language that starts with the code
+        for (final l in langs) {
+          if (l.toLowerCase().startsWith(codeOnly.toLowerCase())) return l;
+        }
+      }
+
+      // Try common fallbacks for Hindi/Bengali
+      final lower = lang.toLowerCase();
+      if (lower.startsWith('hi')) {
+        if (langs.contains('hi-IN')) return 'hi-IN';
+        if (langs.contains('hi')) return 'hi';
+      }
+      if (lower.startsWith('bn')) {
+        if (langs.contains('bn-IN')) return 'bn-IN';
+        if (langs.contains('bn')) return 'bn';
+        if (langs.contains('bn-BD')) return 'bn-BD';
+      }
+
+      // Fallback to first available language that looks like the target
+      for (final l in langs) {
+        if (l.toLowerCase().contains('hi')) return l;
+        if (l.toLowerCase().contains('bn')) return l;
+      }
+
+      // Finally, prefer English
+      if (langs.contains('en-US')) return 'en-US';
+      if (langs.contains('en')) return 'en';
+
+      // Give up and return the requested value (will likely fail upstream)
+      return lang;
+    } catch (_) {
+      return lang;
+    }
   }
 
   bool get isEnabled => _enabled;

@@ -103,15 +103,11 @@ flutter:
   uses-material-design: true
 
   assets:
+    - assets/icon.png
     - assets/images/
     - assets/sounds/
     - assets/animations/
-    - assets/videos/anxiety_relief.mp4
-    - assets/videos/deep_sleep.mp4
-    - assets/videos/focus_concentration.mp4
-    - assets/videos/meditation_demo.mp4
-    - assets/videos/morning_meditation.mp4
-    - assets/videos/stress_release.mp4
+    # Video assets temporarily disabled for local test (add real files in assets/videos/ to enable)
 
   fonts:
     - family: Inter
@@ -129,7 +125,7 @@ flutter:
 flutter_launcher_icons:
   android: true
   ios: true
-  image_path: "assets/icon.png"
+  image_path: "assets/images/mindful_garden_icon.png"
   min_sdk_android: 21
   adaptive_icon_background: "#1a5a28"
-  adaptive_icon_foreground: "assets/icon.png"
+  adaptive_icon_foreground: "assets/images/mindful_garden_icon.png"

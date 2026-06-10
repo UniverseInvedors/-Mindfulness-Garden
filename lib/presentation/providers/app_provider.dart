@@ -8,6 +8,7 @@ class AppProvider with ChangeNotifier {
   ThemeMode _themeMode = ThemeMode.dark;
   AppUiTheme _uiTheme = AppUiTheme.cosmicDark;
   AppLanguage _appLanguage = AppLanguage.english;
+  VoicePersonality _voicePersonality = VoicePersonality.buddha;
   int _streakDays = 24;
   int _totalMinutes = 240;
   String _currentMood = '';
@@ -48,6 +49,17 @@ class AppProvider with ChangeNotifier {
       final voiceLang = LocalStorageService.getSetting('voice_language');
       if (voiceLang is String) {
         _appLanguage = LocalizationService.languageFromCode(voiceLang);
+      }
+    }
+    // Load voice personality preference
+    final p = LocalStorageService.getSetting('voice_personality');
+    if (p is String) {
+      try {
+        _voicePersonality = VoicePersonality.values.firstWhere(
+            (v) => v.name == p,
+            orElse: () => VoicePersonality.buddha);
+      } catch (_) {
+        _voicePersonality = VoicePersonality.buddha;
       }
     }
   }
@@ -92,6 +104,31 @@ class AppProvider with ChangeNotifier {
     await LocalStorageService.saveSetting(
         'voice_language', language.localeCode);
     await VoiceService().setAppLanguage(language);
+    // Announce the change using the voice system (voice-first UX)
+    try {
+      final template =
+          LocalizationService.translate('language_set', _appLanguage);
+      final phrase = template.replaceAll('{language}', language.displayName);
+      await VoiceService().speak(phrase);
+    } catch (_) {}
+    notifyListeners();
+  }
+
+  VoicePersonality get voicePersonality => _voicePersonality;
+
+  Future<void> setVoicePersonality(VoicePersonality p) async {
+    _voicePersonality = p;
+    await LocalStorageService.saveSetting('voice_personality', p.name);
+    await VoiceService().setPersonality(p);
+    // short spoken confirmation
+    final announce = {
+      VoicePersonality.buddha: 'Buddha voice selected',
+      VoicePersonality.zeno: 'Zeno voice selected',
+      VoicePersonality.monk: 'Monk voice selected',
+    }[p]!;
+    try {
+      await VoiceService().speak(announce);
+    } catch (_) {}
     notifyListeners();
   }
 

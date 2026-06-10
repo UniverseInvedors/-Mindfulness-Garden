@@ -8,32 +8,37 @@ class AdService {
   AdService._internal();
 
   // ── Real Ad Unit IDs ──────────────────────────────────────────────
-  static const String _bannerIdProd       = 'ca-app-pub-8759032363251002/9917112645';
-  static const String _interstitialIdProd = 'ca-app-pub-8759032363251002/7946221708';
-  static const String _rewardedIdProd     = 'ca-app-pub-8759032363251002/3009796315';
+  static const String _bannerIdProd = 'ca-app-pub-8436172731596367/1842302530';
+  static const String _interstitialIdProd =
+      'ca-app-pub-8436172731596367/9529220864';
+  static const String _rewardedIdProd =
+      'ca-app-pub-8436172731596367/7072098393';
 
   // Google test IDs (used in debug builds so you never click real ads)
-  static const String _bannerIdTest       = 'ca-app-pub-3940256099942544/6300978111';
-  static const String _interstitialIdTest = 'ca-app-pub-3940256099942544/1033173712';
-  static const String _rewardedIdTest     = 'ca-app-pub-3940256099942544/5224354917';
+  static const String _bannerIdTest = 'ca-app-pub-3940256099942544/6300978111';
+  static const String _interstitialIdTest =
+      'ca-app-pub-3940256099942544/1033173712';
+  static const String _rewardedIdTest =
+      'ca-app-pub-3940256099942544/5224354917';
 
-  String get _bannerId       => kDebugMode ? _bannerIdTest       : _bannerIdProd;
-  String get _interstitialId => kDebugMode ? _interstitialIdTest : _interstitialIdProd;
-  String get _rewardedId     => kDebugMode ? _rewardedIdTest     : _rewardedIdProd;
+  String get _bannerId => kDebugMode ? _bannerIdTest : _bannerIdProd;
+  String get _interstitialId =>
+      kDebugMode ? _interstitialIdTest : _interstitialIdProd;
+  String get _rewardedId => kDebugMode ? _rewardedIdTest : _rewardedIdProd;
   // ─────────────────────────────────────────────────────────────────
 
-  BannerAd?       _bannerAd;
+  BannerAd? _bannerAd;
   InterstitialAd? _interstitialAd;
-  RewardedAd?     _rewardedAd;
+  RewardedAd? _rewardedAd;
 
-  bool _isInitialized    = false;
-  bool _bannerLoaded     = false;
+  bool _isInitialized = false;
+  bool _bannerLoaded = false;
   bool _interstitialReady = false;
-  bool _rewardedReady    = false;
+  bool _rewardedReady = false;
 
-  bool get isBannerLoaded      => _bannerLoaded;
+  bool get isBannerLoaded => _bannerLoaded;
   bool get isInterstitialReady => _interstitialReady;
-  bool get isRewardedReady     => _rewardedReady;
+  bool get isRewardedReady => _rewardedReady;
 
   // ── Init ─────────────────────────────────────────────────────────
   Future<void> initialize() async {

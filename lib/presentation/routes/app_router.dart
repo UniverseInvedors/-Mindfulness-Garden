@@ -29,6 +29,7 @@ import 'package:mindfulness_garden/features/subscription/subscription_screen.dar
 import 'package:mindfulness_garden/features/settings/settings_screen.dart';
 import 'package:mindfulness_garden/features/yoga/yoga_scene_screen.dart';
 import 'package:mindfulness_garden/features/profile/profile_screen.dart';
+import 'package:mindfulness_garden/features/auth/auth_screen.dart';
 
 class AppRouter {
   static final GlobalKey<NavigatorState> rootNavigatorKey =
@@ -656,6 +657,27 @@ class AppRouter {
                     Tween<Offset>(begin: const Offset(1, 0), end: Offset.zero)
                         .animate(animation),
                 child: child,
+              );
+            },
+          );
+        },
+      ),
+
+      // ===== AUTH =====
+      GoRoute(
+        path: '/auth',
+        name: 'auth',
+        pageBuilder: (context, state) {
+          return CustomTransitionPage<void>(
+            key: state.pageKey,
+            child: const AuthScreen(),
+            transitionsBuilder:
+                (context, animation, secondaryAnimation, child) {
+              return SlideTransition(
+                position:
+                    Tween<Offset>(begin: const Offset(0, 1), end: Offset.zero)
+                        .animate(animation),
+                child: FadeTransition(opacity: animation, child: child),
               );
             },
           );

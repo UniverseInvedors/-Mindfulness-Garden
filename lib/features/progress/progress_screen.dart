@@ -6,6 +6,7 @@ import 'package:mindfulness_garden/data/local_storage/local_storage_service.dart
 import 'package:mindfulness_garden/data/models/session_model.dart';
 import 'package:mindfulness_garden/data/models/mood_model.dart';
 import 'package:mindfulness_garden/presentation/providers/user_provider.dart';
+import 'package:mindfulness_garden/presentation/providers/session_provider.dart';
 import 'package:mindfulness_garden/presentation/providers/challenge_provider.dart';
 
 class ProgressScreen extends StatefulWidget {
@@ -40,21 +41,42 @@ class _ProgressScreenState extends State<ProgressScreen>
 
   static const _days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
   static const _typeColors = [
-    Color(0xFF00b4d8), Color(0xFF9d4edd), Color(0xFF38b000),
-    Color(0xFFf72585), Color(0xFFffb700), Color(0xFF4361ee),
+    Color(0xFF00b4d8),
+    Color(0xFF9d4edd),
+    Color(0xFF38b000),
+    Color(0xFFf72585),
+    Color(0xFFffb700),
+    Color(0xFF4361ee),
   ];
 
   @override
   void initState() {
     super.initState();
     _tabController = TabController(length: 3, vsync: this);
-    WidgetsBinding.instance.addPostFrameCallback((_) => _loadData());
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _loadData();
+      // Listen for session provider changes so progress updates live
+      try {
+        final sessionProv = context.read<SessionProvider>();
+        sessionProv.addListener(_onSessionChange);
+      } catch (_) {}
+    });
   }
 
   @override
   void dispose() {
+    try {
+      final sessionProv = context.read<SessionProvider>();
+      sessionProv.removeListener(_onSessionChange);
+    } catch (_) {}
     _tabController.dispose();
     super.dispose();
+  }
+
+  void _onSessionChange() {
+    // Debounce / ensure UI still mounted before reloading
+    if (!mounted) return;
+    _loadData();
   }
 
   Future<void> _loadData() async {
@@ -89,7 +111,10 @@ class _ProgressScreenState extends State<ProgressScreen>
     int maxMin = 0;
     String bestDay = '—';
     for (int i = 0; i < 7; i++) {
-      if (weekMins[i] > maxMin) { maxMin = weekMins[i]; bestDay = _days[i]; }
+      if (weekMins[i] > maxMin) {
+        maxMin = weekMins[i];
+        bestDay = _days[i];
+      }
     }
 
     // Mood last 14 days
@@ -110,15 +135,26 @@ class _ProgressScreenState extends State<ProgressScreen>
     // Mood trend
     String trend = 'stable';
     if (recentMoods.length >= 6) {
-      final first = recentMoods.take(recentMoods.length ~/ 2).map((m) => m.rating).reduce((a, b) => a + b) / (recentMoods.length ~/ 2);
-      final last = recentMoods.skip(recentMoods.length ~/ 2).map((m) => m.rating).reduce((a, b) => a + b) / (recentMoods.length - recentMoods.length ~/ 2);
+      final first = recentMoods
+              .take(recentMoods.length ~/ 2)
+              .map((m) => m.rating)
+              .reduce((a, b) => a + b) /
+          (recentMoods.length ~/ 2);
+      final last = recentMoods
+              .skip(recentMoods.length ~/ 2)
+              .map((m) => m.rating)
+              .reduce((a, b) => a + b) /
+          (recentMoods.length - recentMoods.length ~/ 2);
       if (last - first > 0.3) {
         trend = 'improving';
       } else if (first - last > 0.3) trend = 'declining';
     }
 
     // Mood logs this week
-    final weekMoods = moods.where((m) => m.date.isAfter(weekStart.subtract(const Duration(hours: 1)))).length;
+    final weekMoods = moods
+        .where(
+            (m) => m.date.isAfter(weekStart.subtract(const Duration(hours: 1))))
+        .length;
 
     // Session type breakdown
     final typeMap = <String, int>{};
@@ -128,7 +164,8 @@ class _ProgressScreenState extends State<ProgressScreen>
     }
 
     // Challenges
-    final completed = challengeProvider.challenges.where((c) => c.isCompleted).length;
+    final completed =
+        challengeProvider.challenges.where((c) => c.isCompleted).length;
     final points = challengeProvider.points;
 
     setState(() {
@@ -163,15 +200,20 @@ class _ProgressScreenState extends State<ProgressScreen>
         elevation: 0,
         leading: IconButton(
           icon: const Icon(Icons.arrow_back, color: Colors.white),
-          onPressed: () => context.canPop() ? context.pop() : context.go('/main'),
+          onPressed: () =>
+              context.canPop() ? context.pop() : context.go('/main'),
         ),
         title: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             const Text('My Progress',
-                style: TextStyle(color: Colors.white, fontWeight: FontWeight.w800, fontSize: 18)),
+                style: TextStyle(
+                    color: Colors.white,
+                    fontWeight: FontWeight.w800,
+                    fontSize: 18)),
             Text('Real data from your sessions',
-                style: TextStyle(color: Colors.white.withOpacity(0.4), fontSize: 11)),
+                style: TextStyle(
+                    color: Colors.white.withOpacity(0.4), fontSize: 11)),
           ],
         ),
         actions: [
@@ -193,7 +235,8 @@ class _ProgressScreenState extends State<ProgressScreen>
         ),
       ),
       body: _isLoading
-          ? const Center(child: CircularProgressIndicator(color: Color(0xFF00b4d8)))
+          ? const Center(
+              child: CircularProgressIndicator(color: Color(0xFF00b4d8)))
           : TabBarView(
               controller: _tabController,
               children: [
@@ -262,11 +305,15 @@ class _ProgressScreenState extends State<ProgressScreen>
             children: [
               Text(value,
                   style: const TextStyle(
-                      color: Colors.white, fontSize: 22, fontWeight: FontWeight.w800)),
+                      color: Colors.white,
+                      fontSize: 22,
+                      fontWeight: FontWeight.w800)),
               const SizedBox(height: 2),
               Text(label,
                   style: TextStyle(
-                      color: Colors.white.withOpacity(0.5), fontSize: 12, letterSpacing: 0.5)),
+                      color: Colors.white.withOpacity(0.5),
+                      fontSize: 12,
+                      letterSpacing: 0.5)),
             ],
           ),
         ],
@@ -275,7 +322,9 @@ class _ProgressScreenState extends State<ProgressScreen>
   }
 
   Widget _buildWeeklyChart() {
-    final maxVal = _weeklyMinutes.isEmpty ? 1 : _weeklyMinutes.reduce((a, b) => a > b ? a : b);
+    final maxVal = _weeklyMinutes.isEmpty
+        ? 1
+        : _weeklyMinutes.reduce((a, b) => a > b ? a : b);
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
@@ -289,10 +338,13 @@ class _ProgressScreenState extends State<ProgressScreen>
           Row(
             children: [
               const Text('THIS WEEK',
-                  style: TextStyle(color: Colors.white70, fontSize: 12, letterSpacing: 1)),
+                  style: TextStyle(
+                      color: Colors.white70, fontSize: 12, letterSpacing: 1)),
               const Spacer(),
-              Text('Best: $_bestDay ${_bestDayMinutes > 0 ? "$_bestDayMinutes min" : ""}',
-                  style: TextStyle(color: Colors.white.withOpacity(0.5), fontSize: 12)),
+              Text(
+                  'Best: $_bestDay ${_bestDayMinutes > 0 ? "$_bestDayMinutes min" : ""}',
+                  style: TextStyle(
+                      color: Colors.white.withOpacity(0.5), fontSize: 12)),
             ],
           ),
           const SizedBox(height: 16),
@@ -318,39 +370,48 @@ class _ProgressScreenState extends State<ProgressScreen>
                       getTitlesWidget: (v, _) => Padding(
                         padding: const EdgeInsets.only(top: 6),
                         child: Text(_days[v.toInt()],
-                            style: const TextStyle(color: Colors.white54, fontSize: 11)),
+                            style: const TextStyle(
+                                color: Colors.white54, fontSize: 11)),
                       ),
                       reservedSize: 24,
                     ),
                   ),
-                  leftTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
-                  rightTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
-                  topTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+                  leftTitles: const AxisTitles(
+                      sideTitles: SideTitles(showTitles: false)),
+                  rightTitles: const AxisTitles(
+                      sideTitles: SideTitles(showTitles: false)),
+                  topTitles: const AxisTitles(
+                      sideTitles: SideTitles(showTitles: false)),
                 ),
                 gridData: FlGridData(
                   show: true,
                   drawVerticalLine: false,
-                  getDrawingHorizontalLine: (_) =>
-                      FlLine(color: Colors.white.withOpacity(0.05), strokeWidth: 1),
+                  getDrawingHorizontalLine: (_) => FlLine(
+                      color: Colors.white.withOpacity(0.05), strokeWidth: 1),
                 ),
                 borderData: FlBorderData(show: false),
-                barGroups: List.generate(7, (i) => BarChartGroupData(
-                  x: i,
-                  barRods: [
-                    BarChartRodData(
-                      toY: _weeklyMinutes[i].toDouble(),
-                      width: 18,
-                      borderRadius: BorderRadius.circular(6),
-                      gradient: LinearGradient(
-                        colors: _weeklyMinutes[i] > 0
-                            ? [const Color(0xFF00b4d8), const Color(0xFF9d4edd)]
-                            : [Colors.white12, Colors.white12],
-                        begin: Alignment.bottomCenter,
-                        end: Alignment.topCenter,
-                      ),
-                    ),
-                  ],
-                )),
+                barGroups: List.generate(
+                    7,
+                    (i) => BarChartGroupData(
+                          x: i,
+                          barRods: [
+                            BarChartRodData(
+                              toY: _weeklyMinutes[i].toDouble(),
+                              width: 18,
+                              borderRadius: BorderRadius.circular(6),
+                              gradient: LinearGradient(
+                                colors: _weeklyMinutes[i] > 0
+                                    ? [
+                                        const Color(0xFF00b4d8),
+                                        const Color(0xFF9d4edd)
+                                      ]
+                                    : [Colors.white12, Colors.white12],
+                                begin: Alignment.bottomCenter,
+                                end: Alignment.topCenter,
+                              ),
+                            ),
+                          ],
+                        )),
               ),
             ),
           ),
@@ -359,7 +420,8 @@ class _ProgressScreenState extends State<ProgressScreen>
             _totalSessions == 0
                 ? 'No sessions yet — start your first one!'
                 : 'Total this week: ${_weeklyMinutes.fold(0, (a, b) => a + b)} min across ${_sessions.where((s) => s.startTime.isAfter(DateTime.now().subtract(const Duration(days: 7)))).length} sessions',
-            style: TextStyle(color: Colors.white.withOpacity(0.5), fontSize: 12),
+            style:
+                TextStyle(color: Colors.white.withOpacity(0.5), fontSize: 12),
           ),
         ],
       ),
@@ -380,7 +442,8 @@ class _ProgressScreenState extends State<ProgressScreen>
           Row(
             children: [
               const Text('MOOD TREND (14 DAYS)',
-                  style: TextStyle(color: Colors.white70, fontSize: 12, letterSpacing: 1)),
+                  style: TextStyle(
+                      color: Colors.white70, fontSize: 12, letterSpacing: 1)),
               const Spacer(),
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
@@ -389,9 +452,15 @@ class _ProgressScreenState extends State<ProgressScreen>
                   borderRadius: BorderRadius.circular(10),
                 ),
                 child: Text(
-                  _moodTrend == 'improving' ? '↑ Improving' :
-                  _moodTrend == 'declining' ? '↓ Declining' : '→ Stable',
-                  style: TextStyle(color: _moodTrendColor(), fontSize: 11, fontWeight: FontWeight.w600),
+                  _moodTrend == 'improving'
+                      ? '↑ Improving'
+                      : _moodTrend == 'declining'
+                          ? '↓ Declining'
+                          : '→ Stable',
+                  style: TextStyle(
+                      color: _moodTrendColor(),
+                      fontSize: 11,
+                      fontWeight: FontWeight.w600),
                 ),
               ),
             ],
@@ -401,12 +470,13 @@ class _ProgressScreenState extends State<ProgressScreen>
             height: 130,
             child: LineChart(
               LineChartData(
-                minY: 1, maxY: 5,
+                minY: 1,
+                maxY: 5,
                 gridData: FlGridData(
                   show: true,
                   drawVerticalLine: false,
-                  getDrawingHorizontalLine: (_) =>
-                      FlLine(color: Colors.white.withOpacity(0.05), strokeWidth: 1),
+                  getDrawingHorizontalLine: (_) => FlLine(
+                      color: Colors.white.withOpacity(0.05), strokeWidth: 1),
                 ),
                 titlesData: FlTitlesData(
                   leftTitles: AxisTitles(
@@ -415,18 +485,24 @@ class _ProgressScreenState extends State<ProgressScreen>
                       reservedSize: 24,
                       getTitlesWidget: (v, _) => Text(
                         v.toInt().toString(),
-                        style: const TextStyle(color: Colors.white38, fontSize: 10),
+                        style: const TextStyle(
+                            color: Colors.white38, fontSize: 10),
                       ),
                     ),
                   ),
-                  bottomTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
-                  rightTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
-                  topTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+                  bottomTitles: const AxisTitles(
+                      sideTitles: SideTitles(showTitles: false)),
+                  rightTitles: const AxisTitles(
+                      sideTitles: SideTitles(showTitles: false)),
+                  topTitles: const AxisTitles(
+                      sideTitles: SideTitles(showTitles: false)),
                 ),
                 borderData: FlBorderData(show: false),
                 lineBarsData: [
                   LineChartBarData(
-                    spots: _moodRatings.asMap().entries
+                    spots: _moodRatings
+                        .asMap()
+                        .entries
                         .map((e) => FlSpot(e.key.toDouble(), e.value))
                         .toList(),
                     isCurved: true,
@@ -460,10 +536,12 @@ class _ProgressScreenState extends State<ProgressScreen>
           Row(
             children: [
               Text('Avg mood: ${_avgMoodRating.toStringAsFixed(1)}/5',
-                  style: TextStyle(color: Colors.white.withOpacity(0.6), fontSize: 12)),
+                  style: TextStyle(
+                      color: Colors.white.withOpacity(0.6), fontSize: 12)),
               const Spacer(),
               Text('${_moods.length} total logs',
-                  style: TextStyle(color: Colors.white.withOpacity(0.4), fontSize: 12)),
+                  style: TextStyle(
+                      color: Colors.white.withOpacity(0.4), fontSize: 12)),
             ],
           ),
         ],
@@ -480,58 +558,111 @@ class _ProgressScreenState extends State<ProgressScreen>
   Widget _buildInsightCards() {
     final insights = _generateInsights();
     return Column(
-      children: insights.map((i) => Container(
-        margin: const EdgeInsets.only(bottom: 10),
-        padding: const EdgeInsets.all(14),
-        decoration: BoxDecoration(
-          color: i['color'].withOpacity(0.1),
-          borderRadius: BorderRadius.circular(14),
-          border: Border.all(color: (i['color'] as Color).withOpacity(0.2)),
-        ),
-        child: Row(
-          children: [
-            Text(i['emoji'], style: const TextStyle(fontSize: 24)),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(i['title'],
-                      style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w700, fontSize: 14)),
-                  const SizedBox(height: 2),
-                  Text(i['body'],
-                      style: TextStyle(color: Colors.white.withOpacity(0.6), fontSize: 12)),
-                ],
-              ),
-            ),
-          ],
-        ),
-      )).toList(),
+      children: insights
+          .map((i) => Container(
+                margin: const EdgeInsets.only(bottom: 10),
+                padding: const EdgeInsets.all(14),
+                decoration: BoxDecoration(
+                  color: i['color'].withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(14),
+                  border:
+                      Border.all(color: (i['color'] as Color).withOpacity(0.2)),
+                ),
+                child: Row(
+                  children: [
+                    Text(i['emoji'], style: const TextStyle(fontSize: 24)),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(i['title'],
+                              style: const TextStyle(
+                                  color: Colors.white,
+                                  fontWeight: FontWeight.w700,
+                                  fontSize: 14)),
+                          const SizedBox(height: 2),
+                          Text(i['body'],
+                              style: TextStyle(
+                                  color: Colors.white.withOpacity(0.6),
+                                  fontSize: 12)),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ))
+          .toList(),
     );
   }
 
   List<Map<String, dynamic>> _generateInsights() {
     final insights = <Map<String, dynamic>>[];
     if (_streak >= 7) {
-      insights.add({'emoji': '🏆', 'title': '7-Day Streak!', 'body': 'Your consistency is building real neural pathways. Keep going!', 'color': Colors.amber});
+      insights.add({
+        'emoji': '🏆',
+        'title': '7-Day Streak!',
+        'body':
+            'Your consistency is building real neural pathways. Keep going!',
+        'color': Colors.amber
+      });
     } else if (_streak >= 3) {
-      insights.add({'emoji': '🔥', 'title': '$_streak-Day Streak', 'body': '${7 - _streak} more days to hit your weekly goal!', 'color': Colors.orange});
+      insights.add({
+        'emoji': '🔥',
+        'title': '$_streak-Day Streak',
+        'body': '${7 - _streak} more days to hit your weekly goal!',
+        'color': Colors.orange
+      });
     } else if (_streak == 0) {
-      insights.add({'emoji': '💡', 'title': 'Start Your Streak', 'body': 'Complete one session today to begin your streak.', 'color': Colors.blue});
+      insights.add({
+        'emoji': '💡',
+        'title': 'Start Your Streak',
+        'body': 'Complete one session today to begin your streak.',
+        'color': Colors.blue
+      });
     }
     if (_totalMinutes >= 60) {
-      insights.add({'emoji': '⏱', 'title': '$_totalMinutes Minutes Mindful', 'body': 'That is ${(_totalMinutes / 60).toStringAsFixed(1)} hours of mindfulness practice.', 'color': Colors.teal});
+      insights.add({
+        'emoji': '⏱',
+        'title': '$_totalMinutes Minutes Mindful',
+        'body':
+            'That is ${(_totalMinutes / 60).toStringAsFixed(1)} hours of mindfulness practice.',
+        'color': Colors.teal
+      });
     }
     if (_avgMoodRating >= 4.0) {
-      insights.add({'emoji': '😊', 'title': 'Great Mood Average', 'body': 'Your avg mood is ${_avgMoodRating.toStringAsFixed(1)}/5 — mindfulness is working!', 'color': Colors.green});
+      insights.add({
+        'emoji': '😊',
+        'title': 'Great Mood Average',
+        'body':
+            'Your avg mood is ${_avgMoodRating.toStringAsFixed(1)}/5 — mindfulness is working!',
+        'color': Colors.green
+      });
     } else if (_avgMoodRating > 0 && _avgMoodRating < 3.0) {
-      insights.add({'emoji': '💙', 'title': 'Mood Needs Attention', 'body': 'Your avg mood is ${_avgMoodRating.toStringAsFixed(1)}/5. Try a loving-kindness session.', 'color': Colors.purple});
+      insights.add({
+        'emoji': '💙',
+        'title': 'Mood Needs Attention',
+        'body':
+            'Your avg mood is ${_avgMoodRating.toStringAsFixed(1)}/5. Try a loving-kindness session.',
+        'color': Colors.purple
+      });
     }
     if (_moodLogsThisWeek >= 5) {
-      insights.add({'emoji': '📓', 'title': 'Consistent Mood Logging', 'body': '$_moodLogsThisWeek mood logs this week — great self-awareness!', 'color': Colors.pink});
+      insights.add({
+        'emoji': '📓',
+        'title': 'Consistent Mood Logging',
+        'body':
+            '$_moodLogsThisWeek mood logs this week — great self-awareness!',
+        'color': Colors.pink
+      });
     }
     if (insights.isEmpty) {
-      insights.add({'emoji': '🌱', 'title': 'Your Journey Begins', 'body': 'Complete your first session to see real insights here.', 'color': Colors.green});
+      insights.add({
+        'emoji': '🌱',
+        'title': 'Your Journey Begins',
+        'body': 'Complete your first session to see real insights here.',
+        'color': Colors.green
+      });
     }
     return insights;
   }
@@ -556,7 +687,8 @@ class _ProgressScreenState extends State<ProgressScreen>
 
   Widget _buildSessionTypeBreakdown() {
     if (_typeBreakdown.isEmpty) {
-      return _emptyCard('No sessions yet', 'Complete a session to see your activity breakdown.');
+      return _emptyCard('No sessions yet',
+          'Complete a session to see your activity breakdown.');
     }
     final entries = _typeBreakdown.entries.toList()
       ..sort((a, b) => b.value.compareTo(a.value));
@@ -573,34 +705,42 @@ class _ProgressScreenState extends State<ProgressScreen>
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           const Text('SESSION TYPES',
-              style: TextStyle(color: Colors.white70, fontSize: 12, letterSpacing: 1)),
+              style: TextStyle(
+                  color: Colors.white70, fontSize: 12, letterSpacing: 1)),
           const SizedBox(height: 16),
           Row(
             children: [
               SizedBox(
-                width: 120, height: 120,
+                width: 120,
+                height: 120,
                 child: PieChart(PieChartData(
                   sectionsSpace: 2,
                   centerSpaceRadius: 30,
-                  sections: entries.asMap().entries.map((e) => PieChartSectionData(
-                    value: e.value.value.toDouble(),
-                    color: _typeColors[e.key % _typeColors.length],
-                    radius: 30,
-                    title: '',
-                  )).toList(),
+                  sections: entries
+                      .asMap()
+                      .entries
+                      .map((e) => PieChartSectionData(
+                            value: e.value.value.toDouble(),
+                            color: _typeColors[e.key % _typeColors.length],
+                            radius: 30,
+                            title: '',
+                          ))
+                      .toList(),
                 )),
               ),
               const SizedBox(width: 16),
               Expanded(
                 child: Column(
                   children: entries.asMap().entries.map((e) {
-                    final pct = total > 0 ? (e.value.value / total * 100).round() : 0;
+                    final pct =
+                        total > 0 ? (e.value.value / total * 100).round() : 0;
                     return Padding(
                       padding: const EdgeInsets.only(bottom: 8),
                       child: Row(
                         children: [
                           Container(
-                            width: 10, height: 10,
+                            width: 10,
+                            height: 10,
                             decoration: BoxDecoration(
                               color: _typeColors[e.key % _typeColors.length],
                               shape: BoxShape.circle,
@@ -609,12 +749,14 @@ class _ProgressScreenState extends State<ProgressScreen>
                           const SizedBox(width: 8),
                           Expanded(
                             child: Text(e.value.key,
-                                style: const TextStyle(color: Colors.white, fontSize: 12),
+                                style: const TextStyle(
+                                    color: Colors.white, fontSize: 12),
                                 overflow: TextOverflow.ellipsis),
                           ),
                           Text('$pct%',
                               style: TextStyle(
-                                  color: Colors.white.withOpacity(0.6), fontSize: 12)),
+                                  color: Colors.white.withOpacity(0.6),
+                                  fontSize: 12)),
                         ],
                       ),
                     );
@@ -631,7 +773,8 @@ class _ProgressScreenState extends State<ProgressScreen>
   Widget _buildRecentSessions() {
     final recent = _sessions.take(10).toList();
     if (recent.isEmpty) {
-      return _emptyCard('No sessions yet', 'Your completed sessions will appear here.');
+      return _emptyCard(
+          'No sessions yet', 'Your completed sessions will appear here.');
     }
     return Container(
       padding: const EdgeInsets.all(16),
@@ -644,48 +787,62 @@ class _ProgressScreenState extends State<ProgressScreen>
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           const Text('RECENT SESSIONS',
-              style: TextStyle(color: Colors.white70, fontSize: 12, letterSpacing: 1)),
+              style: TextStyle(
+                  color: Colors.white70, fontSize: 12, letterSpacing: 1)),
           const SizedBox(height: 12),
           ...recent.map((s) => Padding(
-            padding: const EdgeInsets.only(bottom: 10),
-            child: Row(
-              children: [
-                Container(
-                  width: 40, height: 40,
-                  decoration: BoxDecoration(
-                    color: const Color(0xFF9d4edd).withOpacity(0.15),
-                    borderRadius: BorderRadius.circular(10),
-                  ),
-                  child: const Center(child: Text('🧘', style: TextStyle(fontSize: 18))),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        s.meditationType.isEmpty ? 'Meditation' : s.meditationType,
-                        style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w600, fontSize: 13),
+                padding: const EdgeInsets.only(bottom: 10),
+                child: Row(
+                  children: [
+                    Container(
+                      width: 40,
+                      height: 40,
+                      decoration: BoxDecoration(
+                        color: const Color(0xFF9d4edd).withOpacity(0.15),
+                        borderRadius: BorderRadius.circular(10),
                       ),
-                      Text(
-                        _formatDate(s.startTime),
-                        style: TextStyle(color: Colors.white.withOpacity(0.4), fontSize: 11),
+                      child: const Center(
+                          child: Text('🧘', style: TextStyle(fontSize: 18))),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            s.meditationType.isEmpty
+                                ? 'Meditation'
+                                : s.meditationType,
+                            style: const TextStyle(
+                                color: Colors.white,
+                                fontWeight: FontWeight.w600,
+                                fontSize: 13),
+                          ),
+                          Text(
+                            _formatDate(s.startTime),
+                            style: TextStyle(
+                                color: Colors.white.withOpacity(0.4),
+                                fontSize: 11),
+                          ),
+                        ],
                       ),
-                    ],
-                  ),
+                    ),
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 10, vertical: 4),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFF00b4d8).withOpacity(0.15),
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      child: Text('${s.durationMinutes} min',
+                          style: const TextStyle(
+                              color: Color(0xFF00b4d8),
+                              fontSize: 12,
+                              fontWeight: FontWeight.w600)),
+                    ),
+                  ],
                 ),
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                  decoration: BoxDecoration(
-                    color: const Color(0xFF00b4d8).withOpacity(0.15),
-                    borderRadius: BorderRadius.circular(10),
-                  ),
-                  child: Text('${s.durationMinutes} min',
-                      style: const TextStyle(color: Color(0xFF00b4d8), fontSize: 12, fontWeight: FontWeight.w600)),
-                ),
-              ],
-            ),
-          )),
+              )),
         ],
       ),
     );
@@ -693,13 +850,15 @@ class _ProgressScreenState extends State<ProgressScreen>
 
   Widget _buildMoodDistribution() {
     if (_moods.isEmpty) {
-      return _emptyCard('No mood logs yet', 'Log your mood daily to see patterns here.');
+      return _emptyCard(
+          'No mood logs yet', 'Log your mood daily to see patterns here.');
     }
     final dist = <String, int>{};
     for (final m in _moods) {
       dist[m.mood] = (dist[m.mood] ?? 0) + 1;
     }
-    final sorted = dist.entries.toList()..sort((a, b) => b.value.compareTo(a.value));
+    final sorted = dist.entries.toList()
+      ..sort((a, b) => b.value.compareTo(a.value));
 
     return Container(
       padding: const EdgeInsets.all(16),
@@ -714,10 +873,12 @@ class _ProgressScreenState extends State<ProgressScreen>
           Row(
             children: [
               const Text('MOOD DISTRIBUTION',
-                  style: TextStyle(color: Colors.white70, fontSize: 12, letterSpacing: 1)),
+                  style: TextStyle(
+                      color: Colors.white70, fontSize: 12, letterSpacing: 1)),
               const Spacer(),
               Text('${_moods.length} total logs',
-                  style: TextStyle(color: Colors.white.withOpacity(0.4), fontSize: 11)),
+                  style: TextStyle(
+                      color: Colors.white.withOpacity(0.4), fontSize: 11)),
             ],
           ),
           const SizedBox(height: 14),
@@ -730,14 +891,18 @@ class _ProgressScreenState extends State<ProgressScreen>
                 children: [
                   Row(
                     children: [
-                      Text(_moodEmoji(e.key), style: const TextStyle(fontSize: 16)),
+                      Text(_moodEmoji(e.key),
+                          style: const TextStyle(fontSize: 16)),
                       const SizedBox(width: 8),
                       Expanded(
                         child: Text(e.key,
-                            style: const TextStyle(color: Colors.white, fontSize: 13)),
+                            style: const TextStyle(
+                                color: Colors.white, fontSize: 13)),
                       ),
                       Text('${e.value}x  ${(pct * 100).round()}%',
-                          style: TextStyle(color: Colors.white.withOpacity(0.5), fontSize: 12)),
+                          style: TextStyle(
+                              color: Colors.white.withOpacity(0.5),
+                              fontSize: 12)),
                     ],
                   ),
                   const SizedBox(height: 4),
@@ -761,22 +926,33 @@ class _ProgressScreenState extends State<ProgressScreen>
 
   String _moodEmoji(String mood) {
     switch (mood.toLowerCase()) {
-      case 'happy': return '😊';
-      case 'stressed': return '😰';
-      case 'sad': return '😢';
-      case 'angry': return '😠';
-      case 'tired': return '😴';
-      case 'neutral': return '😐';
-      case 'anxious': return '😟';
-      case 'calm': return '😌';
-      default: return '🙂';
+      case 'happy':
+        return '😊';
+      case 'stressed':
+        return '😰';
+      case 'sad':
+        return '😢';
+      case 'angry':
+        return '😠';
+      case 'tired':
+        return '😴';
+      case 'neutral':
+        return '😐';
+      case 'anxious':
+        return '😟';
+      case 'calm':
+        return '😌';
+      default:
+        return '🙂';
     }
   }
 
   String _formatDate(DateTime dt) {
     final now = DateTime.now();
     final diff = now.difference(dt).inDays;
-    if (diff == 0) return 'Today ${dt.hour.toString().padLeft(2, '0')}:${dt.minute.toString().padLeft(2, '0')}';
+    if (diff == 0) {
+      return 'Today ${dt.hour.toString().padLeft(2, '0')}:${dt.minute.toString().padLeft(2, '0')}';
+    }
     if (diff == 1) return 'Yesterday';
     return '${dt.day}/${dt.month}/${dt.year}';
   }
@@ -787,8 +963,10 @@ class _ProgressScreenState extends State<ProgressScreen>
     final provider = context.watch<ChallengeProvider>();
     final challenges = provider.challenges;
     final completed = challenges.where((c) => c.isCompleted).toList();
-    final inProgress = challenges.where((c) => !c.isCompleted && c.progress > 0).toList();
-    final notStarted = challenges.where((c) => !c.isCompleted && c.progress == 0).toList();
+    final inProgress =
+        challenges.where((c) => !c.isCompleted && c.progress > 0).toList();
+    final notStarted =
+        challenges.where((c) => !c.isCompleted && c.progress == 0).toList();
 
     return SingleChildScrollView(
       padding: const EdgeInsets.all(16),
@@ -797,11 +975,17 @@ class _ProgressScreenState extends State<ProgressScreen>
           // Summary cards
           Row(
             children: [
-              Expanded(child: _challengeSummaryCard('✅', '${completed.length}', 'Completed', Colors.green)),
+              Expanded(
+                  child: _challengeSummaryCard(
+                      '✅', '${completed.length}', 'Completed', Colors.green)),
               const SizedBox(width: 12),
-              Expanded(child: _challengeSummaryCard('🪙', '$_totalChallengePoints', 'Points Earned', Colors.amber)),
+              Expanded(
+                  child: _challengeSummaryCard('🪙', '$_totalChallengePoints',
+                      'Points Earned', Colors.amber)),
               const SizedBox(width: 12),
-              Expanded(child: _challengeSummaryCard('🔄', '${inProgress.length}', 'In Progress', Colors.blue)),
+              Expanded(
+                  child: _challengeSummaryCard('🔄', '${inProgress.length}',
+                      'In Progress', Colors.blue)),
             ],
           ),
           const SizedBox(height: 20),
@@ -842,7 +1026,8 @@ class _ProgressScreenState extends State<ProgressScreen>
     );
   }
 
-  Widget _challengeSummaryCard(String emoji, String value, String label, Color color) {
+  Widget _challengeSummaryCard(
+      String emoji, String value, String label, Color color) {
     return Container(
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
@@ -855,9 +1040,13 @@ class _ProgressScreenState extends State<ProgressScreen>
           Text(emoji, style: const TextStyle(fontSize: 22)),
           const SizedBox(height: 4),
           Text(value,
-              style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w800, fontSize: 18)),
+              style: const TextStyle(
+                  color: Colors.white,
+                  fontWeight: FontWeight.w800,
+                  fontSize: 18)),
           Text(label,
-              style: TextStyle(color: Colors.white.withOpacity(0.5), fontSize: 10),
+              style:
+                  TextStyle(color: Colors.white.withOpacity(0.5), fontSize: 10),
               textAlign: TextAlign.center),
         ],
       ),
@@ -879,10 +1068,12 @@ class _ProgressScreenState extends State<ProgressScreen>
           Row(
             children: [
               const Text('OVERALL PROGRESS',
-                  style: TextStyle(color: Colors.white70, fontSize: 12, letterSpacing: 1)),
+                  style: TextStyle(
+                      color: Colors.white70, fontSize: 12, letterSpacing: 1)),
               const Spacer(),
               Text('$done / $total',
-                  style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w700)),
+                  style: const TextStyle(
+                      color: Colors.white, fontWeight: FontWeight.w700)),
             ],
           ),
           const SizedBox(height: 10),
@@ -897,7 +1088,8 @@ class _ProgressScreenState extends State<ProgressScreen>
           ),
           const SizedBox(height: 6),
           Text('${(pct * 100).round()}% of all challenges completed',
-              style: TextStyle(color: Colors.white.withOpacity(0.4), fontSize: 12)),
+              style: TextStyle(
+                  color: Colors.white.withOpacity(0.4), fontSize: 12)),
         ],
       ),
     );
@@ -920,7 +1112,10 @@ class _ProgressScreenState extends State<ProgressScreen>
             children: [
               Expanded(
                 child: Text(c.title,
-                    style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w700, fontSize: 14)),
+                    style: const TextStyle(
+                        color: Colors.white,
+                        fontWeight: FontWeight.w700,
+                        fontSize: 14)),
               ),
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
@@ -929,13 +1124,17 @@ class _ProgressScreenState extends State<ProgressScreen>
                   borderRadius: BorderRadius.circular(10),
                 ),
                 child: Text('+${c.reward} 🪙',
-                    style: TextStyle(color: color, fontSize: 11, fontWeight: FontWeight.w600)),
+                    style: TextStyle(
+                        color: color,
+                        fontSize: 11,
+                        fontWeight: FontWeight.w600)),
               ),
             ],
           ),
           const SizedBox(height: 4),
           Text(c.description,
-              style: TextStyle(color: Colors.white.withOpacity(0.5), fontSize: 12)),
+              style: TextStyle(
+                  color: Colors.white.withOpacity(0.5), fontSize: 12)),
           const SizedBox(height: 10),
           Row(
             children: [
@@ -952,7 +1151,8 @@ class _ProgressScreenState extends State<ProgressScreen>
               ),
               const SizedBox(width: 8),
               Text('${(c.progress * 100).round()}%',
-                  style: TextStyle(color: color, fontSize: 12, fontWeight: FontWeight.w600)),
+                  style: TextStyle(
+                      color: color, fontSize: 12, fontWeight: FontWeight.w600)),
             ],
           ),
         ],
@@ -978,14 +1178,21 @@ class _ProgressScreenState extends State<ProgressScreen>
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(c.title,
-                    style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w600, fontSize: 13)),
+                    style: const TextStyle(
+                        color: Colors.white,
+                        fontWeight: FontWeight.w600,
+                        fontSize: 13)),
                 Text(c.description,
-                    style: TextStyle(color: Colors.white.withOpacity(0.4), fontSize: 11)),
+                    style: TextStyle(
+                        color: Colors.white.withOpacity(0.4), fontSize: 11)),
               ],
             ),
           ),
           Text('+${c.reward} 🪙',
-              style: const TextStyle(color: Colors.amber, fontSize: 12, fontWeight: FontWeight.w600)),
+              style: const TextStyle(
+                  color: Colors.amber,
+                  fontSize: 12,
+                  fontWeight: FontWeight.w600)),
         ],
       ),
     );
@@ -1003,16 +1210,21 @@ class _ProgressScreenState extends State<ProgressScreen>
       ),
       child: Row(
         children: [
-          Icon(Icons.lock_outline, color: Colors.white.withOpacity(0.3), size: 18),
+          Icon(Icons.lock_outline,
+              color: Colors.white.withOpacity(0.3), size: 18),
           const SizedBox(width: 10),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(c.title,
-                    style: TextStyle(color: Colors.white.withOpacity(0.6), fontWeight: FontWeight.w600, fontSize: 13)),
+                    style: TextStyle(
+                        color: Colors.white.withOpacity(0.6),
+                        fontWeight: FontWeight.w600,
+                        fontSize: 13)),
                 Text(c.description,
-                    style: TextStyle(color: Colors.white.withOpacity(0.3), fontSize: 11)),
+                    style: TextStyle(
+                        color: Colors.white.withOpacity(0.3), fontSize: 11)),
               ],
             ),
           ),
@@ -1043,10 +1255,13 @@ class _ProgressScreenState extends State<ProgressScreen>
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           const Text('BY CATEGORY',
-              style: TextStyle(color: Colors.white70, fontSize: 12, letterSpacing: 1)),
+              style: TextStyle(
+                  color: Colors.white70, fontSize: 12, letterSpacing: 1)),
           const SizedBox(height: 14),
           ...byType.entries.map((e) {
-            final pct = e.value['total']! == 0 ? 0.0 : e.value['done']! / e.value['total']!;
+            final pct = e.value['total']! == 0
+                ? 0.0
+                : e.value['done']! / e.value['total']!;
             final color = _challengeColor('ChallengeType.${e.key}');
             return Padding(
               padding: const EdgeInsets.only(bottom: 12),
@@ -1056,10 +1271,16 @@ class _ProgressScreenState extends State<ProgressScreen>
                   Row(
                     children: [
                       Text(e.key.toUpperCase(),
-                          style: TextStyle(color: color, fontSize: 11, fontWeight: FontWeight.w700, letterSpacing: 0.5)),
+                          style: TextStyle(
+                              color: color,
+                              fontSize: 11,
+                              fontWeight: FontWeight.w700,
+                              letterSpacing: 0.5)),
                       const Spacer(),
                       Text('${e.value['done']}/${e.value['total']}',
-                          style: TextStyle(color: Colors.white.withOpacity(0.5), fontSize: 11)),
+                          style: TextStyle(
+                              color: Colors.white.withOpacity(0.5),
+                              fontSize: 11)),
                     ],
                   ),
                   const SizedBox(height: 4),
@@ -1094,7 +1315,11 @@ class _ProgressScreenState extends State<ProgressScreen>
     return Align(
       alignment: Alignment.centerLeft,
       child: Text(label,
-          style: const TextStyle(color: Colors.white54, fontSize: 12, letterSpacing: 1, fontWeight: FontWeight.w700)),
+          style: const TextStyle(
+              color: Colors.white54,
+              fontSize: 12,
+              letterSpacing: 1,
+              fontWeight: FontWeight.w700)),
     );
   }
 
@@ -1110,9 +1335,13 @@ class _ProgressScreenState extends State<ProgressScreen>
         children: [
           const Text('📭', style: TextStyle(fontSize: 36)),
           const SizedBox(height: 10),
-          Text(title, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w700)),
+          Text(title,
+              style: const TextStyle(
+                  color: Colors.white, fontWeight: FontWeight.w700)),
           const SizedBox(height: 4),
-          Text(body, style: TextStyle(color: Colors.white.withOpacity(0.4), fontSize: 13),
+          Text(body,
+              style:
+                  TextStyle(color: Colors.white.withOpacity(0.4), fontSize: 13),
               textAlign: TextAlign.center),
         ],
       ),

@@ -44,10 +44,6 @@ class _ZenoBreathingScreenState extends State<ZenoBreathingScreen>
     'English',
     'Hindi',
     'Bengali',
-    'Spanish',
-    'French',
-    'German',
-    'Chinese',
   ];
   String _selectedLanguage = 'English';
 
@@ -94,19 +90,11 @@ class _ZenoBreathingScreenState extends State<ZenoBreathingScreen>
 
   void _startExercise() async {
     // Set language for TTS and VoiceService
-    final localeCode = _selectedLanguage == 'Spanish'
-        ? 'es-ES'
-        : _selectedLanguage == 'Hindi'
-            ? 'hi-IN'
-            : _selectedLanguage == 'Bengali'
-                ? 'bn-IN'
-                : _selectedLanguage == 'French'
-                    ? 'fr-FR'
-                    : _selectedLanguage == 'German'
-                        ? 'de-DE'
-                        : _selectedLanguage == 'Chinese'
-                            ? 'zh-CN'
-                            : 'en-US';
+    final localeCode = _selectedLanguage == 'Hindi'
+        ? 'hi-IN'
+        : _selectedLanguage == 'Bengali'
+            ? 'bn-IN'
+            : 'en-US';
     await _ttsService.setLanguage(localeCode);
     await VoiceService().setAppLanguage(
       LocalizationService.languageFromCode(localeCode),
@@ -305,6 +293,22 @@ class _ZenoBreathingScreenState extends State<ZenoBreathingScreen>
       initialTimeOfDay: widget.timeOfDay,
       onBack: () => context.canPop() ? context.pop() : context.go('/main'),
       headerActions: [
+        // Benefits button - teacher explains use cases
+        GestureDetector(
+          onTap: _showBenefits,
+          child: Container(
+            width: 40,
+            height: 40,
+            decoration: BoxDecoration(
+              color: Colors.black.withAlpha(120),
+              shape: BoxShape.circle,
+              border: Border.all(color: Colors.white.withAlpha(40)),
+            ),
+            child:
+                const Icon(Icons.help_outline, color: Colors.white, size: 18),
+          ),
+        ),
+        const SizedBox(width: 4),
         // Language selector
         Container(
           padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
@@ -366,6 +370,38 @@ class _ZenoBreathingScreenState extends State<ZenoBreathingScreen>
         ),
       ],
       bottomPanel: _buildBottomPanel(),
+    );
+  }
+
+  void _showBenefits() {
+    final lang = VoiceService().appLanguage;
+    final text = LocalizationService.translate('benefits_breathing', lang);
+    // Speak and show a dialog
+    VoiceService().speak(text);
+    showDialog(
+      context: context,
+      builder: (_) => Dialog(
+        backgroundColor: const Color(0xFF1a1a2e),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+        child: Padding(
+          padding: const EdgeInsets.all(18),
+          child: Column(mainAxisSize: MainAxisSize.min, children: [
+            const Text('Benefits',
+                style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 18,
+                    fontWeight: FontWeight.w800)),
+            const SizedBox(height: 12),
+            Text(text,
+                style: const TextStyle(color: Colors.white70, fontSize: 14)),
+            const SizedBox(height: 12),
+            TextButton(
+                onPressed: () => Navigator.pop(context),
+                child: const Text('Close',
+                    style: TextStyle(color: Colors.white70)))
+          ]),
+        ),
+      ),
     );
   }
 

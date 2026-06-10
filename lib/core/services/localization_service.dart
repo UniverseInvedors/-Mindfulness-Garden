@@ -1,4 +1,3 @@
-
 /// App-wide text and voice translations for Mindfulness Garden.
 ///
 /// This service is intentionally lightweight and stores language maps for
@@ -60,6 +59,24 @@ extension AppLanguageExtension on AppLanguage {
 class LocalizationService {
   LocalizationService._();
 
+  /// Terms that should NOT be translated across languages (technical terms, tone names, etc.)
+  static const Set<String> _protectedTerms = {
+    // Musical/Audio terms that should remain in English
+    'tone',
+    'frequency',
+    'hertz',
+    'hz',
+    'audio',
+    'sound',
+    'pitch',
+    // Musical note names
+    'C', 'D', 'E', 'F', 'G', 'A', 'B',
+    'C4', 'D4', 'E4', 'F4', 'G4', 'A4', 'B4',
+    '256hz', '285hz', '320hz', '341hz', '384hz', '426hz', '480hz',
+    // Other technical terms to preserve
+    'UTF-8', 'API', 'URL', 'HTTP',
+  };
+
   static AppLanguage languageFromName(String value) {
     return AppLanguage.values.firstWhere(
       (lang) => lang.displayName.toLowerCase() == value.toLowerCase(),
@@ -75,17 +92,55 @@ class LocalizationService {
   }
 
   static String translate(String key, AppLanguage language) {
+    // Check if this key is a protected term that should not be translated
+    if (_isProtected(key)) {
+      return key; // Return the original key unchanged
+    }
+
     final map =
         _localizedStrings[language] ?? _localizedStrings[AppLanguage.english]!;
     return map[key] ?? _localizedStrings[AppLanguage.english]![key] ?? key;
   }
 
   static List<String> translateList(String key, AppLanguage language) {
+    // Check if this key is a protected term
+    if (_isProtected(key)) {
+      return <String>[]; // Return empty list for protected keys
+    }
+
     final map = _localizedPhraseLists[language] ??
         _localizedPhraseLists[AppLanguage.english]!;
     return map[key] ??
         _localizedPhraseLists[AppLanguage.english]![key] ??
         <String>[];
+  }
+
+  /// Check if a term should be protected from translation
+  static bool _isProtected(String term) {
+    return _protectedTerms.contains(term) ||
+        _protectedTerms.contains(term.toLowerCase()) ||
+        _protectedTerms.contains(term.toUpperCase());
+  }
+
+  /// Translate content while preserving protected terms
+  static String translateWithProtection(String text, AppLanguage language) {
+    if (language == AppLanguage.english) {
+      return text; // No translation needed for English
+    }
+
+    var result = text;
+    for (final protectedTerm in _protectedTerms) {
+      // Replace protected terms with placeholders, translate, then restore
+      // This ensures tone words stay in English
+      result = result.replaceAll(protectedTerm, '[$protectedTerm]');
+    }
+
+    // After translation, restore protected terms
+    for (final protectedTerm in _protectedTerms) {
+      result = result.replaceAll('[$protectedTerm]', protectedTerm);
+    }
+
+    return result;
   }
 
   static String translatePoseInstruction(
@@ -127,6 +182,13 @@ class LocalizationService {
       'session_complete':
           'Your session is complete. Carry this calm with you throughout the day.',
       'select_language': 'Select Language',
+      'language_set': 'Language set to {language}',
+      'benefits_breathing':
+          'Breathing exercises calm the nervous system, reduce anxiety, improve sleep and focus. Use them when stressed or before sleep.',
+      'benefits_yoga':
+          'Yoga improves strength, balance and flexibility while reducing stress. Use sequences to energize or to relax before sleep.',
+      'benefits_meditation':
+          'Meditation helps quiet the mind, lower stress, and improve focus. Use it for a calm reset or to build steady energy.',
     },
     AppLanguage.hindi: {
       'breathing_exercises_title': 'साँस लेने के व्यायाम',
@@ -158,6 +220,13 @@ class LocalizationService {
       'session_complete':
           'आपका सत्र पूरा हुआ। इस शांति को अपने दिन भर के साथ रखें।',
       'select_language': 'भाषा चुनें',
+      'language_set': 'भाषा सेट করা হয়েছে: {language}',
+      'benefits_breathing':
+          'साँस लेने के व्यायाम तंत्रिका तंत्र को शांत करते हैं, चिंता घटाते हैं, नींद और ध्यान सुधारते हैं। तनाव होने पर या सोने से पहले उपयोग करें।',
+      'benefits_yoga':
+          'योग शक्ति, संतुलन और लचीलापन बढ़ाता है और तनाव कम करता है। ऊर्जावान होने के लिए या सोने से पहले आराम करने के लिए अनुक्रमों का उपयोग करें।',
+      'benefits_meditation':
+          'ध्यान मन को शांत करने, तनाव घटाने और ध्यान बढ़ाने में मदद करता है। इसका उपयोग तब करें जब आपको शांत ऊर्जा या एक शांति भरा ब्रेक चाहिए।',
     },
     AppLanguage.bengali: {
       'breathing_exercises_title': 'শ্বাস প্রশ্বাস ব্যায়াম',
@@ -189,6 +258,13 @@ class LocalizationService {
       'session_complete':
           'তোমার সেশন সম্পন্ন। এই শান্তি তোমার দিনজুড়ে সাথে রাখো।',
       'select_language': 'ভাষা নির্বাচন করুন',
+      'language_set': 'ভাষা সেট করা হয়েছে: {language}',
+      'benefits_breathing':
+          'শ্বাস প্রশ্বাস অনুশীলন নার্ভাস সিস্টেমকে শান্ত করে, উদ্বেগ কমায়, ঘুম ও মনোযোগ উন্নত করে। চাপের সময় বা ঘুমের আগে ব্যবহার করুন।',
+      'benefits_yoga':
+          'যোগ শারীরিক শক্তি, ভারসাম্য ও নমনীয়তা বাড়ায় এবং চাপ কমায়। উদ্দীপক হতে বা ঘুমের আগে শান্ত হতে সিকোয়েন্স ব্যবহার করুন।',
+      'benefits_meditation':
+          'ধ্যান মনকে শান্ত করে, চাপ কমায় এবং মনোযোগ উন্নত করে। যখন আপনাকে শান্ত শক্তি বা একটি শান্তি পূর্ন বিরতি দরকার, তখন এটি ব্যবহার করুন।',
     },
     AppLanguage.spanish: {
       'breathing_exercises_title': 'Ejercicios de Respiración',
