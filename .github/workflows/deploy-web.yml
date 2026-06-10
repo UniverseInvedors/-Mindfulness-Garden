@@ -1,0 +1,60 @@
+name: Build and Deploy to Public Repository
+
+on:
+  push:
+    branches: [ main ]
+  workflow_dispatch:
+
+env:
+  PUBLIC_REPO_OWNER: Innnervision
+  PUBLIC_REPO_NAME: Mindfulness-Garden
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout private repository
+      uses: actions/checkout@v4
+      with:
+        path: private-repo
+
+    - name: Setup Flutter
+      uses: subosito/flutter-action@v2
+      with:
+        flutter-version: '3.24.0'
+        channel: 'stable'
+        cache: true
+
+    - name: Get dependencies
+      run: |
+        cd private-repo
+        flutter pub get
+
+    - name: Build Flutter web
+      run: |
+        cd private-repo
+        flutter build web --release --base-href /Mindfulness-Garden/
+
+    - name: Checkout public repository
+      uses: actions/checkout@v4
+      with:
+        repository: ${{ env.PUBLIC_REPO_OWNER }}/${{ env.PUBLIC_REPO_NAME }}
+        token: ${{ secrets.PUBLIC_REPO_TOKEN }}
+        path: public-repo
+
+    - name: Copy build artifacts to public repository
+      run: |
+        rm -rf public-repo/*
+        cp -r private-repo/build/web/* public-repo/
+        echo "Mindfulness-Garden" > public-repo/REPO_NAME.txt
+        echo "Built from UniverseInvedors/-Mindfulness-Garden@${{ github.sha }}" > public-repo/BUILD_INFO.txt
+
+    - name: Commit and push to public repository
+      run: |
+        cd public-repo
+        git config user.name "github-actions[bot]"
+        git config user.email "github-actions[bot]@users.noreply.github.com"
+        git add .
+        git commit -m "Deploy web build from UniverseInvedors/-Mindfulness-Garden@${{ github.sha }}"
+        git push origin main
