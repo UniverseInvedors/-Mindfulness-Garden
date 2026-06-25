@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:mindfulness_garden/core/themes/app_theme.dart';
+import 'package:pranaverse/core/themes/app_theme.dart';
 
 class BreathingVisualizer extends StatefulWidget {
   final double size;

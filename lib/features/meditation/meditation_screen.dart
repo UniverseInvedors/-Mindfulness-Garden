@@ -1,9 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:audioplayers/audioplayers.dart';
-import 'package:mindfulness_garden/core/services/localization_service.dart';
-import 'package:mindfulness_garden/core/services/voice_service.dart';
-import 'package:mindfulness_garden/core/widgets/exercise_scene_shell.dart';
-import 'package:mindfulness_garden/core/widgets/meditation_scene_widget.dart';
+import 'package:pranaverse/core/utils/responsive_helper.dart';
+import 'package:pranaverse/core/widgets/glassmorphism/glass_button.dart';
+import 'package:pranaverse/core/widgets/glassmorphism/glass_container.dart';
+import 'package:pranaverse/core/widgets/glassmorphism/glass_icon.dart';
+import 'package:pranaverse/core/services/localization_service.dart';
+import 'package:pranaverse/core/services/voice_service.dart';
+import 'package:pranaverse/core/widgets/exercise_scene_shell.dart';
+import 'package:pranaverse/core/widgets/meditation_scene_widget.dart';
 
 class MeditationScreen extends StatefulWidget {
   const MeditationScreen({super.key});
@@ -33,25 +37,25 @@ class _MeditationScreenState extends State<MeditationScreen>
     {
       'name': 'Forest',
       'icon': Icons.forest,
-      'color': Colors.green,
+      'color': const Color(0xFF4CAF50),
       'description': 'Nature sounds',
-    },
-    {
-      'name': 'Ocean',
-      'icon': Icons.waves,
-      'color': Colors.blue,
-      'description': 'Waves crashing',
     },
     {
       'name': 'Rain',
       'icon': Icons.water_drop,
-      'color': Colors.blueAccent,
+      'color': const Color(0xFF66BB6A),
       'description': 'Gentle rainfall',
+    },
+    {
+      'name': 'Stream',
+      'icon': Icons.waves,
+      'color': const Color(0xFF81C784),
+      'description': 'Flowing water',
     },
     {
       'name': 'Bowl',
       'icon': Icons.music_note,
-      'color': Colors.orange,
+      'color': const Color(0xFFA5D6A7),
       'description': 'Singing bowl',
     },
   ];
@@ -73,8 +77,8 @@ class _MeditationScreenState extends State<MeditationScreen>
     );
 
     _colorAnimation = ColorTween(
-      begin: Colors.blue.withValues(alpha: 0.3),
-      end: Colors.green.withValues(alpha: 0.3),
+      begin: const Color(0xFF4CAF50).withValues(alpha: 0.3),
+      end: const Color(0xFF81C784).withValues(alpha: 0.3),
     ).animate(_animationController);
 
     _setupBreathingCycle();
@@ -184,34 +188,24 @@ class _MeditationScreenState extends State<MeditationScreen>
       initialTimeOfDay: SceneTimeOfDay.morning,
       onBack: () => Navigator.of(context).pop(),
       headerActions: [
-        GestureDetector(
+        GlassIcon(
+          icon: Icons.help_outline,
           onTap: _showBenefits,
-          child: Container(
-            width: 40,
-            height: 40,
-            decoration: BoxDecoration(
-              color: Colors.black.withAlpha(120),
-              shape: BoxShape.circle,
-              border: Border.all(color: Colors.white.withAlpha(40)),
-            ),
-            child:
-                const Icon(Icons.help_outline, color: Colors.white, size: 18),
-          ),
+          size: ResponsiveHelper.getResponsiveIconSize(context, mobileSize: 18, tabletSize: 20, desktopSize: 22),
+          iconColor: Colors.white,
+          blur: 10,
+          opacity: 0.1,
+          isCircular: true,
         ),
-        const SizedBox(width: 4),
-        GestureDetector(
+        SizedBox(width: ResponsiveHelper.getResponsiveSpacing(context, mobileSpacing: 4)),
+        GlassIcon(
+          icon: _isPlaying ? Icons.pause : Icons.play_arrow,
           onTap: _togglePlayback,
-          child: Container(
-            width: 40,
-            height: 40,
-            decoration: BoxDecoration(
-              color: Colors.black.withAlpha(120),
-              shape: BoxShape.circle,
-              border: Border.all(color: Colors.white.withAlpha(40)),
-            ),
-            child: Icon(_isPlaying ? Icons.pause : Icons.play_arrow,
-                color: Colors.white, size: 20),
-          ),
+          size: ResponsiveHelper.getResponsiveIconSize(context, mobileSize: 20, tabletSize: 22, desktopSize: 24),
+          iconColor: Colors.white,
+          blur: 10,
+          opacity: 0.1,
+          isCircular: true,
         ),
       ],
       bottomPanel: _buildBottomPanel(),
@@ -220,18 +214,22 @@ class _MeditationScreenState extends State<MeditationScreen>
 
   Widget _buildBottomPanel() {
     return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 4, 16, 8),
+      padding: EdgeInsets.fromLTRB(
+        ResponsiveHelper.getResponsivePadding(context, mobilePadding: 16),
+        ResponsiveHelper.getResponsivePadding(context, mobilePadding: 4),
+        ResponsiveHelper.getResponsivePadding(context, mobilePadding: 16),
+        ResponsiveHelper.getResponsivePadding(context, mobilePadding: 8),
+      ),
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Container(
-            width: 36,
-            height: 4,
-            margin: const EdgeInsets.only(bottom: 12),
-            decoration: BoxDecoration(
-              color: Colors.white.withAlpha(60),
-              borderRadius: BorderRadius.circular(2),
-            ),
+          GlassContainer(
+            width: ResponsiveHelper.getResponsiveContainerWidth(context, mobileWidth: 36),
+            height: ResponsiveHelper.getResponsiveContainerHeight(context, mobileHeight: 4),
+            margin: EdgeInsets.only(bottom: ResponsiveHelper.getResponsiveSpacing(context, mobileSpacing: 12)),
+            borderRadius: BorderRadius.circular(2),
+            blur: 6,
+            opacity: 0.15,
           ),
 
           // Timer + phase
@@ -240,155 +238,139 @@ class _MeditationScreenState extends State<MeditationScreen>
             children: [
               Text(
                 _formatDuration(_position),
-                style: const TextStyle(
-                  fontSize: 36,
+                style: TextStyle(
+                  fontSize: ResponsiveHelper.getResponsiveFontSize(context, mobileSize: 36, tabletSize: 38, desktopSize: 40),
                   fontWeight: FontWeight.w300,
                   color: Colors.white,
                   fontFamily: 'RobotoMono',
                 ),
               ),
-              const SizedBox(width: 16),
+              SizedBox(width: ResponsiveHelper.getResponsiveSpacing(context, mobileSpacing: 16)),
               Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(_breathPhase,
-                      style: const TextStyle(
-                          fontSize: 18,
+                      style: TextStyle(
+                          fontSize: ResponsiveHelper.getResponsiveFontSize(context, mobileSize: 18, tabletSize: 19, desktopSize: 20),
                           fontWeight: FontWeight.w600,
                           color: Colors.white)),
                   Text('Cycle $_breathCycle',
                       style:
-                          const TextStyle(fontSize: 12, color: Colors.white54)),
+                          TextStyle(fontSize: ResponsiveHelper.getResponsiveFontSize(context, mobileSize: 12, tabletSize: 13, desktopSize: 14), color: Colors.white54)),
                 ],
               ),
             ],
           ),
 
-          const SizedBox(height: 16),
-          ElevatedButton.icon(
+          SizedBox(height: ResponsiveHelper.getResponsiveSpacing(context, mobileSpacing: 16)),
+          GlassButton(
             onPressed: _showBenefits,
-            icon: const Icon(Icons.help_outline, size: 18),
-            label: const Text('Benefits'),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.white24,
-              foregroundColor: Colors.white,
-              padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 12),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
-              ),
+            blur: 10,
+            opacity: 0.15,
+            borderRadius: BorderRadius.circular(12),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(Icons.help_outline, size: ResponsiveHelper.getResponsiveIconSize(context, mobileSize: 18, tabletSize: 19, desktopSize: 20)),
+                SizedBox(width: ResponsiveHelper.getResponsiveSpacing(context, mobileSpacing: 8)),
+                const Text('Benefits'),
+              ],
             ),
           ),
-          const SizedBox(height: 12),
-          const SizedBox(height: 14),
+          SizedBox(height: ResponsiveHelper.getResponsiveSpacing(context, mobileSpacing: 12)),
+          SizedBox(height: ResponsiveHelper.getResponsiveSpacing(context, mobileSpacing: 14)),
 
           // Breathing visualizer (compact)
           AnimatedBuilder(
             animation: _breathAnimation,
-            builder: (_, __) => Container(
-              width: 80 + _breathProgress * 40,
-              height: 80 + _breathProgress * 40,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                color: (_breathPhase == 'Inhale' ? Colors.blue : Colors.green)
-                    .withAlpha(80),
-                border: Border.all(
-                  color: _breathPhase == 'Inhale' ? Colors.blue : Colors.green,
-                  width: 2,
-                ),
-                boxShadow: [
-                  BoxShadow(
-                    color:
-                        (_breathPhase == 'Inhale' ? Colors.blue : Colors.green)
-                            .withAlpha(80),
-                    blurRadius: 16,
-                    spreadRadius: 4,
-                  )
+            builder: (_, __) => GlassContainer(
+              width: ResponsiveHelper.getResponsiveContainerWidth(context, mobileWidth: 80) + _breathProgress * 40,
+              height: ResponsiveHelper.getResponsiveContainerHeight(context, mobileHeight: 80) + _breathProgress * 40,
+              borderRadius: BorderRadius.circular(50),
+              blur: 15,
+              opacity: 0.3,
+              gradient: LinearGradient(
+                colors: [
+                  (_breathPhase == 'Inhale' ? const Color(0xFF4CAF50) : const Color(0xFF81C784)).withAlpha(80),
+                  (_breathPhase == 'Inhale' ? const Color(0xFF4CAF50) : const Color(0xFF81C784)).withAlpha(40),
                 ],
               ),
               child: Center(
                 child: Icon(
                   _breathPhase == 'Inhale' ? Icons.air : Icons.water_drop,
                   color: Colors.white,
-                  size: 28,
+                  size: ResponsiveHelper.getResponsiveIconSize(context, mobileSize: 28, tabletSize: 30, desktopSize: 32),
                 ),
               ),
             ),
           ),
 
-          const SizedBox(height: 14),
+          SizedBox(height: ResponsiveHelper.getResponsiveSpacing(context, mobileSpacing: 14)),
 
           // Controls
           Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              _controlBtn(Icons.replay_30, () {}),
-              const SizedBox(width: 20),
+              _controlBtn(context, Icons.replay_30, () {}),
+              SizedBox(width: ResponsiveHelper.getResponsiveSpacing(context, mobileSpacing: 20)),
               GestureDetector(
                 onTap: _togglePlayback,
-                child: Container(
-                  width: 64,
-                  height: 64,
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    color:
-                        (_isPlaying ? Colors.red : Colors.blue).withAlpha(200),
-                    boxShadow: [
-                      BoxShadow(
-                        color: (_isPlaying ? Colors.red : Colors.blue)
-                            .withAlpha(100),
-                        blurRadius: 16,
-                        spreadRadius: 4,
-                      )
+                child: GlassContainer(
+                  width: ResponsiveHelper.getResponsiveContainerWidth(context, mobileWidth: 64),
+                  height: ResponsiveHelper.getResponsiveContainerHeight(context, mobileHeight: 64),
+                  borderRadius: BorderRadius.circular(32),
+                  blur: 15,
+                  opacity: 0.3,
+                  gradient: LinearGradient(
+                    colors: [
+                      (_isPlaying ? Colors.red : Colors.blue).withAlpha(200),
+                      (_isPlaying ? Colors.red : Colors.blue).withAlpha(100),
                     ],
                   ),
                   child: Icon(_isPlaying ? Icons.pause : Icons.play_arrow,
-                      size: 32, color: Colors.white),
+                      size: ResponsiveHelper.getResponsiveIconSize(context, mobileSize: 32, tabletSize: 34, desktopSize: 36), color: Colors.white),
                 ),
               ),
-              const SizedBox(width: 20),
-              _controlBtn(Icons.forward_30, () {}),
+              SizedBox(width: ResponsiveHelper.getResponsiveSpacing(context, mobileSpacing: 20)),
+              _controlBtn(context, Icons.forward_30, () {}),
             ],
           ),
 
-          const SizedBox(height: 14),
+          SizedBox(height: ResponsiveHelper.getResponsiveSpacing(context, mobileSpacing: 14)),
 
           // Sound selector
           SizedBox(
-            height: 72,
+            height: ResponsiveHelper.getResponsiveContainerHeight(context, mobileHeight: 72),
             child: ListView.separated(
               scrollDirection: Axis.horizontal,
               itemCount: _sounds.length,
-              separatorBuilder: (_, __) => const SizedBox(width: 10),
+              separatorBuilder: (_, __) => SizedBox(width: ResponsiveHelper.getResponsiveSpacing(context, mobileSpacing: 10)),
               itemBuilder: (_, i) {
                 final s = _sounds[i];
                 final sel = _selectedSound == i;
                 return GestureDetector(
                   onTap: () => _selectSound(i),
-                  child: AnimatedContainer(
+                  child: GlassContainer(
                     duration: const Duration(milliseconds: 250),
-                    width: 64,
-                    decoration: BoxDecoration(
-                      color: sel
-                          ? (s['color'] as Color).withAlpha(60)
-                          : Colors.white.withAlpha(15),
-                      borderRadius: BorderRadius.circular(14),
-                      border: Border.all(
-                        color: sel
-                            ? s['color'] as Color
-                            : Colors.white.withAlpha(30),
-                        width: sel ? 2 : 1,
-                      ),
+                    width: ResponsiveHelper.getResponsiveContainerWidth(context, mobileWidth: 64),
+                    borderRadius: BorderRadius.circular(14),
+                    blur: sel ? 12 : 8,
+                    opacity: sel ? 0.3 : 0.15,
+                    gradient: LinearGradient(
+                      colors: sel
+                          ? [(s['color'] as Color).withAlpha(60), (s['color'] as Color).withAlpha(30)]
+                          : [Colors.white.withAlpha(15), Colors.white.withAlpha(8)],
                     ),
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
                         Icon(s['icon'] as IconData,
-                            size: 22,
+                            size: ResponsiveHelper.getResponsiveIconSize(context, mobileSize: 22, tabletSize: 23, desktopSize: 24),
                             color: sel ? s['color'] as Color : Colors.white54),
-                        const SizedBox(height: 4),
+                        SizedBox(height: ResponsiveHelper.getResponsiveSpacing(context, mobileSpacing: 4)),
                         Text(s['name'] as String,
                             style: TextStyle(
-                              fontSize: 10,
+                              fontSize: ResponsiveHelper.getResponsiveFontSize(context, mobileSize: 10, tabletSize: 11, desktopSize: 12),
                               color: sel ? Colors.white : Colors.white54,
                               fontWeight:
                                   sel ? FontWeight.w700 : FontWeight.normal,
@@ -405,16 +387,13 @@ class _MeditationScreenState extends State<MeditationScreen>
     );
   }
 
-  Widget _controlBtn(IconData icon, VoidCallback onTap) => GestureDetector(
+  Widget _controlBtn(BuildContext context, IconData icon, VoidCallback onTap) => GlassIcon(
+        icon: icon,
         onTap: onTap,
-        child: Container(
-          width: 44,
-          height: 44,
-          decoration: BoxDecoration(
-            color: Colors.white.withAlpha(20),
-            shape: BoxShape.circle,
-          ),
-          child: Icon(icon, color: Colors.white, size: 22),
-        ),
+        size: ResponsiveHelper.getResponsiveIconSize(context, mobileSize: 22, tabletSize: 23, desktopSize: 24),
+        iconColor: Colors.white,
+        blur: 8,
+        opacity: 0.15,
+        isCircular: true,
       );
 }

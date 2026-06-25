@@ -2,8 +2,8 @@
 import 'dart:math';
 import 'dart:async';
 import 'package:flutter/material.dart';
-import 'package:mindfulness_garden/core/services/asset_service.dart';
-import 'package:mindfulness_garden/core/services/audio_service.dart';
+import 'package:pranaverse/core/services/asset_service.dart';
+import 'package:pranaverse/core/services/audio_service.dart';
 import 'package:go_router/go_router.dart';
 
 // Scene Manager Screen Widget
@@ -23,7 +23,8 @@ class SceneManager extends StatelessWidget {
         elevation: 0,
         leading: IconButton(
           icon: const Icon(Icons.arrow_back, color: Colors.white),
-          onPressed: () => context.canPop() ? context.pop() : context.go('/main'),
+          onPressed: () =>
+              context.canPop() ? context.pop() : context.go('/main'),
         ),
       ),
       body: Padding(
@@ -205,9 +206,9 @@ class SceneManagerService {
         SceneElement(type: 'rocks', x: 0.7, y: 0.6),
       ],
       soundtracks: [
-        'assets/sounds/nature/waterfall.mp3',
-        'assets/sounds/nature/birds.mp3',
-        'assets/sounds/nature/wind.mp3'
+        'assets/sounds/waterfall.mp3',
+        'assets/sounds/birds.mp3',
+        'assets/sounds/wind.mp3'
       ],
       particleCount: 50,
       backgroundColor: const Color(0xFF0A2472),
@@ -228,9 +229,9 @@ class SceneManagerService {
         SceneElement(type: 'mushrooms', x: 0.6, y: 0.9),
       ],
       soundtracks: [
-        'assets/sounds/nature/forest.mp3',
-        'assets/sounds/nature/birds.mp3',
-        'assets/sounds/nature/crickets.mp3'
+        'assets/sounds/forest.mp3',
+        'assets/sounds/birds.mp3',
+        'assets/sounds/crickets.mp3'
       ],
       particleCount: 30,
       backgroundColor: const Color(0xFF1B4332),
@@ -250,7 +251,7 @@ class SceneManagerService {
         SceneElement(type: 'fish_2', x: 0.6, y: 0.4),
         SceneElement(type: 'bubbles', x: 0.5, y: 0.3),
       ],
-      soundtracks: ['assets/sounds/nature/ocean.mp3'],
+      soundtracks: ['assets/sounds/ocean.mp3'],
       particleCount: 40,
       backgroundColor: const Color(0xFF03045e),
     ),
@@ -269,7 +270,7 @@ class SceneManagerService {
         SceneElement(type: 'trees', x: 0.4, y: 0.8),
         SceneElement(type: 'trees', x: 0.6, y: 0.8),
       ],
-      soundtracks: ['assets/sounds/nature/wind.mp3'],
+      soundtracks: ['assets/sounds/wind.mp3'],
       particleCount: 20,
       backgroundColor: const Color(0xFF1a759f),
     ),
@@ -287,7 +288,7 @@ class SceneManagerService {
         SceneElement(type: 'nebula', x: 0.8, y: 0.3),
         SceneElement(type: 'comet', x: 0.1, y: 0.1),
       ],
-      soundtracks: ['assets/sounds/meditation/bowl.mp3'],
+      soundtracks: ['assets/sounds/bowl.mp3'],
       particleCount: 100,
       backgroundColor: const Color(0xFF10002b),
     ),
@@ -886,4 +887,3 @@ class ParticlePainter extends CustomPainter {
         particles != oldDelegate.particles;
   }
 }
-

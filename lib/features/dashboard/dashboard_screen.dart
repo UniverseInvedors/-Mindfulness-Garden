@@ -2,13 +2,19 @@ import 'dart:math';
 
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-import 'package:mindfulness_garden/core/widgets/breathing_visualizer.dart';
-import 'package:mindfulness_garden/core/widgets/enhanced_garden_widget.dart';
-import 'package:mindfulness_garden/data/models/mood_model.dart';
-import 'package:mindfulness_garden/data/models/session_model.dart';
-import 'package:mindfulness_garden/presentation/providers/mood_provider.dart';
-import 'package:mindfulness_garden/presentation/providers/session_provider.dart';
-import 'package:mindfulness_garden/presentation/providers/user_provider.dart';
+import 'package:pranaverse/core/utils/responsive_helper.dart';
+import 'package:pranaverse/core/widgets/breathing_visualizer.dart';
+import 'package:pranaverse/core/widgets/enhanced_garden_widget.dart';
+import 'package:pranaverse/core/widgets/glassmorphism/glass_button.dart';
+import 'package:pranaverse/core/widgets/glassmorphism/glass_card.dart';
+import 'package:pranaverse/core/widgets/glassmorphism/glass_container.dart';
+import 'package:pranaverse/core/widgets/glassmorphism/glass_icon.dart';
+import 'package:pranaverse/data/models/mood_model.dart';
+import 'package:pranaverse/data/models/session_model.dart';
+import 'package:pranaverse/presentation/providers/mood_provider.dart';
+import 'package:pranaverse/presentation/providers/session_provider.dart';
+import 'package:pranaverse/presentation/providers/user_provider.dart';
+import 'package:pranaverse/l10n/app_localizations.dart';
 import 'package:provider/provider.dart';
 import 'package:share_plus/share_plus.dart';
 
@@ -45,6 +51,7 @@ class _DashboardScreenState extends State<DashboardScreen>
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     final userProvider = context.watch<UserProvider>();
     final sessionProvider = context.watch<SessionProvider>();
     final moodProvider = context.watch<MoodProvider>();
@@ -58,13 +65,17 @@ class _DashboardScreenState extends State<DashboardScreen>
     final leaderboard = _buildLeaderboard(userProvider);
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF4F6F0),
+      backgroundColor: Theme.of(context).colorScheme.background,
       body: Container(
-        decoration: const BoxDecoration(
+        decoration: BoxDecoration(
           gradient: LinearGradient(
             begin: Alignment.topCenter,
             end: Alignment.bottomCenter,
-            colors: [Color(0xFFF7F1E7), Color(0xFFF4F6F0), Color(0xFFE8F3EC)],
+            colors: [
+              Theme.of(context).colorScheme.background,
+              Theme.of(context).colorScheme.surface,
+              Theme.of(context).colorScheme.surface,
+            ],
           ),
         ),
         child: SafeArea(
@@ -79,20 +90,42 @@ class _DashboardScreenState extends State<DashboardScreen>
                     children: [
                       Row(
                         children: [
-                          _icon(Icons.arrow_back_rounded,
-                              () => context.go('/main')),
+                          GlassIcon(
+                            icon: Icons.arrow_back_rounded,
+                            onTap: () => context.go('/main'),
+                            size: ResponsiveHelper.getResponsiveIconSize(context, mobileSize: 24, tabletSize: 26, desktopSize: 28),
+                            iconColor: Theme.of(context).colorScheme.onSurface,
+                            blur: 10,
+                            opacity: 0.1,
+                          ),
                           const Spacer(),
                           if (user?.email == null ||
                               user?.email.isEmpty == true)
-                            IconButton(
-                              icon: const Icon(Icons.login_rounded,
-                                  color: Colors.white),
-                              onPressed: () => context.go('/auth'),
+                            GlassIcon(
+                              icon: Icons.login_rounded,
+                              onTap: () => context.go('/auth'),
+                              size: ResponsiveHelper.getResponsiveIconSize(context, mobileSize: 24, tabletSize: 26, desktopSize: 28),
+                              iconColor: Theme.of(context).colorScheme.onSurface,
+                              blur: 10,
+                              opacity: 0.1,
                             ),
-                          _icon(Icons.calendar_month_rounded,
-                              () => context.go('/progress')),
-                          const SizedBox(width: 10),
-                          _icon(Icons.notifications_none_rounded, () {}),
+                          GlassIcon(
+                            icon: Icons.calendar_month_rounded,
+                            onTap: () => context.go('/progress'),
+                            size: ResponsiveHelper.getResponsiveIconSize(context, mobileSize: 24, tabletSize: 26, desktopSize: 28),
+                            iconColor: Theme.of(context).colorScheme.onSurface,
+                            blur: 10,
+                            opacity: 0.1,
+                          ),
+                          SizedBox(width: ResponsiveHelper.getResponsiveSpacing(context, mobileSpacing: 10)),
+                          GlassIcon(
+                            icon: Icons.notifications_none_rounded,
+                            onTap: () {},
+                            size: ResponsiveHelper.getResponsiveIconSize(context, mobileSize: 24, tabletSize: 26, desktopSize: 28),
+                            iconColor: Theme.of(context).colorScheme.onSurface,
+                            blur: 10,
+                            opacity: 0.1,
+                          ),
                         ],
                       ),
                       const SizedBox(height: 20),
@@ -110,101 +143,101 @@ class _DashboardScreenState extends State<DashboardScreen>
                           context,
                           user?.name.isNotEmpty == true
                               ? user!.name
-                              : 'Mindful Gardener',
+                              : l10n.myProfile,
                           user?.currentStreak ?? 0,
                           event,
                           message,
                         ),
                       ),
-                      const SizedBox(height: 20),
+                      SizedBox(height: ResponsiveHelper.getResponsiveSpacing(context, mobileSpacing: 20)),
                       Row(
                         children: [
                           Expanded(
                               child: _stat(
-                                  'Minutes',
+                                  l10n.minutes,
                                   '${user?.totalMinutes ?? 0}',
                                   Icons.timelapse_rounded,
-                                  const Color(0xFF3A8E7C))),
-                          const SizedBox(width: 12),
+                                  Colors.green)),
+                          SizedBox(width: ResponsiveHelper.getResponsiveSpacing(context, mobileSpacing: 12)),
                           Expanded(
                               child: _stat(
-                                  'Sessions',
+                                  l10n.sessions,
                                   '${user?.totalSessions ?? sessions.length}',
                                   Icons.self_improvement_rounded,
-                                  const Color(0xFFC98B42))),
-                          const SizedBox(width: 12),
+                                  Colors.lightGreen)),
+                          SizedBox(width: ResponsiveHelper.getResponsiveSpacing(context, mobileSpacing: 12)),
                           Expanded(
                               child: _stat(
-                                  'Garden',
+                                  l10n.garden,
                                   'Lv ${user?.gardenLevel ?? 1}',
                                   Icons.park_rounded,
-                                  const Color(0xFF7A8AD8),
+                                  Colors.lightGreen.shade300,
                                   footer:
                                       '${user?.achievementCount ?? 0} charms')),
                         ],
                       ),
-                      const SizedBox(height: 20),
+                      SizedBox(height: ResponsiveHelper.getResponsiveSpacing(context, mobileSpacing: 20)),
                       _banner(context, event),
-                      const SizedBox(height: 24),
-                      _section('Today Plan',
-                          'A personalized rhythm for your next calm win.'),
-                      const SizedBox(height: 12),
+                      SizedBox(height: ResponsiveHelper.getResponsiveSpacing(context, mobileSpacing: 24)),
+                      _section('Today\'s Plan',
+                          'Your personalized yoga and meditation schedule'),
+                      SizedBox(height: ResponsiveHelper.getResponsiveSpacing(context, mobileSpacing: 12)),
                       SizedBox(
                         height: 220,
                         child: ListView.separated(
                           scrollDirection: Axis.horizontal,
                           itemCount: plan.length,
                           separatorBuilder: (_, __) =>
-                              const SizedBox(width: 16),
+                              SizedBox(width: ResponsiveHelper.getResponsiveSpacing(context, mobileSpacing: 16)),
                           itemBuilder: (context, index) =>
                               _planCard(context, plan[index]),
                         ),
                       ),
-                      const SizedBox(height: 24),
-                      _section('Companion Insight',
-                          'A calmer, more personal guide through your day.'),
-                      const SizedBox(height: 12),
+                      SizedBox(height: ResponsiveHelper.getResponsiveSpacing(context, mobileSpacing: 24)),
+                      _section('AI Companion Insight',
+                          'Personalized guidance from Zeno'),
+                      SizedBox(height: ResponsiveHelper.getResponsiveSpacing(context, mobileSpacing: 12)),
                       _companionCard(message, mood),
-                      const SizedBox(height: 24),
+                      SizedBox(height: ResponsiveHelper.getResponsiveSpacing(context, mobileSpacing: 24)),
                       _section('Living Garden',
-                          'Your streaks and sessions now shape a richer world.'),
-                      const SizedBox(height: 12),
+                          'Grow your mindfulness garden'),
+                      SizedBox(height: ResponsiveHelper.getResponsiveSpacing(context, mobileSpacing: 12)),
                       _gardenCard(context, user?.gardenLevel ?? 1,
                           user?.currentStreak ?? 0, sessions.length),
-                      const SizedBox(height: 24),
+                      SizedBox(height: ResponsiveHelper.getResponsiveSpacing(context, mobileSpacing: 24)),
                       _section('Breathing Studio',
-                          'Fast entry into a guided reset with visual rhythm.'),
-                      const SizedBox(height: 12),
+                          'Guided breathing exercises'),
+                      SizedBox(height: ResponsiveHelper.getResponsiveSpacing(context, mobileSpacing: 12)),
                       _card(
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             _cardIntro(
-                                'Use motion-led guidance for a quick nervous-system reset before you dive back into the day.',
+                                'Master your breath with guided exercises',
                                 'Open',
                                 () => context.go('/breathing')),
-                            const SizedBox(height: 14),
+                            SizedBox(height: ResponsiveHelper.getResponsiveSpacing(context, mobileSpacing: 14)),
                             const BreathingVisualizer(size: 210),
                           ],
                         ),
                       ),
-                      const SizedBox(height: 24),
+                      SizedBox(height: ResponsiveHelper.getResponsiveSpacing(context, mobileSpacing: 24)),
                       _section('Momentum Circle',
-                          'Share progress, see friendly competition, stay consistent.'),
-                      const SizedBox(height: 12),
+                          'Track your progress streak'),
+                      SizedBox(height: ResponsiveHelper.getResponsiveSpacing(context, mobileSpacing: 12)),
                       _socialCard(context, leaderboard,
                           user?.currentStreak ?? 0, user?.totalMinutes ?? 0),
-                      const SizedBox(height: 24),
+                      SizedBox(height: ResponsiveHelper.getResponsiveSpacing(context, mobileSpacing: 24)),
                       _section('Reward Vault',
-                          'Collectible progress makes the calm loop more exciting.'),
-                      const SizedBox(height: 12),
+                          'Unlock achievements and rewards'),
+                      SizedBox(height: ResponsiveHelper.getResponsiveSpacing(context, mobileSpacing: 12)),
                       _card(
                           child: Column(
                               children: rewards.map(_rewardTile).toList())),
-                      const SizedBox(height: 24),
+                      SizedBox(height: ResponsiveHelper.getResponsiveSpacing(context, mobileSpacing: 24)),
                       _section('Quick Actions',
-                          'Jump straight into what feels good right now.'),
-                      const SizedBox(height: 12),
+                          'Start your session instantly'),
+                      SizedBox(height: ResponsiveHelper.getResponsiveSpacing(context, mobileSpacing: 12)),
                       _quickActions(context),
                     ],
                   ),
@@ -219,90 +252,105 @@ class _DashboardScreenState extends State<DashboardScreen>
 
   Widget _hero(BuildContext context, String name, int streak, _Seasonal event,
       String message) {
-    return Container(
-      padding: const EdgeInsets.all(24),
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(32),
-        gradient: const LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [Color(0xFF113C34), Color(0xFF1B5C51), Color(0xFF6FAF8B)],
-        ),
-        boxShadow: const [
-          BoxShadow(
-              color: Color(0x26113C34), blurRadius: 28, offset: Offset(0, 16))
+    return GlassContainer(
+      padding: EdgeInsets.all(ResponsiveHelper.getResponsivePadding(context, mobilePadding: 24)),
+      borderRadius: BorderRadius.circular(ResponsiveHelper.getResponsiveBorderRadius(context, mobileRadius: 32)),
+      blur: 20,
+      opacity: 0.15,
+      gradient: LinearGradient(
+        begin: Alignment.topLeft,
+        end: Alignment.bottomRight,
+        colors: [
+          Theme.of(context).colorScheme.primary,
+          Theme.of(context).colorScheme.primary.withOpacity(0.8),
+          Theme.of(context).colorScheme.primary.withOpacity(0.6),
         ],
       ),
       child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
         Text('Today, $name',
             style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                color: Colors.white, fontWeight: FontWeight.w800, height: 1.1)),
-        const SizedBox(height: 10),
+                color: Theme.of(context).colorScheme.onPrimary, fontWeight: FontWeight.w800, height: 1.1)),
+        SizedBox(height: ResponsiveHelper.getResponsiveSpacing(context, mobileSpacing: 10)),
         Text(message,
             style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                color: Colors.white.withOpacity(0.82), height: 1.45)),
-        const SizedBox(height: 18),
-        Wrap(spacing: 10, runSpacing: 10, children: [
+                color: Theme.of(context).colorScheme.onPrimary.withOpacity(0.82), height: 1.45)),
+        SizedBox(height: ResponsiveHelper.getResponsiveSpacing(context, mobileSpacing: 18)),
+        Wrap(spacing: ResponsiveHelper.getResponsiveSpacing(context, mobileSpacing: 10), runSpacing: ResponsiveHelper.getResponsiveSpacing(context, mobileSpacing: 10), children: [
           _pill(Icons.local_fire_department_rounded, '$streak day streak'),
           _pill(event.icon, event.shortLabel)
         ]),
-        const SizedBox(height: 22),
+        SizedBox(height: ResponsiveHelper.getResponsiveSpacing(context, mobileSpacing: 22)),
         Row(children: [
           Expanded(
-            child: FilledButton(
+            child: GlassButton(
               onPressed: () => context.go('/meditation'),
-              style: FilledButton.styleFrom(
-                backgroundColor: const Color(0xFFF6C66B),
-                foregroundColor: const Color(0xFF1D2D26),
-                padding: const EdgeInsets.symmetric(vertical: 16),
-                shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(18)),
+              blur: 10,
+              opacity: 0.2,
+              gradient: LinearGradient(
+                colors: [
+                  Theme.of(context).colorScheme.surface,
+                  Theme.of(context).colorScheme.surface.withOpacity(0.9),
+                ],
               ),
-              child: const Text('Start Today Plan'),
+              borderRadius: BorderRadius.circular(18),
+              child: Text('Start Today\'s Plan',
+                  style: TextStyle(
+                    color: Theme.of(context).colorScheme.primary,
+                    fontSize: ResponsiveHelper.getResponsiveFontSize(context, mobileSize: 16, tabletSize: 17, desktopSize: 18),
+                    fontWeight: FontWeight.w700,
+                  )),
             ),
           ),
-          const SizedBox(width: 12),
-          OutlinedButton(
+          SizedBox(width: ResponsiveHelper.getResponsiveSpacing(context, mobileSpacing: 12)),
+          GlassButton(
             onPressed: () => context.go('/garden'),
-            style: OutlinedButton.styleFrom(
-              foregroundColor: Colors.white,
-              side: BorderSide(color: Colors.white.withOpacity(0.28)),
-              padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 16),
-              shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(18)),
+            blur: 10,
+            opacity: 0.1,
+            gradient: LinearGradient(
+              colors: [
+                Theme.of(context).colorScheme.onSurface.withOpacity(0.1),
+                Theme.of(context).colorScheme.onSurface.withOpacity(0.05),
+              ],
             ),
-            child: const Text('Open Garden'),
+            borderRadius: BorderRadius.circular(18),
+            child: Text('Open Garden',
+                style: TextStyle(
+                  color: Theme.of(context).colorScheme.onSurface,
+                  fontSize: ResponsiveHelper.getResponsiveFontSize(context, mobileSize: 15, tabletSize: 16, desktopSize: 17),
+                  fontWeight: FontWeight.w600,
+                )),
           ),
         ]),
       ]),
     );
   }
 
-  Widget _banner(BuildContext context, _Seasonal event) => Container(
-        padding: const EdgeInsets.all(20),
-        decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(28),
-            gradient: LinearGradient(colors: [event.start, event.end])),
+  Widget _banner(BuildContext context, _Seasonal event) => GlassContainer(
+        padding: EdgeInsets.all(ResponsiveHelper.getResponsivePadding(context, mobilePadding: 20)),
+        borderRadius: BorderRadius.circular(ResponsiveHelper.getResponsiveBorderRadius(context, mobileRadius: 28)),
+        blur: 15,
+        opacity: 0.2,
+        gradient: LinearGradient(colors: [event.start, event.end]),
         child: Row(children: [
           Container(
-            width: 58,
-            height: 58,
+            width: ResponsiveHelper.getResponsiveContainerWidth(context, mobileWidth: 58),
+            height: ResponsiveHelper.getResponsiveContainerHeight(context, mobileHeight: 58),
             decoration: BoxDecoration(
-                color: Colors.white.withOpacity(0.16),
+                color: Theme.of(context).colorScheme.onSurface.withOpacity(0.16),
                 borderRadius: BorderRadius.circular(18)),
-            child: Icon(event.icon, color: Colors.white, size: 28),
+            child: Icon(event.icon, color: Theme.of(context).colorScheme.onSurface, size: 28),
           ),
-          const SizedBox(width: 16),
+          SizedBox(width: ResponsiveHelper.getResponsiveSpacing(context, mobileSpacing: 16)),
           Expanded(
             child:
                 Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
               Text(event.title,
                   style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                      color: Colors.white, fontWeight: FontWeight.w800)),
-              const SizedBox(height: 6),
+                      color: Theme.of(context).colorScheme.onSurface, fontWeight: FontWeight.w800)),
+              SizedBox(height: ResponsiveHelper.getResponsiveSpacing(context, mobileSpacing: 6)),
               Text(event.description,
                   style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                      color: Colors.white.withOpacity(0.88), height: 1.4)),
+                      color: Theme.of(context).colorScheme.onSurface.withOpacity(0.88), height: 1.4)),
             ]),
           ),
         ]),
@@ -319,28 +367,28 @@ class _DashboardScreenState extends State<DashboardScreen>
             height: 46,
             decoration: BoxDecoration(
                 borderRadius: BorderRadius.circular(16),
-                color: const Color(0xFFD9EFE7)),
-            child: const Icon(Icons.favorite_outline_rounded,
-                color: Color(0xFF236957)),
+                color: Theme.of(context).colorScheme.surface.withOpacity(0.5)),
+            child: Icon(Icons.favorite_outline_rounded,
+                color: Theme.of(context).colorScheme.primary),
           ),
-          const SizedBox(width: 14),
+          SizedBox(width: ResponsiveHelper.getResponsiveSpacing(context, mobileSpacing: 14)),
           Expanded(
               child: Text(message,
-                  style: const TextStyle(
+                  style: TextStyle(
                       fontSize: 16,
                       fontWeight: FontWeight.w700,
                       height: 1.45,
-                      color: Color(0xFF183028)))),
+                      color: Theme.of(context).colorScheme.onSurface))),
         ]),
-        const SizedBox(height: 16),
-        Wrap(spacing: 10, runSpacing: 10, children: [
+        SizedBox(height: ResponsiveHelper.getResponsiveSpacing(context, mobileSpacing: 16)),
+        Wrap(spacing: ResponsiveHelper.getResponsiveSpacing(context, mobileSpacing: 10), runSpacing: ResponsiveHelper.getResponsiveSpacing(context, mobileSpacing: 10), children: [
           _tag(Icons.mood_rounded, 'Mood: $moodLabel'),
           _tag(
               Icons.star_outline_rounded,
               rating > 0
                   ? 'Energy ${rating.toStringAsFixed(1)}/5'
                   : 'Rate today'),
-          _tag(Icons.auto_awesome_rounded, 'AI companion active'),
+          _tag(Icons.auto_awesome_rounded, 'AI Companion Active'),
         ]),
       ]),
     );
@@ -351,55 +399,67 @@ class _DashboardScreenState extends State<DashboardScreen>
       _card(
         child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
           _cardIntro(
-              'Your garden grows faster with consistent care, quests, and mindfulness sessions.',
+              'Grow your mindfulness garden',
               'Play',
               () => context.go('/garden')),
-          const SizedBox(height: 14),
+          SizedBox(height: ResponsiveHelper.getResponsiveSpacing(context, mobileSpacing: 14)),
           ClipRRect(
               borderRadius: BorderRadius.circular(24),
               child: EnhancedGardenWidget(
                   level: level, streak: streak, size: 240)),
-          const SizedBox(height: 14),
+          SizedBox(height: ResponsiveHelper.getResponsiveSpacing(context, mobileSpacing: 14)),
           Row(children: [
             Expanded(
                 child: _mini('Garden Power', '${min(100, 30 + (level * 8))}%',
-                    const Color(0xFF2D7A61))),
-            const SizedBox(width: 10),
+                    Colors.green)),
+            SizedBox(width: ResponsiveHelper.getResponsiveSpacing(context, mobileSpacing: 10)),
             Expanded(
                 child: _mini('Session Fuel', '$sessions boosts',
-                    const Color(0xFFB97D3D))),
+                    Colors.orange)),
           ]),
         ]),
       );
 
   Widget _socialCard(
           BuildContext context, List<_Board> board, int streak, int minutes) =>
-      Container(
-        padding: const EdgeInsets.all(20),
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(28),
-          gradient: const LinearGradient(
-              colors: [Color(0xFFE7EEF9), Color(0xFFF4EFE7)]),
-          border: Border.all(color: const Color(0xFFDCE3EF)),
-        ),
+      GlassCard(
+        padding: EdgeInsets.all(ResponsiveHelper.getResponsivePadding(context, mobilePadding: 20)),
+        borderRadius: BorderRadius.circular(ResponsiveHelper.getResponsiveBorderRadius(context, mobileRadius: 28)),
+        blur: 12,
+        opacity: 0.1,
+        gradient: LinearGradient(
+            colors: [
+              Theme.of(context).colorScheme.surface.withOpacity(0.3),
+              Theme.of(context).colorScheme.surface.withOpacity(0.2)
+            ]),
         child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
           Row(children: [
-            const Expanded(
-                child: Text('Weekly calm league',
+            Expanded(
+                child: Text('Weekly Calm League',
                     style: TextStyle(
-                        fontSize: 18,
+                        fontSize: ResponsiveHelper.getResponsiveFontSize(context, mobileSize: 18, tabletSize: 19, desktopSize: 20),
                         fontWeight: FontWeight.w800,
-                        color: Color(0xFF1A2430)))),
-            OutlinedButton.icon(
-                onPressed: () => _shareProgress(streak, minutes),
-                icon: const Icon(Icons.ios_share_rounded),
-                label: const Text('Share')),
+                        color: Theme.of(context).colorScheme.onSurface))),
+            GlassButton(
+              onPressed: () => _shareProgress(streak, minutes),
+              blur: 8,
+              opacity: 0.15,
+              borderRadius: BorderRadius.circular(12),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(Icons.ios_share_rounded, size: ResponsiveHelper.getResponsiveIconSize(context, mobileSize: 18, tabletSize: 19, desktopSize: 20)),
+                  SizedBox(width: ResponsiveHelper.getResponsiveSpacing(context, mobileSpacing: 6)),
+                  const Text('Share'),
+                ],
+              ),
+            ),
           ]),
-          const SizedBox(height: 14),
+          SizedBox(height: ResponsiveHelper.getResponsiveSpacing(context, mobileSpacing: 14)),
           ...board.map((entry) => Padding(
-              padding: const EdgeInsets.only(bottom: 10),
+              padding: EdgeInsets.only(bottom: ResponsiveHelper.getResponsiveSpacing(context, mobileSpacing: 10)),
               child: _boardTile(entry))),
-          const SizedBox(height: 6),
+          SizedBox(height: ResponsiveHelper.getResponsiveSpacing(context, mobileSpacing: 6)),
           Text(
               'Friendly ranking helps retention without making the app feel stressful.',
               style: Theme.of(context)
@@ -411,140 +471,143 @@ class _DashboardScreenState extends State<DashboardScreen>
 
   Widget _quickActions(BuildContext context) {
     final actions = [
-      _Action('Meditate', Icons.spa_rounded, const Color(0xFF2C7A65),
+      _Action('Meditate', Icons.self_improvement_rounded, const Color(0xFF4CAF50),
           '/meditation'),
-      _Action('Garden', Icons.yard_rounded, const Color(0xFFB9843A), '/garden'),
+      _Action('Garden', Icons.eco_rounded, const Color(0xFF81C784), '/garden'),
       _Action(
-          'Mood', Icons.mood_rounded, const Color(0xFF6C76D8), '/mood-tracker'),
-      _Action('Progress', Icons.insights_rounded, const Color(0xFF2D4E74),
+          'Breathing', Icons.air_rounded, const Color(0xFFA5D6A7), '/breathing'),
+      _Action('Mood', Icons.mood_rounded, const Color(0xFFC8E6C9), '/mood-tracker'),
+      _Action('Progress', Icons.insights_rounded, const Color(0xFF66BB6A),
           '/progress'),
+      _Action('Settings', Icons.settings_rounded, const Color(0xFF43A047),
+          '/settings'),
     ];
     return GridView.builder(
       itemCount: actions.length,
       shrinkWrap: true,
       physics: const NeverScrollableScrollPhysics(),
-      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-          crossAxisCount: 2,
-          crossAxisSpacing: 14,
-          mainAxisSpacing: 14,
-          childAspectRatio: 1.15),
+      gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+          crossAxisCount: 3,
+          crossAxisSpacing: ResponsiveHelper.getResponsiveSpacing(context, mobileSpacing: 16),
+          mainAxisSpacing: ResponsiveHelper.getResponsiveSpacing(context, mobileSpacing: 16),
+          childAspectRatio: 0.9),
       itemBuilder: (context, index) {
         final action = actions[index];
-        return InkWell(
-          borderRadius: BorderRadius.circular(26),
-          onTap: () => context.go(action.route),
-          child: Container(
-            padding: const EdgeInsets.all(18),
-            decoration: BoxDecoration(
-                color: Colors.white.withOpacity(0.82),
-                borderRadius: BorderRadius.circular(26),
-                border: Border.all(color: const Color(0xFFDFE8DB))),
-            child:
-                Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-              Container(
-                width: 46,
-                height: 46,
-                decoration: BoxDecoration(
-                    color: action.color.withOpacity(0.12),
-                    borderRadius: BorderRadius.circular(16)),
-                child: Icon(action.icon, color: action.color),
-              ),
-              const Spacer(),
-              Text(action.label,
-                  style: const TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.w800,
-                      color: Color(0xFF1E332B))),
-              const SizedBox(height: 4),
-              Text('Tap to enter',
-                  style: TextStyle(
-                      fontSize: 13,
-                      color: const Color(0xFF1E332B).withOpacity(0.62))),
-            ]),
+        return GlassContainer(
+          borderRadius: BorderRadius.circular(50),
+          blur: 15,
+          opacity: 0.15,
+          gradient: LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [
+              action.color.withOpacity(0.8),
+              action.color.withOpacity(0.6),
+            ],
           ),
+          onTap: () => context.go(action.route),
+          child:
+              Column(crossAxisAlignment: CrossAxisAlignment.center, children: [
+            SizedBox(height: ResponsiveHelper.getResponsiveSpacing(context, mobileSpacing: 20)),
+            Container(
+              width: ResponsiveHelper.getResponsiveContainerWidth(context, mobileWidth: 60),
+              height: ResponsiveHelper.getResponsiveContainerHeight(context, mobileHeight: 60),
+              decoration: BoxDecoration(
+                  color: Colors.white.withOpacity(0.2),
+                  shape: BoxShape.circle,
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.white.withOpacity(0.1),
+                      blurRadius: 10,
+                    ),
+                  ]),
+              child: Icon(action.icon, color: Colors.white, size: 32),
+            ),
+            const Spacer(),
+            Text(action.label,
+                style: TextStyle(
+                    fontSize: ResponsiveHelper.getResponsiveFontSize(context, mobileSize: 16, tabletSize: 17, desktopSize: 18),
+                    fontWeight: FontWeight.w700,
+                    color: Colors.white)),
+            SizedBox(height: ResponsiveHelper.getResponsiveSpacing(context, mobileSpacing: 20)),
+          ]),
         );
       },
     );
   }
 
-  Widget _planCard(BuildContext context, _Plan item) => InkWell(
-        borderRadius: BorderRadius.circular(30),
+  Widget _planCard(BuildContext context, _Plan item) => GlassContainer(
+        width: ResponsiveHelper.getResponsiveContainerWidth(context, mobileWidth: 260),
+        padding: EdgeInsets.all(ResponsiveHelper.getResponsivePadding(context, mobilePadding: 20)),
+        borderRadius: BorderRadius.circular(ResponsiveHelper.getResponsiveBorderRadius(context, mobileRadius: 30)),
+        blur: 15,
+        opacity: 0.15,
+        gradient: LinearGradient(
+            colors: [item.color, item.color.withOpacity(0.72)]),
         onTap: () => context.go(item.route),
-        child: Container(
-          width: 260,
-          padding: const EdgeInsets.all(20),
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(30),
-            gradient: LinearGradient(
-                colors: [item.color, item.color.withOpacity(0.72)]),
-            boxShadow: [
-              BoxShadow(
-                  color: item.color.withOpacity(0.22),
-                  blurRadius: 20,
-                  offset: const Offset(0, 12))
-            ],
-          ),
-          child:
-              Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-            Container(
-                width: 52,
-                height: 52,
-                decoration: BoxDecoration(
-                    color: Colors.white.withOpacity(0.18),
-                    borderRadius: BorderRadius.circular(18)),
-                child: Icon(item.icon, color: Colors.white, size: 28)),
-            const Spacer(),
-            Text(item.metric,
-                style: const TextStyle(
-                    color: Colors.white70,
-                    fontSize: 13,
-                    fontWeight: FontWeight.w600)),
-            const SizedBox(height: 8),
-            Text(item.title,
-                style: const TextStyle(
-                    color: Colors.white,
-                    fontSize: 22,
-                    height: 1.15,
-                    fontWeight: FontWeight.w800)),
-            const SizedBox(height: 8),
-            Text(item.subtitle,
-                style: const TextStyle(
-                    color: Colors.white70, fontSize: 14, height: 1.4)),
-          ]),
-        ),
+        child:
+            Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          Container(
+              width: ResponsiveHelper.getResponsiveContainerWidth(context, mobileWidth: 52),
+              height: ResponsiveHelper.getResponsiveContainerHeight(context, mobileHeight: 52),
+              decoration: BoxDecoration(
+                  color: Colors.white.withOpacity(0.18),
+                  borderRadius: BorderRadius.circular(18)),
+              child: Icon(item.icon, color: Colors.white, size: 28)),
+          const Spacer(),
+          Text(item.metric,
+              style: TextStyle(
+                  color: Colors.white70,
+                  fontSize: ResponsiveHelper.getResponsiveFontSize(context, mobileSize: 13, tabletSize: 14, desktopSize: 15),
+                  fontWeight: FontWeight.w600)),
+          SizedBox(height: ResponsiveHelper.getResponsiveSpacing(context, mobileSpacing: 8)),
+          Text(item.title,
+              style: TextStyle(
+                  color: Colors.white,
+                  fontSize: ResponsiveHelper.getResponsiveFontSize(context, mobileSize: 22, tabletSize: 24, desktopSize: 26),
+                  height: 1.15,
+                  fontWeight: FontWeight.w800)),
+          SizedBox(height: ResponsiveHelper.getResponsiveSpacing(context, mobileSpacing: 8)),
+          Text(item.subtitle,
+              style: TextStyle(
+                  color: Colors.white70, fontSize: ResponsiveHelper.getResponsiveFontSize(context, mobileSize: 14, tabletSize: 15, desktopSize: 16), height: 1.4)),
+        ]),
       );
 
   Widget _rewardTile(_Reward reward) {
     final percent = (reward.progress * 100).round();
     return Padding(
-      padding: const EdgeInsets.only(bottom: 12),
-      child: Container(
-        padding: const EdgeInsets.all(16),
-        decoration: BoxDecoration(
-            color: reward.color.withOpacity(0.08),
-            borderRadius: BorderRadius.circular(22)),
+      padding: EdgeInsets.only(bottom: ResponsiveHelper.getResponsiveSpacing(context, mobileSpacing: 12)),
+      child: GlassCard(
+        padding: EdgeInsets.all(ResponsiveHelper.getResponsivePadding(context, mobilePadding: 16)),
+        borderRadius: BorderRadius.circular(ResponsiveHelper.getResponsiveBorderRadius(context, mobileRadius: 22)),
+        blur: 8,
+        opacity: 0.05,
+        gradient: LinearGradient(
+          colors: [reward.color.withOpacity(0.08), reward.color.withOpacity(0.04)],
+        ),
         child: Row(children: [
           Container(
-              width: 48,
-              height: 48,
+              width: ResponsiveHelper.getResponsiveContainerWidth(context, mobileWidth: 48),
+              height: ResponsiveHelper.getResponsiveContainerHeight(context, mobileHeight: 48),
               decoration: BoxDecoration(
                   color: reward.color.withOpacity(0.14),
                   borderRadius: BorderRadius.circular(16)),
               child: Icon(reward.icon, color: reward.color)),
-          const SizedBox(width: 14),
+          SizedBox(width: ResponsiveHelper.getResponsiveSpacing(context, mobileSpacing: 14)),
           Expanded(
             child:
                 Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
               Text(reward.title,
-                  style: const TextStyle(
-                      fontSize: 16,
+                  style: TextStyle(
+                      fontSize: ResponsiveHelper.getResponsiveFontSize(context, mobileSize: 16, tabletSize: 17, desktopSize: 18),
                       fontWeight: FontWeight.w800,
-                      color: Color(0xFF183028))),
-              const SizedBox(height: 4),
+                      color: const Color(0xFF183028))),
+              SizedBox(height: ResponsiveHelper.getResponsiveSpacing(context, mobileSpacing: 4)),
               Text(reward.subtitle,
-                  style: const TextStyle(
-                      fontSize: 13, height: 1.4, color: Color(0xFF4D6259))),
-              const SizedBox(height: 10),
+                  style: TextStyle(
+                      fontSize: ResponsiveHelper.getResponsiveFontSize(context, mobileSize: 13, tabletSize: 14, desktopSize: 15), height: 1.4, color: const Color(0xFF4D6259))),
+              SizedBox(height: ResponsiveHelper.getResponsiveSpacing(context, mobileSpacing: 10)),
               ClipRRect(
                 borderRadius: BorderRadius.circular(999),
                 child: LinearProgressIndicator(
@@ -555,7 +618,7 @@ class _DashboardScreenState extends State<DashboardScreen>
               ),
             ]),
           ),
-          const SizedBox(width: 12),
+          SizedBox(width: ResponsiveHelper.getResponsiveSpacing(context, mobileSpacing: 12)),
           Text('$percent%',
               style:
                   TextStyle(color: reward.color, fontWeight: FontWeight.w800)),
@@ -564,34 +627,32 @@ class _DashboardScreenState extends State<DashboardScreen>
     );
   }
 
-  Widget _boardTile(_Board entry) => Container(
-        padding: const EdgeInsets.all(14),
-        decoration: BoxDecoration(
-          color: entry.emphasized
-              ? entry.color.withOpacity(0.12)
-              : Colors.white.withOpacity(0.8),
-          borderRadius: BorderRadius.circular(18),
-          border: Border.all(
-              color: entry.emphasized
-                  ? entry.color.withOpacity(0.32)
-                  : const Color(0xFFDDE4EE)),
+  Widget _boardTile(_Board entry) => GlassCard(
+        padding: EdgeInsets.all(ResponsiveHelper.getResponsivePadding(context, mobilePadding: 14)),
+        borderRadius: BorderRadius.circular(ResponsiveHelper.getResponsiveBorderRadius(context, mobileRadius: 18)),
+        blur: 6,
+        opacity: entry.emphasized ? 0.12 : 0.05,
+        gradient: LinearGradient(
+          colors: entry.emphasized
+              ? [entry.color.withOpacity(0.12), entry.color.withOpacity(0.06)]
+              : [Colors.white.withOpacity(0.8), Colors.white.withOpacity(0.6)],
         ),
         child: Row(children: [
           Container(
-              width: 42,
-              height: 42,
+              width: ResponsiveHelper.getResponsiveContainerWidth(context, mobileWidth: 42),
+              height: ResponsiveHelper.getResponsiveContainerHeight(context, mobileHeight: 42),
               decoration: BoxDecoration(
                   color: entry.color.withOpacity(0.16),
                   borderRadius: BorderRadius.circular(14)),
               child: Icon(Icons.bolt_rounded, color: entry.color)),
-          const SizedBox(width: 12),
+          SizedBox(width: ResponsiveHelper.getResponsiveSpacing(context, mobileSpacing: 12)),
           Expanded(
             child:
                 Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
               Text(entry.name,
                   style: const TextStyle(
                       fontWeight: FontWeight.w800, color: Color(0xFF1F2D38))),
-              const SizedBox(height: 3),
+              SizedBox(height: ResponsiveHelper.getResponsiveSpacing(context, mobileSpacing: 3)),
               Text(entry.highlight,
                   style:
                       const TextStyle(fontSize: 13, color: Color(0xFF5B6876))),
@@ -610,20 +671,19 @@ class _DashboardScreenState extends State<DashboardScreen>
               style: const TextStyle(
                   fontSize: 24,
                   fontWeight: FontWeight.w800,
-                  color: Color(0xFF17342B))),
+                  color: Colors.white)),
           const SizedBox(height: 6),
           Text(subtitle,
-              style: const TextStyle(
-                  fontSize: 14, height: 1.45, color: Color(0xFF50635A))),
+              style: TextStyle(
+                  fontSize: 14, height: 1.45, color: Colors.white.withOpacity(0.7))),
         ],
       );
 
-  Widget _card({required Widget child}) => Container(
-        padding: const EdgeInsets.all(20),
-        decoration: BoxDecoration(
-            color: Colors.white.withOpacity(0.82),
-            borderRadius: BorderRadius.circular(28),
-            border: Border.all(color: const Color(0xFFDFE8DB))),
+  Widget _card({required Widget child}) => GlassCard(
+        padding: EdgeInsets.all(ResponsiveHelper.getResponsivePadding(context, mobilePadding: 20)),
+        borderRadius: BorderRadius.circular(ResponsiveHelper.getResponsiveBorderRadius(context, mobileRadius: 28)),
+        blur: 12,
+        opacity: 0.08,
         child: child,
       );
 
@@ -631,10 +691,16 @@ class _DashboardScreenState extends State<DashboardScreen>
         children: [
           Expanded(
               child: Text(text,
-                  style: const TextStyle(
-                      fontSize: 15, height: 1.45, color: Color(0xFF355047)))),
-          const SizedBox(width: 12),
-          FilledButton.tonal(onPressed: onTap, child: Text(cta)),
+                  style: TextStyle(
+                      fontSize: ResponsiveHelper.getResponsiveFontSize(context, mobileSize: 15, tabletSize: 16, desktopSize: 17), height: 1.45, color: const Color(0xFF355047)))),
+          SizedBox(width: ResponsiveHelper.getResponsiveSpacing(context, mobileSpacing: 12)),
+          GlassButton(
+            onPressed: onTap,
+            blur: 8,
+            opacity: 0.15,
+            borderRadius: BorderRadius.circular(12),
+            child: Text(cta),
+          ),
         ],
       );
 
@@ -645,35 +711,44 @@ class _DashboardScreenState extends State<DashboardScreen>
           width: 48,
           height: 48,
           decoration: BoxDecoration(
-              color: Colors.white.withOpacity(0.74),
+              color: Colors.white.withOpacity(0.1),
               borderRadius: BorderRadius.circular(18),
-              border: Border.all(color: const Color(0xFFDDE7DB))),
-          child: Icon(icon, color: const Color(0xFF234136)),
+              border: Border.all(color: Colors.white.withOpacity(0.15))),
+          child: Icon(icon, color: Colors.white),
         ),
       );
 
-  Widget _pill(IconData icon, String label) => Container(
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-        decoration: BoxDecoration(
-            color: Colors.white.withOpacity(0.12),
-            borderRadius: BorderRadius.circular(18)),
+  Widget _pill(IconData icon, String label) => GlassContainer(
+        padding: EdgeInsets.symmetric(
+          horizontal: ResponsiveHelper.getResponsivePadding(context, mobilePadding: 12),
+          vertical: ResponsiveHelper.getResponsivePadding(context, mobilePadding: 10),
+        ),
+        borderRadius: BorderRadius.circular(18),
+        blur: 8,
+        opacity: 0.12,
         child: Row(mainAxisSize: MainAxisSize.min, children: [
           Icon(icon, color: Colors.white, size: 18),
-          const SizedBox(width: 8),
+          SizedBox(width: ResponsiveHelper.getResponsiveSpacing(context, mobileSpacing: 8)),
           Text(label,
               style: const TextStyle(
                   color: Colors.white, fontWeight: FontWeight.w700))
         ]),
       );
 
-  Widget _tag(IconData icon, String label) => Container(
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-        decoration: BoxDecoration(
-            color: const Color(0xFFF0F4EC),
-            borderRadius: BorderRadius.circular(16)),
+  Widget _tag(IconData icon, String label) => GlassCard(
+        padding: EdgeInsets.symmetric(
+          horizontal: ResponsiveHelper.getResponsivePadding(context, mobilePadding: 12),
+          vertical: ResponsiveHelper.getResponsivePadding(context, mobilePadding: 10),
+        ),
+        borderRadius: BorderRadius.circular(16),
+        blur: 6,
+        opacity: 0.1,
+        gradient: const LinearGradient(
+          colors: [Color(0xFFF0F4EC), Color(0xFFE8F2E4)],
+        ),
         child: Row(mainAxisSize: MainAxisSize.min, children: [
           Icon(icon, size: 17, color: const Color(0xFF34564B)),
-          const SizedBox(width: 8),
+          SizedBox(width: ResponsiveHelper.getResponsiveSpacing(context, mobileSpacing: 8)),
           Text(label,
               style: const TextStyle(
                   fontWeight: FontWeight.w700, color: Color(0xFF34564B)))
@@ -682,50 +757,52 @@ class _DashboardScreenState extends State<DashboardScreen>
 
   Widget _stat(String title, String value, IconData icon, Color color,
           {String? footer}) =>
-      Container(
-        padding: const EdgeInsets.all(16),
-        decoration: BoxDecoration(
-            color: Colors.white.withOpacity(0.8),
-            borderRadius: BorderRadius.circular(24),
-            border: Border.all(color: const Color(0xFFDFE8DB))),
+      GlassCard(
+        padding: EdgeInsets.all(ResponsiveHelper.getResponsivePadding(context, mobilePadding: 16)),
+        borderRadius: BorderRadius.circular(ResponsiveHelper.getResponsiveBorderRadius(context, mobileRadius: 24)),
+        blur: 10,
+        opacity: 0.08,
         child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
           Container(
-              width: 40,
-              height: 40,
+              width: ResponsiveHelper.getResponsiveContainerWidth(context, mobileWidth: 40),
+              height: ResponsiveHelper.getResponsiveContainerHeight(context, mobileHeight: 40),
               decoration: BoxDecoration(
-                  color: color.withOpacity(0.12),
+                  color: color.withOpacity(0.2),
                   borderRadius: BorderRadius.circular(14)),
               child: Icon(icon, color: color)),
-          const SizedBox(height: 14),
+          SizedBox(height: ResponsiveHelper.getResponsiveSpacing(context, mobileSpacing: 14)),
           Text(value,
-              style: const TextStyle(
-                  fontSize: 20,
+              style: TextStyle(
+                  fontSize: ResponsiveHelper.getResponsiveFontSize(context, mobileSize: 20, tabletSize: 22, desktopSize: 24),
                   fontWeight: FontWeight.w800,
-                  color: Color(0xFF17342B))),
-          const SizedBox(height: 4),
+                  color: Colors.white)),
+          SizedBox(height: ResponsiveHelper.getResponsiveSpacing(context, mobileSpacing: 4)),
           Text(title,
-              style: const TextStyle(fontSize: 13, color: Color(0xFF5D7067))),
+              style: TextStyle(fontSize: ResponsiveHelper.getResponsiveFontSize(context, mobileSize: 13, tabletSize: 14, desktopSize: 15), color: Colors.white.withOpacity(0.7))),
           if (footer != null) ...[
-            const SizedBox(height: 10),
+            SizedBox(height: ResponsiveHelper.getResponsiveSpacing(context, mobileSpacing: 10)),
             Text(footer,
                 style: TextStyle(
-                    fontSize: 12, color: color, fontWeight: FontWeight.w700))
+                    fontSize: ResponsiveHelper.getResponsiveFontSize(context, mobileSize: 12, tabletSize: 13, desktopSize: 14), color: color, fontWeight: FontWeight.w700))
           ],
         ]),
       );
 
-  Widget _mini(String label, String value, Color color) => Container(
-        padding: const EdgeInsets.all(14),
-        decoration: BoxDecoration(
-            color: color.withOpacity(0.09),
-            borderRadius: BorderRadius.circular(18)),
+  Widget _mini(String label, String value, Color color) => GlassCard(
+        padding: EdgeInsets.all(ResponsiveHelper.getResponsivePadding(context, mobilePadding: 14)),
+        borderRadius: BorderRadius.circular(ResponsiveHelper.getResponsiveBorderRadius(context, mobileRadius: 18)),
+        blur: 6,
+        opacity: 0.08,
+        gradient: LinearGradient(
+          colors: [color.withOpacity(0.09), color.withOpacity(0.04)],
+        ),
         child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
           Text(label,
-              style: const TextStyle(color: Color(0xFF50635A), fontSize: 13)),
-          const SizedBox(height: 6),
+              style: TextStyle(color: const Color(0xFF50635A), fontSize: ResponsiveHelper.getResponsiveFontSize(context, mobileSize: 13, tabletSize: 14, desktopSize: 15))),
+          SizedBox(height: ResponsiveHelper.getResponsiveSpacing(context, mobileSpacing: 6)),
           Text(value,
               style: TextStyle(
-                  color: color, fontSize: 18, fontWeight: FontWeight.w800))
+                  color: color, fontSize: ResponsiveHelper.getResponsiveFontSize(context, mobileSize: 18, tabletSize: 20, desktopSize: 22), fontWeight: FontWeight.w800))
         ]),
       );
 

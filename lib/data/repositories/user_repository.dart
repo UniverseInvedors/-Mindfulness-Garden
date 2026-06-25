@@ -1,12 +1,8 @@
-import 'package:mindfulness_garden/data/local_storage/local_storage_service.dart';
-import 'package:mindfulness_garden/data/models/user_model.dart';
-import 'package:mindfulness_garden/data/services/firestore_progress_service.dart';
+import 'package:pranaverse/data/local_storage/local_storage_service.dart';
+import 'package:pranaverse/data/models/user_model.dart';
 
 class UserRepository {
-  final FirestoreProgressService _progressService;
-
-  UserRepository({FirestoreProgressService? progressService})
-      : _progressService = progressService ?? FirestoreProgressService.instance;
+  UserRepository();
 
   Future<UserModel?> getCurrentUser() async {
     return LocalStorageService.getUser();
@@ -14,7 +10,7 @@ class UserRepository {
 
   Future<void> saveUser(UserModel user) async {
     await LocalStorageService.saveUser(user);
-    await _syncUserProgress(user);
+    // Sync to backend is handled by BackendIntegrationService
   }
 
   Future<void> updateUser({
@@ -31,15 +27,6 @@ class UserRepository {
         lastSessionDate: DateTime.now(),
       );
       await LocalStorageService.updateUser(updatedUser);
-      await _syncUserProgress(updatedUser);
-    }
-  }
-
-  Future<void> _syncUserProgress(UserModel user) async {
-    try {
-      await _progressService.syncUserProgress(user);
-    } catch (_) {
-      // Firestore sync is optional and should not block local progress.
     }
   }
 

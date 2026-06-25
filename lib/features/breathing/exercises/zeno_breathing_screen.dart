@@ -1,17 +1,20 @@
 import 'package:flutter/material.dart';
-import 'package:mindfulness_garden/core/services/audio_service.dart';
-import 'package:mindfulness_garden/core/services/tts_service.dart';
-import 'package:mindfulness_garden/core/services/ad_service.dart';
-import 'package:mindfulness_garden/core/services/localization_service.dart';
-import 'package:mindfulness_garden/core/services/voice_service.dart';
-import 'package:mindfulness_garden/core/widgets/exercise_scene_shell.dart';
-import 'package:mindfulness_garden/core/widgets/meditation_scene_widget.dart';
-import 'package:mindfulness_garden/presentation/providers/session_provider.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:pranaverse/core/services/audio_service.dart';
+import 'package:pranaverse/core/services/tts_service.dart';
+import 'package:pranaverse/core/services/ad_service.dart';
+import 'package:pranaverse/core/services/localization_service.dart';
+import 'package:pranaverse/core/services/voice_service.dart';
+import 'package:pranaverse/core/widgets/exercise_scene_shell.dart';
+import 'package:pranaverse/core/widgets/meditation_scene_widget.dart';
+import 'package:pranaverse/presentation/providers/session_provider.dart';
 import 'package:provider/provider.dart';
 import 'package:go_router/go_router.dart';
+import 'package:pranaverse/core/providers/app_settings_provider.dart';
+import 'package:pranaverse/l10n/app_localizations.dart';
 import 'dart:async';
 
-class ZenoBreathingScreen extends StatefulWidget {
+class ZenoBreathingScreen extends ConsumerStatefulWidget {
   final SceneEnvironment environment;
   final SceneTimeOfDay timeOfDay;
 
@@ -22,10 +25,10 @@ class ZenoBreathingScreen extends StatefulWidget {
   });
 
   @override
-  State<ZenoBreathingScreen> createState() => _ZenoBreathingScreenState();
+  ConsumerState<ZenoBreathingScreen> createState() => _ZenoBreathingScreenState();
 }
 
-class _ZenoBreathingScreenState extends State<ZenoBreathingScreen>
+class _ZenoBreathingScreenState extends ConsumerState<ZenoBreathingScreen>
     with SingleTickerProviderStateMixin {
   late AnimationController _controller;
   late Animation<double> _scaleAnimation;
@@ -40,12 +43,6 @@ class _ZenoBreathingScreenState extends State<ZenoBreathingScreen>
   BreathingPhase _phase = BreathingPhase.intro;
   String _currentInstruction = '';
   String _currentVoiceLine = '';
-  final List<String> _languages = [
-    'English',
-    'Hindi',
-    'Bengali',
-  ];
-  String _selectedLanguage = 'English';
 
   // Ad timer
   Timer? _adTimer;
@@ -56,7 +53,7 @@ class _ZenoBreathingScreenState extends State<ZenoBreathingScreen>
   @override
   void initState() {
     super.initState();
-    _selectedLanguage = VoiceService().appLanguage.displayName;
+    print('ZENO BREATHING SCREEN: initState called');
 
     _controller = AnimationController(
       duration: const Duration(seconds: 4),
@@ -89,27 +86,14 @@ class _ZenoBreathingScreenState extends State<ZenoBreathingScreen>
   }
 
   void _startExercise() async {
-    // Set language for TTS and VoiceService
-    final localeCode = _selectedLanguage == 'Hindi'
-        ? 'hi-IN'
-        : _selectedLanguage == 'Bengali'
-            ? 'bn-IN'
-            : 'en-US';
-    await _ttsService.setLanguage(localeCode);
-    await VoiceService().setAppLanguage(
-      LocalizationService.languageFromCode(localeCode),
-    );
-
+    final l10n = AppLocalizations.of(context)!;
+    // Language is now managed globally by AppSettingsProvider
     // Buddha intro
     await VoiceService().speakBreathingIntro();
 
     // Start with intro
     _setPhase(BreathingPhase.intro);
-    await _speak(
-      "Hi, it's Zeno. We are going to do breathing exercises now. "
-      "You can do these anytime you are having a difficult time. "
-      "Remember, Just breathe.",
-    );
+    await _speak(l10n.zenoIntro);
 
     await Future.delayed(const Duration(seconds: 2));
 
@@ -127,7 +111,8 @@ class _ZenoBreathingScreenState extends State<ZenoBreathingScreen>
       if (_cycleCount >= 4) {
         timer.cancel();
         _setPhase(BreathingPhase.rest);
-        await _speak("Great job! Rest now for 5 seconds.");
+        final l10n = AppLocalizations.of(context)!;
+        await _speak(l10n.complete);
         await Future.delayed(const Duration(seconds: 5));
         _setPhase(BreathingPhase.complete);
         _completeSession();
@@ -138,21 +123,22 @@ class _ZenoBreathingScreenState extends State<ZenoBreathingScreen>
         _cycleCount++;
 
         // Inhale phase
-        _setInstruction("Breathe in...");
-        await _speak("Ok, let's inhale now");
+        final l10n = AppLocalizations.of(context)!;
+        _setInstruction(l10n.inhale);
+        await _speak(l10n.inhale);
         VoiceService().speakInhale();
         await _animateBreath(inhale: true);
         await Future.delayed(const Duration(seconds: 2));
 
         // Hold phase
-        _setInstruction("Hold...");
-        await _speak("Hold for a few seconds");
+        _setInstruction(l10n.hold);
+        await _speak(l10n.hold);
         VoiceService().speakHold();
         await Future.delayed(const Duration(seconds: 3));
 
         // Exhale phase
-        _setInstruction("Let it go...");
-        await _speak("Let it go, Let it go");
+        _setInstruction(l10n.exhale);
+        await _speak(l10n.exhale);
         VoiceService().speakExhale();
         await _animateBreath(inhale: false);
 
@@ -199,7 +185,8 @@ class _ZenoBreathingScreenState extends State<ZenoBreathingScreen>
       if (_isPaused) {
         _breathTimer?.cancel();
         _controller.stop();
-        _setInstruction("Paused");
+        final l10n = AppLocalizations.of(context)!;
+        _setInstruction(l10n.pause);
       } else {
         _startBreathingCycles();
       }
@@ -243,15 +230,14 @@ class _ZenoBreathingScreenState extends State<ZenoBreathingScreen>
     if (_phase == BreathingPhase.complete) return BreathPhase.complete;
     if (_phase == BreathingPhase.rest) return BreathPhase.rest;
     if (!_isPlaying) return BreathPhase.idle;
-    if (_currentInstruction.contains('in') ||
-        _currentInstruction.toLowerCase().contains('inhale')) {
+    final l10n = AppLocalizations.of(context)!;
+    if (_currentInstruction == l10n.inhale) {
       return BreathPhase.inhale;
     }
-    if (_currentInstruction.toLowerCase().contains('hold')) {
+    if (_currentInstruction == l10n.hold) {
       return BreathPhase.hold;
     }
-    if (_currentInstruction.toLowerCase().contains('let') ||
-        _currentInstruction.toLowerCase().contains('exhale')) {
+    if (_currentInstruction == l10n.exhale) {
       return BreathPhase.exhale;
     }
     return BreathPhase.idle;
@@ -282,90 +268,31 @@ class _ZenoBreathingScreenState extends State<ZenoBreathingScreen>
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+    print('ZENO BREATHING SCREEN: build called, phase: $_phase, isPlaying: $_isPlaying');
     return ExerciseSceneShell(
       title: 'Zeno Breathing',
       breathPhase: _sceneBreathPhase,
       instruction: _currentInstruction.isEmpty
-          ? 'Tap Start to begin'
+          ? l10n.tapStartToBegin
           : _currentInstruction,
       isActive: _isPlaying && !_isPaused,
       initialEnvironment: widget.environment,
       initialTimeOfDay: widget.timeOfDay,
       onBack: () => context.canPop() ? context.pop() : context.go('/main'),
       headerActions: [
-        // Benefits button - teacher explains use cases
-        GestureDetector(
-          onTap: _showBenefits,
-          child: Container(
-            width: 40,
-            height: 40,
-            decoration: BoxDecoration(
-              color: Colors.black.withAlpha(120),
-              shape: BoxShape.circle,
-              border: Border.all(color: Colors.white.withAlpha(40)),
-            ),
-            child:
-                const Icon(Icons.help_outline, color: Colors.white, size: 18),
-          ),
-        ),
-        const SizedBox(width: 4),
-        // Language selector
-        Container(
-          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-          decoration: BoxDecoration(
-            color: Colors.black.withAlpha(120),
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: Colors.white.withAlpha(40)),
-          ),
-          child: DropdownButtonHideUnderline(
-            child: DropdownButton<String>(
-              value: _selectedLanguage,
-              dropdownColor: const Color(0xFF1a1a2e),
-              style: const TextStyle(color: Colors.white, fontSize: 12),
-              isDense: true,
-              items: _languages
-                  .map((l) => DropdownMenuItem(
-                        value: l,
-                        child: Text(l,
-                            style: const TextStyle(
-                                color: Colors.white, fontSize: 12)),
-                      ))
-                  .toList(),
-              onChanged: (v) {
-                if (v == null) return;
-                setState(() => _selectedLanguage = v);
-                final localeCode = v == 'Spanish'
-                    ? 'es-ES'
-                    : v == 'Hindi'
-                        ? 'hi-IN'
-                        : v == 'Bengali'
-                            ? 'bn-IN'
-                            : v == 'French'
-                                ? 'fr-FR'
-                                : v == 'German'
-                                    ? 'de-DE'
-                                    : v == 'Chinese'
-                                        ? 'zh-CN'
-                                        : 'en-US';
-                VoiceService().setAppLanguage(
-                    LocalizationService.languageFromCode(localeCode));
-              },
-            ),
-          ),
-        ),
-        const SizedBox(width: 4),
         GestureDetector(
           onTap: _isPlaying ? _togglePause : null,
           child: Container(
-            width: 40,
-            height: 40,
+            width: 28,
+            height: 28,
             decoration: BoxDecoration(
               color: Colors.black.withAlpha(120),
               shape: BoxShape.circle,
               border: Border.all(color: Colors.white.withAlpha(40)),
             ),
             child: Icon(_isPaused ? Icons.play_arrow : Icons.pause,
-                color: Colors.white, size: 20),
+                color: Colors.white, size: 14),
           ),
         ),
       ],
@@ -374,8 +301,9 @@ class _ZenoBreathingScreenState extends State<ZenoBreathingScreen>
   }
 
   void _showBenefits() {
-    final lang = VoiceService().appLanguage;
-    final text = LocalizationService.translate('benefits_breathing', lang);
+    final l10n = AppLocalizations.of(context)!;
+    final appSettings = context.read<AppSettingsProvider>();
+    final text = LocalizationService.translate('benefits_breathing', appSettings.language);
     // Speak and show a dialog
     VoiceService().speak(text);
     showDialog(
@@ -386,8 +314,8 @@ class _ZenoBreathingScreenState extends State<ZenoBreathingScreen>
         child: Padding(
           padding: const EdgeInsets.all(18),
           child: Column(mainAxisSize: MainAxisSize.min, children: [
-            const Text('Benefits',
-                style: TextStyle(
+            Text(l10n.benefits,
+                style: const TextStyle(
                     color: Colors.white,
                     fontSize: 18,
                     fontWeight: FontWeight.w800)),
@@ -397,8 +325,8 @@ class _ZenoBreathingScreenState extends State<ZenoBreathingScreen>
             const SizedBox(height: 12),
             TextButton(
                 onPressed: () => Navigator.pop(context),
-                child: const Text('Close',
-                    style: TextStyle(color: Colors.white70)))
+                child: Text(l10n.close,
+                    style: const TextStyle(color: Colors.white70)))
           ]),
         ),
       ),
@@ -406,81 +334,117 @@ class _ZenoBreathingScreenState extends State<ZenoBreathingScreen>
   }
 
   Widget _buildBottomPanel() {
+    final l10n = AppLocalizations.of(context)!;
+    print('ZENO BREATHING SCREEN: _buildBottomPanel called, phase: $_phase');
+    final screenWidth = MediaQuery.of(context).size.width;
+    final isSmallScreen = screenWidth < 360;
+    final isLargeScreen = screenWidth > 400;
+    
+    final circleSize = isSmallScreen ? 90.0 : (isLargeScreen ? 110.0 : 100.0);
+    final iconSize = isSmallScreen ? 24.0 : (isLargeScreen ? 32.0 : 28.0);
+    final buttonTextSize = isSmallScreen ? 14.0 : (isLargeScreen ? 17.0 : 16.0);
+    final buttonPadding = isSmallScreen ? 14.0 : (isLargeScreen ? 18.0 : 16.0);
+    
     return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 4, 16, 8),
+      padding: EdgeInsets.fromLTRB(
+        isSmallScreen ? 16 : 20, 
+        8, 
+        isSmallScreen ? 16 : 20, 
+        20
+      ),
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Container(
-            width: 36,
-            height: 4,
-            margin: const EdgeInsets.only(bottom: 12),
-            decoration: BoxDecoration(
-              color: Colors.white.withAlpha(60),
-              borderRadius: BorderRadius.circular(2),
+          // Drag handle
+          Center(
+            child: Container(
+              width: 40,
+              height: 4,
+              margin: const EdgeInsets.only(bottom: 16),
+              decoration: BoxDecoration(
+                color: Colors.white.withAlpha(80),
+                borderRadius: BorderRadius.circular(2),
+              ),
             ),
           ),
 
           // Phase indicator
-          AnimatedBuilder(
-            animation: _controller,
-            builder: (_, __) => Container(
-              width: 120 * _scaleAnimation.value,
-              height: 120 * _scaleAnimation.value,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                color: _getPhaseColor().withAlpha(80),
-                border: Border.all(color: _getPhaseColor(), width: 2),
-                boxShadow: [
-                  BoxShadow(
-                    color: _getPhaseColor().withAlpha(100),
-                    blurRadius: 20,
-                    spreadRadius: 4,
-                  )
-                ],
-              ),
-              child: Center(
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Icon(_getPhaseIcon(), size: 32, color: Colors.white),
-                    const SizedBox(height: 4),
-                    Text('Cycle $_cycleCount/4',
-                        style: const TextStyle(
-                            color: Colors.white70, fontSize: 11)),
+          Center(
+            child: AnimatedBuilder(
+              animation: _controller,
+              builder: (_, __) => Container(
+                width: circleSize * _scaleAnimation.value,
+                height: circleSize * _scaleAnimation.value,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: _getPhaseColor().withAlpha(80),
+                  border: Border.all(color: _getPhaseColor(), width: 2),
+                  boxShadow: [
+                    BoxShadow(
+                      color: _getPhaseColor().withAlpha(100),
+                      blurRadius: 20,
+                      spreadRadius: 4,
+                    )
                   ],
+                ),
+                child: Center(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(_getPhaseIcon(), size: iconSize, color: Colors.white),
+                      const SizedBox(height: 6),
+                      Text('${l10n.cycleCount} $_cycleCount/4',
+                          textAlign: TextAlign.center,
+                          style: TextStyle(
+                              color: Colors.white70, 
+                              fontSize: isSmallScreen ? 11.0 : 12.0,
+                              fontWeight: FontWeight.w500,
+                              letterSpacing: 0.2)),
+                    ],
+                  ),
                 ),
               ),
             ),
           ),
 
-          const SizedBox(height: 10),
+          SizedBox(height: isSmallScreen ? 12 : 16),
 
           // Voice line
           if (_currentVoiceLine.isNotEmpty)
             Container(
-              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+              width: double.infinity,
+              padding: EdgeInsets.symmetric(
+                horizontal: isSmallScreen ? 14 : 16, 
+                vertical: isSmallScreen ? 10 : 12
+              ),
               decoration: BoxDecoration(
                 color: Colors.white.withAlpha(15),
                 borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: Colors.white.withAlpha(20), width: 1),
               ),
               child: Row(
                 children: [
-                  const Icon(Icons.record_voice_over,
-                      color: Colors.white60, size: 16),
-                  const SizedBox(width: 8),
+                  Icon(Icons.record_voice_over,
+                      color: Colors.white60, 
+                      size: isSmallScreen ? 16 : 18),
+                  const SizedBox(width: 10),
                   Expanded(
                     child: Text(_currentVoiceLine,
-                        style: const TextStyle(
+                        textAlign: TextAlign.left,
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
                             color: Colors.white70,
-                            fontSize: 12,
+                            fontSize: isSmallScreen ? 12.0 : 13.0,
+                            height: 1.3,
+                            letterSpacing: 0.1,
                             fontStyle: FontStyle.italic)),
                   ),
                 ],
               ),
             ),
 
-          const SizedBox(height: 12),
+          SizedBox(height: isSmallScreen ? 12 : 16),
 
           // Controls
           if (_phase == BreathingPhase.complete)
@@ -491,22 +455,32 @@ class _ZenoBreathingScreenState extends State<ZenoBreathingScreen>
                   onPressed: _playAgain,
                   style: ElevatedButton.styleFrom(
                     backgroundColor: const Color(0xFF00b4d8),
-                    padding: const EdgeInsets.symmetric(vertical: 14),
+                    foregroundColor: Colors.white,
+                    padding: EdgeInsets.symmetric(vertical: buttonPadding),
                     shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(14)),
+                        borderRadius: BorderRadius.circular(16)),
+                    elevation: 0,
                   ),
-                  child: const Text('PLAY AGAIN',
+                  child: Text(l10n.playAgain,
                       style: TextStyle(
-                          fontSize: 15,
+                          fontSize: buttonTextSize,
                           fontWeight: FontWeight.w700,
-                          color: Colors.white)),
+                          letterSpacing: 0.5)),
                 ),
               ),
+              SizedBox(height: isSmallScreen ? 10 : 12),
               TextButton(
                 onPressed: () =>
                     context.canPop() ? context.pop() : context.go('/main'),
-                child: const Text('BACK TO EXERCISES',
-                    style: TextStyle(color: Colors.white70, fontSize: 13)),
+                style: TextButton.styleFrom(
+                  padding: EdgeInsets.symmetric(vertical: isSmallScreen ? 10 : 12),
+                ),
+                child: Text(l10n.backToExercises,
+                    style: TextStyle(
+                        color: Colors.white70, 
+                        fontSize: isSmallScreen ? 13.0 : 14.0,
+                        fontWeight: FontWeight.w500,
+                        letterSpacing: 0.2)),
               ),
             ])
           else if (_phase == BreathingPhase.rest)
@@ -516,15 +490,17 @@ class _ZenoBreathingScreenState extends State<ZenoBreathingScreen>
                 onPressed: () {},
                 style: ElevatedButton.styleFrom(
                   backgroundColor: Colors.orange,
-                  padding: const EdgeInsets.symmetric(vertical: 14),
+                  foregroundColor: Colors.white,
+                  padding: EdgeInsets.symmetric(vertical: buttonPadding),
                   shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(14)),
+                      borderRadius: BorderRadius.circular(16)),
+                  elevation: 0,
                 ),
-                child: const Text('REST NOW',
+                child: Text(l10n.restNow,
                     style: TextStyle(
-                        fontSize: 15,
+                        fontSize: buttonTextSize,
                         fontWeight: FontWeight.w700,
-                        color: Colors.white)),
+                        letterSpacing: 0.5)),
               ),
             )
           else if (!_isPlaying)
@@ -534,15 +510,17 @@ class _ZenoBreathingScreenState extends State<ZenoBreathingScreen>
                 onPressed: _startExercise,
                 style: ElevatedButton.styleFrom(
                   backgroundColor: Colors.blue,
-                  padding: const EdgeInsets.symmetric(vertical: 14),
+                  foregroundColor: Colors.white,
+                  padding: EdgeInsets.symmetric(vertical: buttonPadding),
                   shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(14)),
+                      borderRadius: BorderRadius.circular(16)),
+                  elevation: 0,
                 ),
-                child: const Text('START',
+                child: Text(l10n.start,
                     style: TextStyle(
-                        fontSize: 15,
+                        fontSize: buttonTextSize,
                         fontWeight: FontWeight.w700,
-                        color: Colors.white)),
+                        letterSpacing: 0.5)),
               ),
             )
           else
@@ -552,15 +530,17 @@ class _ZenoBreathingScreenState extends State<ZenoBreathingScreen>
                 onPressed: _togglePause,
                 style: ElevatedButton.styleFrom(
                   backgroundColor: _isPaused ? Colors.green : Colors.orange,
-                  padding: const EdgeInsets.symmetric(vertical: 14),
+                  foregroundColor: Colors.white,
+                  padding: EdgeInsets.symmetric(vertical: buttonPadding),
                   shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(14)),
+                      borderRadius: BorderRadius.circular(16)),
+                  elevation: 0,
                 ),
-                child: Text(_isPaused ? 'RESUME' : 'PAUSE',
-                    style: const TextStyle(
-                        fontSize: 15,
+                child: Text(_isPaused ? l10n.resume : l10n.pause,
+                    style: TextStyle(
+                        fontSize: buttonTextSize,
                         fontWeight: FontWeight.w700,
-                        color: Colors.white)),
+                        letterSpacing: 0.5)),
               ),
             ),
         ],

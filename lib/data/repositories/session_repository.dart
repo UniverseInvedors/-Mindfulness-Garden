@@ -1,6 +1,6 @@
 import 'package:uuid/uuid.dart';
-import 'package:mindfulness_garden/data/local_storage/local_storage_service.dart';
-import 'package:mindfulness_garden/data/models/session_model.dart';
+import 'package:pranaverse/data/local_storage/local_storage_service.dart';
+import 'package:pranaverse/data/models/session_model.dart';
 
 class SessionRepository {
   final Uuid _uuid = const Uuid();

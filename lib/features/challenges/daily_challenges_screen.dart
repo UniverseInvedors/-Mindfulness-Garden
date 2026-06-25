@@ -1,9 +1,9 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:go_router/go_router.dart';
-import 'package:mindfulness_garden/presentation/providers/challenge_provider.dart';
-import 'package:mindfulness_garden/data/models/challenge_model.dart';
-import 'package:mindfulness_garden/data/local_storage/local_storage_service.dart';
+import 'package:pranaverse/presentation/providers/challenge_provider.dart';
+import 'package:pranaverse/data/models/challenge_model.dart';
+import 'package:pranaverse/data/local_storage/local_storage_service.dart';
 
 class _ZenoOpponent {
   final int streak;
@@ -95,7 +95,7 @@ class _DailyChallengesScreenState extends State<DailyChallengesScreen>
       ),
       body: provider.isLoading
           ? const Center(child: Column(mainAxisSize: MainAxisSize.min, children: [
-              Text('⬡', style: TextStyle(fontSize: 40, color: Color(0xFF9d4edd))),
+              Text('?', style: TextStyle(fontSize: 40, color: Color(0xFF9d4edd))),
               SizedBox(height: 12),
               CircularProgressIndicator(color: Color(0xFF9d4edd)),
               SizedBox(height: 12),
@@ -181,7 +181,7 @@ class _DailyChallengesScreenState extends State<DailyChallengesScreen>
         boxShadow: [BoxShadow(color: Color(0x339d4edd), blurRadius: 20, offset: Offset(0, 8))],
       ),
       child: Row(children: [
-        const Text('🔥', style: TextStyle(fontSize: 40)),
+        const Text('??', style: TextStyle(fontSize: 40)),
         const SizedBox(width: 16),
         Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
           Text('$_userStreak-DAY STREAK',
@@ -223,13 +223,13 @@ class _DailyChallengesScreenState extends State<DailyChallengesScreen>
         Row(children: [
           Icon(done ? Icons.check_circle : Icons.radar, color: done ? const Color(0xFF38b000) : const Color(0xFF00b4d8)),
           const SizedBox(width: 8),
-          Text(done ? 'MISSION COMPLETE ✓' : 'PRIORITY MISSION',
+          Text(done ? 'MISSION COMPLETE ?' : 'PRIORITY MISSION',
               style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w700, letterSpacing: 1.5, fontSize: 11)),
           const Spacer(),
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
             decoration: const BoxDecoration(color: Color(0x33FFFFFF), borderRadius: BorderRadius.all(Radius.circular(20))),
-            child: Text('+${challenge.reward} ⬡', style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w700)),
+            child: Text('+${challenge.reward} ?', style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w700)),
           ),
         ]),
         const SizedBox(height: 12),
@@ -260,7 +260,7 @@ class _DailyChallengesScreenState extends State<DailyChallengesScreen>
               padding: const EdgeInsets.symmetric(vertical: 12),
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
             ),
-            child: Text(done ? 'DONE ✓' : 'MARK DONE',
+            child: Text(done ? 'DONE ?' : 'MARK DONE',
                 style: TextStyle(fontWeight: FontWeight.w700, color: done ? const Color(0xFF38b000) : Colors.white, letterSpacing: 0.5)),
           )),
         ]),
@@ -298,7 +298,7 @@ class _DailyChallengesScreenState extends State<DailyChallengesScreen>
                   Container(
                     padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                     decoration: BoxDecoration(color: Color.fromARGB(38, color.red, color.green, color.blue), borderRadius: BorderRadius.circular(10)),
-                    child: Text('+${challenge.reward} ⬡', style: TextStyle(color: color, fontSize: 12, fontWeight: FontWeight.w600)),
+                    child: Text('+${challenge.reward} ?', style: TextStyle(color: color, fontSize: 12, fontWeight: FontWeight.w600)),
                   ),
               ]),
               const SizedBox(height: 6),
@@ -375,12 +375,12 @@ class _DailyChallengesScreenState extends State<DailyChallengesScreen>
           Container(
             width: 60, height: 60,
             decoration: const BoxDecoration(color: Color(0x339d4edd), shape: BoxShape.circle, border: Border.fromBorderSide(BorderSide(color: Color(0xFF9d4edd)))),
-            child: const Center(child: Text('⬡', style: TextStyle(fontSize: 28, color: Color(0xFF9d4edd)))),
+            child: const Center(child: Text('?', style: TextStyle(fontSize: 28, color: Color(0xFF9d4edd)))),
           ),
           const SizedBox(width: 16),
           Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
             const Text('ZENO', style: TextStyle(fontSize: 22, fontWeight: FontWeight.w800, color: Colors.white, letterSpacing: 2)),
-            const Text('Neural AI Opponent · Future Entity', style: TextStyle(color: Color(0xB39d4edd), fontSize: 12)),
+            const Text('Neural AI Opponent � Future Entity', style: TextStyle(color: Color(0xB39d4edd), fontSize: 12)),
             const SizedBox(height: 4),
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
@@ -391,10 +391,10 @@ class _DailyChallengesScreenState extends State<DailyChallengesScreen>
         ]),
         const SizedBox(height: 16),
         Row(mainAxisAlignment: MainAxisAlignment.spaceAround, children: [
-          _statChip('🔥 ${_zeno.streak}', 'STREAK'),
-          _statChip('⬡ ${_zeno.points}', 'POINTS'),
-          _statChip('🧘 ${_zeno.sessionsToday}', 'TODAY'),
-          _statChip('🌱 ${_zeno.plantsGrown}', 'PLANTS'),
+          _statChip('?? ${_zeno.streak}', 'STREAK'),
+          _statChip('? ${_zeno.points}', 'POINTS'),
+          _statChip('?? ${_zeno.sessionsToday}', 'TODAY'),
+          _statChip('?? ${_zeno.plantsGrown}', 'PLANTS'),
         ]),
       ]),
     );
@@ -420,7 +420,7 @@ class _DailyChallengesScreenState extends State<DailyChallengesScreen>
         border: Border.fromBorderSide(BorderSide(color: Color(0x339d4edd))),
       ),
       child: Column(children: [
-        const Text('NEURAL COMBAT · HEAD TO HEAD',
+        const Text('NEURAL COMBAT � HEAD TO HEAD',
             style: TextStyle(color: Colors.white, fontWeight: FontWeight.w800, letterSpacing: 1.5, fontSize: 12)),
         const SizedBox(height: 16),
         const Row(children: [
@@ -481,7 +481,7 @@ class _DailyChallengesScreenState extends State<DailyChallengesScreen>
             padding: const EdgeInsets.all(16),
             child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
               Row(children: [
-                const Text('⚡', style: TextStyle(fontSize: 20)),
+                const Text('?', style: TextStyle(fontSize: 20)),
                 const SizedBox(width: 10),
                 Expanded(child: Text(challenge.title, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w700, fontSize: 15))),
                 Container(
@@ -491,7 +491,7 @@ class _DailyChallengesScreenState extends State<DailyChallengesScreen>
                     borderRadius: BorderRadius.circular(10),
                     border: Border.all(color: winning ? const Color(0x6638b000) : const Color(0x66FF4444)),
                   ),
-                  child: Text(winning ? '🏆 WINNING' : '⚠ LOSING',
+                  child: Text(winning ? '?? WINNING' : '? LOSING',
                       style: TextStyle(color: winning ? const Color(0xFF38b000) : const Color(0xFFFF4444), fontSize: 11, fontWeight: FontWeight.w700, letterSpacing: 0.5)),
                 ),
               ]),
@@ -521,7 +521,7 @@ class _DailyChallengesScreenState extends State<DailyChallengesScreen>
                     padding: const EdgeInsets.symmetric(vertical: 10),
                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
                   ),
-                  child: Text(done ? 'DEFEATED ✓' : 'BEAT ZENO (+${challenge.reward} ⬡)',
+                  child: Text(done ? 'DEFEATED ?' : 'BEAT ZENO (+${challenge.reward} ?)',
                       style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w700, fontSize: 11)),
                 )),
               ]),
@@ -597,7 +597,7 @@ class _DailyChallengesScreenState extends State<DailyChallengesScreen>
           child: Column(mainAxisSize: MainAxisSize.min, children: [
             const Text('MISSION COMPLETE', style: TextStyle(color: Colors.white, fontWeight: FontWeight.w800, letterSpacing: 2, fontSize: 16), textAlign: TextAlign.center),
             const SizedBox(height: 16),
-            const Text('🏆', style: TextStyle(fontSize: 56)),
+            const Text('??', style: TextStyle(fontSize: 56)),
             const SizedBox(height: 12),
             Text('+${challenge.reward} CREDITS EARNED',
                 style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w700, color: Color(0xFFFFD700), letterSpacing: 1)),
@@ -630,10 +630,10 @@ class _DailyChallengesScreenState extends State<DailyChallengesScreen>
           ),
           padding: const EdgeInsets.fromLTRB(24, 24, 24, 16),
           child: Column(mainAxisSize: MainAxisSize.min, children: [
-            Text(won ? 'ZENO DEFEATED 🏆' : 'ZENO WINS THIS ROUND',
+            Text(won ? 'ZENO DEFEATED ??' : 'ZENO WINS THIS ROUND',
                 style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w800, letterSpacing: 1, fontSize: 16), textAlign: TextAlign.center),
             const SizedBox(height: 16),
-            Text(won ? '🎉' : '⚡', style: const TextStyle(fontSize: 56)),
+            Text(won ? '??' : '?', style: const TextStyle(fontSize: 56)),
             const SizedBox(height: 12),
             Text(won ? '+${challenge.reward} CREDITS!' : 'CONTINUE TRAINING',
                 style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700,

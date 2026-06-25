@@ -1,8 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:firebase_auth/firebase_auth.dart';
-import 'package:mindfulness_garden/core/services/auth_service.dart';
-import 'package:mindfulness_garden/data/models/user_model.dart';
-import 'package:mindfulness_garden/data/local_storage/local_storage_service.dart';
+import 'package:pranaverse/core/services/auth_service.dart';
+import 'package:pranaverse/data/models/user_model.dart';
+import 'package:pranaverse/data/local_storage/local_storage_service.dart';
 
 class AuthProvider extends ChangeNotifier {
   final AuthService _authService = AuthService();
@@ -10,7 +9,7 @@ class AuthProvider extends ChangeNotifier {
   UserModel? _user;
   bool _isLoading = false;
   String? _error;
-  bool _isEmailVerified = false;
+  bool _isEmailVerified = true; // Backend assumes verified
 
   // Getters
   UserModel? get user => _user;
@@ -18,7 +17,7 @@ class AuthProvider extends ChangeNotifier {
   String? get error => _error;
   bool get isAuthenticated => _authService.isAuthenticated;
   bool get isEmailVerified => _isEmailVerified;
-  User? get firebaseUser => _authService.currentUser;
+  String? get currentUserId => _authService.currentUserId;
 
   AuthProvider() {
     _initialize();
@@ -26,11 +25,13 @@ class AuthProvider extends ChangeNotifier {
 
   /// Initialize auth state listener
   void _initialize() {
-    _authService.authStateChanges.listen((firebaseUser) async {
-      if (firebaseUser != null) {
-        // User is signed in
-        _user = AuthService.userModelFromFirebaseUser(firebaseUser);
-        _isEmailVerified = firebaseUser.emailVerified;
+    _authService.authStateChanges.listen((userId) async {
+      if (userId != null) {
+        // Load user from local storage or create default
+        _user = await LocalStorageService.getUser();
+        if (_user == null) {
+          _user = AuthService.userModelFromBackendUser(userId, 'User');
+        }
 
         // Save to local storage
         await LocalStorageService.saveUser(_user!);
@@ -40,7 +41,7 @@ class AuthProvider extends ChangeNotifier {
         // User is signed out
         _user = null;
         _isEmailVerified = false;
-        await LocalStorageService.deleteUser();
+        // Don't call deleteUser here - handled by core/auth_provider to avoid duplicates
 
         if (_isLoading == false) notifyListeners();
       }
@@ -57,17 +58,14 @@ class AuthProvider extends ChangeNotifier {
     _error = null;
 
     try {
-      await _authService.signUp(
+      final success = await _authService.signUp(
         email: email,
         password: password,
         displayName: displayName,
       );
 
-      // Create local user model
-      final firebaseUser = _authService.currentUser;
-      if (firebaseUser != null) {
-        _user = AuthService.userModelFromFirebaseUser(firebaseUser)
-            .copyWith(name: displayName);
+      if (success) {
+        _user = AuthService.userModelFromBackendUser(email, displayName);
         await LocalStorageService.saveUser(_user!);
       }
 
@@ -86,15 +84,13 @@ class AuthProvider extends ChangeNotifier {
     _error = null;
 
     try {
-      await _authService.signIn(
+      final success = await _authService.signIn(
         email: email,
         password: password,
       );
 
-      // Create local user model
-      final firebaseUser = _authService.currentUser;
-      if (firebaseUser != null) {
-        _user = AuthService.userModelFromFirebaseUser(firebaseUser);
+      if (success) {
+        _user = AuthService.userModelFromBackendUser(email, email.split('@')[0]);
         await LocalStorageService.saveUser(_user!);
       }
 
@@ -179,15 +175,13 @@ class AuthProvider extends ChangeNotifier {
 
   /// Reload user data
   Future<void> reloadUser() async {
-    final firebaseUser = _authService.currentUser;
-    if (firebaseUser != null) {
-      await firebaseUser.reload();
-      _isEmailVerified = firebaseUser.emailVerified;
-
-      _user = AuthService.userModelFromFirebaseUser(firebaseUser)
-          .copyWith(name: _user?.name ?? firebaseUser.displayName);
-      await LocalStorageService.saveUser(_user!);
-      notifyListeners();
+    final userId = _authService.currentUserId;
+    if (userId != null) {
+      _user = await LocalStorageService.getUser();
+      if (_user != null) {
+        await LocalStorageService.saveUser(_user!);
+        notifyListeners();
+      }
     }
   }
 

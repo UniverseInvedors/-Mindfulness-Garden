@@ -1,5 +1,4 @@
 import 'package:hive/hive.dart';
-import 'package:path_provider/path_provider.dart';
 import 'package:flutter/foundation.dart';
 import 'dart:math' as math;
 import 'dart:convert';
@@ -47,12 +46,6 @@ class LocalStorageService {
         print('🌱 Planting storage seeds...');
       }
 
-      // Get application documents directory
-      final appDocumentDir = await getApplicationDocumentsDirectory();
-
-      // Initialize Hive with custom path
-      Hive.init(appDocumentDir.path);
-
       // Register adapters with unique typeIds
       await _registerAdapters();
 
@@ -69,7 +62,6 @@ class LocalStorageService {
         print('  🧘 Sessions: ${_sessionsBoxInstance.length}');
         print('  😊 Moods: ${_moodsBoxInstance.length}');
         print('  🏆 Achievements: ${_achievementsBoxInstance.length}');
-        print('  📍 Storage Path: ${appDocumentDir.path}');
       }
 
       // Perform initial compaction if needed
@@ -176,20 +168,12 @@ class LocalStorageService {
         print('⚠️ Box $boxName opening failed: $error');
       }
 
-      try {
-        // Try to delete corrupted box
-        await Hive.deleteBoxFromDisk(boxName);
-
-        // Open fresh box
-        return await Hive.openBox<T>(boxName);
-      } catch (recoveryError) {
-        if (kDebugMode) {
-          print('❌ Box $boxName recovery failed: $recoveryError');
-        }
-
-        // Last resort: in-memory box
-        return await Hive.openBox<T>(boxName, path: null);
+      if (kDebugMode) {
+        debugPrint(
+          'Box $boxName could not be opened. User data was preserved.',
+        );
       }
+      rethrow;
     }
   }
 
@@ -205,12 +189,12 @@ class LocalStorageService {
         compactionStrategy: (entries, deletedEntries) => deletedEntries > 50,
       );
     } catch (error) {
-      try {
-        await Hive.deleteBoxFromDisk(boxName);
-        return await Hive.openBox(boxName);
-      } catch (recoveryError) {
-        return await Hive.openBox(boxName, path: null);
+      if (kDebugMode) {
+        debugPrint(
+          'Box $boxName could not be opened. User data was preserved.',
+        );
       }
+      rethrow;
     }
   }
 

@@ -1,11 +1,11 @@
 // lib/features/breathing/exercises/diaphragmatic_breathing_screen.dart
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-import 'package:mindfulness_garden/core/services/audio_service.dart';
-import 'package:mindfulness_garden/core/services/tts_service.dart';
-import 'package:mindfulness_garden/core/services/ad_service.dart';
-import 'package:mindfulness_garden/core/widgets/exercise_scene_shell.dart';
-import 'package:mindfulness_garden/core/widgets/meditation_scene_widget.dart';
+import 'package:pranaverse/core/services/audio_service.dart';
+import 'package:pranaverse/core/services/tts_service.dart';
+import 'package:pranaverse/core/services/ad_service.dart';
+import 'package:pranaverse/core/widgets/exercise_scene_shell.dart';
+import 'package:pranaverse/core/widgets/meditation_scene_widget.dart';
 import 'dart:async';
 
 class DiaphragmaticBreathingScreen extends StatefulWidget {

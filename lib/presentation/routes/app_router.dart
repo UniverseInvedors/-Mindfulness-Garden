@@ -1,35 +1,38 @@
 // lib/presentation/routes/app_router.dart - COMPLETE VERSION
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-import 'package:mindfulness_garden/presentation/screens/splash_screen.dart';
-import 'package:mindfulness_garden/presentation/screens/main_menu.dart';
-import 'package:mindfulness_garden/features/dashboard/dashboard_screen.dart';
-import 'package:mindfulness_garden/features/breathing/breathing_menu_screen.dart';
-import 'package:mindfulness_garden/features/breathing/exercises/box_breathing_screen.dart';
-import 'package:mindfulness_garden/features/breathing/exercises/breathing_478_screen.dart';
-import 'package:mindfulness_garden/features/breathing/exercises/breath_awareness_screen.dart';
-import 'package:mindfulness_garden/features/breathing/exercises/zeno_breathing_screen.dart';
-import 'package:mindfulness_garden/features/breathing/exercises/alternate_nostril_screen.dart';
-import 'package:mindfulness_garden/features/breathing/exercises/diaphragmatic_breathing_screen.dart';
-import 'package:mindfulness_garden/features/garden/garden_screen.dart';
-import 'package:mindfulness_garden/features/mood_tracker/mood_tracker_screen.dart';
-import 'package:mindfulness_garden/features/progress/progress_screen.dart';
-import 'package:mindfulness_garden/features/meditation/guided_meditation_screen.dart';
-import 'package:mindfulness_garden/features/meditation/audio_meditation_screen.dart';
-import 'package:mindfulness_garden/features/sleep/sleep_tracking_screen.dart';
-import 'package:mindfulness_garden/features/sound_therapy/sound_therapy_screen.dart';
-import 'package:mindfulness_garden/features/music/meditation_music_screen.dart';
-import 'package:mindfulness_garden/features/brainwaves/binaural_beats_screen.dart';
-import 'package:mindfulness_garden/features/challenges/daily_challenges_screen.dart';
-import 'package:mindfulness_garden/features/achievements/achievements_screen.dart';
-import 'package:mindfulness_garden/features/ai_coach/ai_coach_screen.dart';
-import 'package:mindfulness_garden/features/biometrics/heart_rate_screen.dart';
-import 'package:mindfulness_garden/features/community/friends_screen.dart';
-import 'package:mindfulness_garden/features/subscription/subscription_screen.dart';
-import 'package:mindfulness_garden/features/settings/settings_screen.dart';
-import 'package:mindfulness_garden/features/yoga/yoga_scene_screen.dart';
-import 'package:mindfulness_garden/features/profile/profile_screen.dart';
-import 'package:mindfulness_garden/features/auth/auth_screen.dart';
+import 'package:pranaverse/presentation/screens/splash_screen.dart';
+import 'package:pranaverse/presentation/screens/main_menu.dart';
+import 'package:pranaverse/features/dashboard/dashboard_screen.dart';
+import 'package:pranaverse/features/breathing/breathing_menu_screen.dart';
+import 'package:pranaverse/features/breathing/exercises/box_breathing_screen.dart';
+import 'package:pranaverse/features/breathing/exercises/breathing_478_screen.dart';
+import 'package:pranaverse/features/breathing/exercises/breath_awareness_screen.dart';
+import 'package:pranaverse/features/breathing/exercises/zeno_breathing_screen.dart';
+import 'package:pranaverse/features/breathing/exercises/alternate_nostril_screen.dart';
+import 'package:pranaverse/features/breathing/exercises/diaphragmatic_breathing_screen.dart';
+import 'package:pranaverse/features/garden/garden_screen.dart';
+import 'package:pranaverse/features/mood_tracker/mood_tracker_screen.dart';
+import 'package:pranaverse/features/progress/progress_screen.dart';
+import 'package:pranaverse/presentation/screens/analytics_screen.dart';
+import 'package:pranaverse/features/meditation/guided_meditation_screen.dart';
+import 'package:pranaverse/features/meditation/audio_meditation_screen.dart';
+import 'package:pranaverse/features/sleep/sleep_tracking_screen.dart';
+import 'package:pranaverse/features/sound_therapy/sound_therapy_screen.dart';
+import 'package:pranaverse/features/music/meditation_music_screen.dart';
+import 'package:pranaverse/features/brainwaves/binaural_beats_screen.dart';
+import 'package:pranaverse/features/challenges/daily_challenges_screen.dart';
+import 'package:pranaverse/features/achievements/achievements_screen.dart';
+import 'package:pranaverse/features/ai_coach/ai_coach_screen.dart';
+import 'package:pranaverse/features/biometrics/heart_rate_screen.dart';
+import 'package:pranaverse/features/community/friends_screen.dart';
+import 'package:pranaverse/features/subscription/subscription_screen.dart';
+import 'package:pranaverse/features/settings/settings_screen.dart';
+import 'package:pranaverse/features/yoga/yoga_scene_screen.dart';
+import 'package:pranaverse/features/profile/profile_screen.dart';
+import 'package:pranaverse/features/auth/auth_screen.dart';
+import 'package:pranaverse/features/scenes/scene_manager.dart';
 
 class AppRouter {
   static final GlobalKey<NavigatorState> rootNavigatorKey =
@@ -38,8 +41,13 @@ class AppRouter {
   static final GoRouter router = GoRouter(
     navigatorKey: rootNavigatorKey,
     initialLocation: '/splash',
-    debugLogDiagnostics: true,
+    debugLogDiagnostics: kDebugMode,
     routes: [
+      GoRoute(
+        path: '/analytics',
+        name: 'analytics',
+        builder: (context, state) => const AnalyticsScreen(),
+      ),
       // Splash screen
       GoRoute(
         path: '/splash',
@@ -189,6 +197,10 @@ class AppRouter {
         path: '/breathing/zeno',
         name: 'zeno-breathing',
         pageBuilder: (context, state) {
+          if (kDebugMode) {
+            debugPrint(
+                'ROUTER: Building ZenoBreathingScreen for /breathing/zeno');
+          }
           return CustomTransitionPage<void>(
             key: state.pageKey,
             child: const ZenoBreathingScreen(),
@@ -376,6 +388,12 @@ class AppRouter {
             },
           );
         },
+      ),
+
+      GoRoute(
+        path: '/scenes',
+        name: 'scenes',
+        builder: (context, state) => const SceneManager(),
       ),
 
       // ===== SLEEP =====

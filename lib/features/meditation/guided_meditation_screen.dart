@@ -1,20 +1,31 @@
 import 'package:chewie/chewie.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-import 'package:mindfulness_garden/core/services/ad_service.dart';
-import 'package:mindfulness_garden/core/services/audio_service.dart';
-import 'package:mindfulness_garden/core/services/tts_service.dart';
-import 'package:mindfulness_garden/core/widgets/meditation_scene_widget.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:pranaverse/core/services/ad_service.dart';
+import 'package:pranaverse/core/services/audio_service.dart';
+import 'package:pranaverse/core/services/tts_service.dart';
+import 'package:pranaverse/core/widgets/meditation_scene_widget.dart';
+import 'package:pranaverse/core/widgets/character/teacher_personality.dart';
 import 'package:video_player/video_player.dart';
 
-class GuidedMeditationScreen extends StatefulWidget {
+class GuidedMeditationScreen extends ConsumerWidget {
   const GuidedMeditationScreen({super.key});
 
   @override
-  State<GuidedMeditationScreen> createState() => _GuidedMeditationScreenState();
+  Widget build(BuildContext context, WidgetRef ref) {
+    return _GuidedMeditationContent();
+  }
 }
 
-class _GuidedMeditationScreenState extends State<GuidedMeditationScreen>
+class _GuidedMeditationContent extends StatefulWidget {
+  const _GuidedMeditationContent();
+
+  @override
+  State<_GuidedMeditationContent> createState() => _GuidedMeditationContentState();
+}
+
+class _GuidedMeditationContentState extends State<_GuidedMeditationContent>
     with TickerProviderStateMixin {
   VideoPlayerController? _videoController;
   ChewieController? _chewieController;
@@ -329,14 +340,20 @@ class _GuidedMeditationScreenState extends State<GuidedMeditationScreen>
     return Stack(
       fit: StackFit.expand,
       children: [
-        MeditationSceneWidget(
-          breathPhase: _isLoading ? BreathPhase.idle : BreathPhase.inhale,
-          pose: ZenoPose.lotus,
-          environment: SceneEnvironment.zenTemple,
-          timeOfDay: SceneTimeOfDay.dawn,
-          instruction: session['tts'],
-          isActive: !_isLoading,
-          height: double.infinity,
+        Consumer(
+          builder: (context, ref, _) {
+            final themeSettings = ref.watch(themePreferenceProvider);
+            return MeditationSceneWidget(
+              breathPhase: _isLoading ? BreathPhase.idle : BreathPhase.inhale,
+              pose: ZenoPose.lotus,
+              environment: themeSettings.environment,
+              teacher: ref.watch(teacherPreferenceProvider),
+              timeOfDay: themeSettings.timeOfDay,
+              instruction: session['tts'],
+              isActive: !_isLoading,
+              height: double.infinity,
+            );
+          },
         ),
         Positioned(
           right: 14,

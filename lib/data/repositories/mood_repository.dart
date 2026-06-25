@@ -1,8 +1,8 @@
 import 'package:uuid/uuid.dart';
 import 'package:flutter/foundation.dart';
 
-import 'package:mindfulness_garden/data/local_storage/local_storage_service.dart';
-import 'package:mindfulness_garden/data/models/mood_model.dart';
+import 'package:pranaverse/data/local_storage/local_storage_service.dart';
+import 'package:pranaverse/data/models/mood_model.dart';
 
 class MoodRepository {
   final Uuid _uuid = const Uuid();

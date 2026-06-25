@@ -1,9 +1,12 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:go_router/go_router.dart';
 import 'dart:async';
-import 'package:mindfulness_garden/data/local_storage/local_storage_service.dart';
-import 'package:mindfulness_garden/presentation/providers/user_provider.dart';
+import 'package:pranaverse/data/local_storage/local_storage_service.dart';
+import 'package:pranaverse/presentation/providers/user_provider.dart';
+import 'package:pranaverse/core/utils/responsive_helper.dart';
+import 'package:pranaverse/core/widgets/glassmorphism/glass_container.dart';
 
 class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});
@@ -58,10 +61,10 @@ class _SplashScreenState extends State<SplashScreen>
       duration: const Duration(milliseconds: 2000),
       vsync: this,
     )..addStatusListener((status) {
-      if (status == AnimationStatus.completed) {
-        _mainController?.repeat(reverse: true);
-      }
-    });
+        if (status == AnimationStatus.completed) {
+          _mainController?.repeat(reverse: true);
+        }
+      });
 
     // Initialize animations
     _fadeInAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
@@ -86,8 +89,8 @@ class _SplashScreenState extends State<SplashScreen>
     );
 
     _backgroundGradientAnimation = ColorTween(
-      begin: const Color(0xFF0A192F),
-      end: const Color(0xFF1A365D),
+      begin: const Color(0xFF1A1A2E),
+      end: const Color(0xFF16213E),
     ).animate(_mainController!);
 
     _textColorAnimation = ColorTween(
@@ -220,7 +223,9 @@ class _SplashScreenState extends State<SplashScreen>
   }
 
   void _handleError(dynamic error) {
-    print('🌱 Splash screen error: $error');
+    if (kDebugMode) {
+      debugPrint('Splash screen error: $error');
+    }
 
     if (!_disposed && mounted) {
       setState(() {
@@ -404,11 +409,13 @@ class _SplashScreenState extends State<SplashScreen>
   @override
   Widget build(BuildContext context) {
     final size = MediaQuery.of(context).size;
+    final isMobile = ResponsiveHelper.isMobile(context);
+    final isDesktop = ResponsiveHelper.isDesktop(context);
 
     // Show loading until animations are initialized
     if (!_isInitialized) {
       return Scaffold(
-        backgroundColor: const Color(0xFF0A192F),
+        backgroundColor: const Color(0xFF1A1A2E),
         body: Center(
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
@@ -429,275 +436,457 @@ class _SplashScreenState extends State<SplashScreen>
     }
 
     return Scaffold(
-      backgroundColor: const Color(0xFF0A192F),
+      backgroundColor: const Color(0xFF1A1A2E),
       body: AnimatedBuilder(
         animation: _mainController!,
         builder: (context, child) {
           return Stack(
             children: [
-              // Background gradient
+              // Background gradient with modern colors
               Positioned.fill(
                 child: Container(
                   decoration: BoxDecoration(
-                    gradient: RadialGradient(
-                      center: Alignment.center,
-                      radius: 1.5,
+                    gradient: LinearGradient(
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
                       colors: [
-                        _backgroundGradientAnimation?.value ??
-                            const Color(0xFF0A192F),
-                        Colors.transparent,
+                        const Color(0xFF1A1A2E),
+                        const Color(0xFF16213E),
+                        const Color(0xFF0F3460),
                       ],
-                      stops: const [0.0, 1.0],
                     ),
                   ),
                 ),
               ),
 
-              // Main content with enhanced layout for new icon
+              // Decorative gradient circles
+              Positioned(
+                top: -size.height * 0.2,
+                right: -size.width * 0.2,
+                child: Container(
+                  width: size.width * 0.6,
+                  height: size.width * 0.6,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    gradient: RadialGradient(
+                      colors: [
+                        const Color(0xFF9D4EDD).withOpacity(0.3),
+                        Colors.transparent,
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+
+              Positioned(
+                bottom: -size.height * 0.2,
+                left: -size.width * 0.2,
+                child: Container(
+                  width: size.width * 0.5,
+                  height: size.width * 0.5,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    gradient: RadialGradient(
+                      colors: [
+                        const Color(0xFF00B4D8).withOpacity(0.2),
+                        Colors.transparent,
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+
+              // Main content with glassmorphism
               Center(
                 child: Opacity(
                   opacity: _fadeInAnimation?.value ?? 1.0,
                   child: Transform.scale(
                     scale: _scaleAnimation?.value ?? 1.0,
-                    child: Container(
-                      width: size.width * 0.95,
-                      constraints: const BoxConstraints(maxWidth: 550),
-                      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 40),
-                      decoration: BoxDecoration(
-                        borderRadius: BorderRadius.circular(40),
-                        gradient: LinearGradient(
-                          begin: Alignment.topLeft,
-                          end: Alignment.bottomRight,
-                          colors: [
-                            Colors.white.withOpacity(0.08),
-                            Colors.white.withOpacity(0.03),
-                          ],
-                        ),
-                        border: Border.all(
-                          color: Colors.white.withOpacity(0.1),
-                          width: 1.5,
-                        ),
+                    child: GlassContainer(
+                      width: isDesktop
+                          ? ResponsiveHelper.getMaxContentWidth(context)
+                          : size.width * 0.95,
+                      height: isDesktop ? size.height * 0.7 : size.height * 0.8,
+                      padding: EdgeInsets.symmetric(
+                        horizontal: ResponsiveHelper.getResponsivePadding(
+                            context,
+                            mobilePadding: 24),
+                        vertical: ResponsiveHelper.getResponsivePadding(context,
+                            mobilePadding: 40),
                       ),
-                      child: Column(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          // Centered Icon Display - Prominent
-                          Transform.scale(
-                            scale: _logoScaleAnimation?.value ?? 0.0,
-                            child: Container(
-                              width: 240,
-                              height: 240,
-                              decoration: BoxDecoration(
-                                shape: BoxShape.circle,
-                                boxShadow: [
-                                  BoxShadow(
-                                    color: Colors.white.withOpacity(0.1),
-                                    blurRadius: 40,
-                                    spreadRadius: 10,
+                      borderRadius: BorderRadius.circular(
+                          ResponsiveHelper.getResponsiveBorderRadius(context,
+                              mobileRadius: 32)),
+                      blur: 20,
+                      opacity: 0.15,
+                      gradient: LinearGradient(
+                        colors: [
+                          const Color(0xFF9D4EDD).withOpacity(0.3),
+                          const Color(0xFF00B4D8).withOpacity(0.2),
+                        ],
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                      ),
+                      child: SingleChildScrollView(
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          crossAxisAlignment: CrossAxisAlignment.center,
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            // Centered Icon Display - Prominent
+                            Transform.scale(
+                              scale: _logoScaleAnimation?.value ?? 0.0,
+                              child: Container(
+                                width: ResponsiveHelper
+                                    .getResponsiveContainerWidth(context,
+                                        mobileWidth: 200,
+                                        tabletWidth: 240,
+                                        desktopWidth: 280),
+                                height: ResponsiveHelper
+                                    .getResponsiveContainerHeight(context,
+                                        mobileHeight: 200,
+                                        tabletHeight: 240,
+                                        desktopHeight: 280),
+                                decoration: BoxDecoration(
+                                  shape: BoxShape.circle,
+                                  gradient: LinearGradient(
+                                    colors: [
+                                      const Color(0xFF9D4EDD).withOpacity(0.4),
+                                      const Color(0xFF00B4D8).withOpacity(0.3),
+                                    ],
+                                    begin: Alignment.topLeft,
+                                    end: Alignment.bottomRight,
                                   ),
-                                  BoxShadow(
-                                    color: const Color(0xFF4CAF50).withOpacity(0.2),
-                                    blurRadius: 30,
-                                    spreadRadius: 5,
+                                  boxShadow: [
+                                    BoxShadow(
+                                      color: const Color(0xFF9D4EDD)
+                                          .withOpacity(0.3),
+                                      blurRadius: 30,
+                                      spreadRadius: 5,
+                                    ),
+                                    BoxShadow(
+                                      color: const Color(0xFF00B4D8)
+                                          .withOpacity(0.2),
+                                      blurRadius: 20,
+                                      spreadRadius: 3,
+                                    ),
+                                  ],
+                                ),
+                                child: Padding(
+                                  padding: const EdgeInsets.all(20),
+                                  child: Image.asset(
+                                    'assets/images/mindful_garden_icon.png',
+                                    fit: BoxFit.contain,
+                                    errorBuilder: (_, __, ___) => Container(
+                                      decoration: const BoxDecoration(
+                                        shape: BoxShape.circle,
+                                        gradient: LinearGradient(
+                                          begin: Alignment.topLeft,
+                                          end: Alignment.bottomRight,
+                                          colors: [
+                                            Color(0xFF4CAF50),
+                                            Color(0xFF2E7D32),
+                                          ],
+                                        ),
+                                      ),
+                                      child: Icon(
+                                        Icons.spa,
+                                        size: 100,
+                                        color: Colors.white.withOpacity(0.9),
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ),
+
+                            SizedBox(
+                                height: ResponsiveHelper.getResponsiveSpacing(
+                                    context,
+                                    mobileSpacing: 40)),
+
+                            // App name
+                            SlideTransition(
+                              position: _slideAnimation ??
+                                  AlwaysStoppedAnimation(Offset.zero),
+                              child: Text(
+                                'MINDFULNESS\nGARDEN',
+                                textAlign: TextAlign.center,
+                                style: TextStyle(
+                                  fontSize:
+                                      ResponsiveHelper.getResponsiveFontSize(
+                                          context,
+                                          mobileSize: 36,
+                                          tabletSize: 42,
+                                          desktopSize: 48),
+                                  fontWeight: FontWeight.w900,
+                                  color: Colors.white,
+                                  letterSpacing: 3,
+                                  height: 1.2,
+                                  shadows: [
+                                    Shadow(
+                                      color: const Color(0xFF9D4EDD)
+                                          .withOpacity(0.5),
+                                      blurRadius: 20,
+                                      offset: const Offset(0, 2),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
+
+                            SizedBox(
+                                height: ResponsiveHelper.getResponsiveSpacing(
+                                    context,
+                                    mobileSpacing: 24)),
+
+                            // Tagline
+                            AnimatedOpacity(
+                              opacity: _showWelcomeText ? 1.0 : 0.0,
+                              duration: const Duration(milliseconds: 800),
+                              curve: Curves.easeOut,
+                              child: Column(
+                                children: [
+                                  Text(
+                                    'Playful Garden Journey',
+                                    style: TextStyle(
+                                      fontSize: ResponsiveHelper
+                                          .getResponsiveFontSize(context,
+                                              mobileSize: 18,
+                                              tabletSize: 20,
+                                              desktopSize: 24),
+                                      color: _textColorAnimation?.value ??
+                                          Colors.white,
+                                      fontStyle: FontStyle.italic,
+                                      fontWeight: FontWeight.w300,
+                                      letterSpacing: 1.5,
+                                    ),
+                                  ),
+                                  SizedBox(
+                                      height:
+                                          ResponsiveHelper.getResponsiveSpacing(
+                                              context,
+                                              mobileSpacing: 8)),
+                                  Text(
+                                    'Grow calm adventures with every step',
+                                    style: TextStyle(
+                                      fontSize: ResponsiveHelper
+                                          .getResponsiveFontSize(context,
+                                              mobileSize: 14,
+                                              tabletSize: 16,
+                                              desktopSize: 18),
+                                      color: Colors.white.withOpacity(0.8),
+                                    ),
                                   ),
                                 ],
                               ),
-                              child: Padding(
-                                padding: const EdgeInsets.all(10),
-                                child: Image.asset(
-                                  'assets/images/mindful_garden_icon.png',
-                                  fit: BoxFit.contain,
-                                  errorBuilder: (_, __, ___) => Container(
-                                    decoration: const BoxDecoration(
-                                      shape: BoxShape.circle,
-                                      gradient: LinearGradient(
-                                        begin: Alignment.topLeft,
-                                        end: Alignment.bottomRight,
-                                        colors: [
-                                          Color(0xFF4CAF50),
-                                          Color(0xFF2E7D32),
+                            ),
+
+                            SizedBox(
+                                height: ResponsiveHelper.getResponsiveSpacing(
+                                    context,
+                                    mobileSpacing: 48)),
+
+                            // Loading section
+                            AnimatedOpacity(
+                              opacity: _showProgressText ? 1.0 : 0.0,
+                              duration: const Duration(milliseconds: 800),
+                              child: GlassContainer(
+                                width: ResponsiveHelper
+                                    .getResponsiveContainerWidth(context,
+                                        mobileWidth: 280,
+                                        tabletWidth: 320,
+                                        desktopWidth: 360),
+                                padding: EdgeInsets.all(
+                                  ResponsiveHelper.getResponsivePadding(context,
+                                      mobilePadding: 20),
+                                ),
+                                borderRadius: BorderRadius.circular(
+                                    ResponsiveHelper.getResponsiveBorderRadius(
+                                        context,
+                                        mobileRadius: 20)),
+                                blur: 15,
+                                opacity: 0.1,
+                                gradient: LinearGradient(
+                                  colors: [
+                                    const Color(0xFF9D4EDD).withOpacity(0.2),
+                                    const Color(0xFF00B4D8).withOpacity(0.1),
+                                  ],
+                                ),
+                                child: Column(
+                                  children: [
+                                    // Loading message
+                                    Text(
+                                      _loadingMessage,
+                                      style: TextStyle(
+                                        fontSize: ResponsiveHelper
+                                            .getResponsiveFontSize(context,
+                                                mobileSize: 14,
+                                                tabletSize: 16,
+                                                desktopSize: 18),
+                                        color: Colors.white.withOpacity(0.9),
+                                        fontStyle: FontStyle.italic,
+                                      ),
+                                    ),
+
+                                    SizedBox(
+                                        height: ResponsiveHelper
+                                            .getResponsiveSpacing(context,
+                                                mobileSpacing: 20)),
+
+                                    // Progress bar
+                                    Container(
+                                      width: ResponsiveHelper
+                                          .getResponsiveContainerWidth(context,
+                                              mobileWidth: 200,
+                                              tabletWidth: 250,
+                                              desktopWidth: 300),
+                                      height: ResponsiveHelper
+                                          .getResponsiveContainerHeight(context,
+                                              mobileHeight: 6,
+                                              tabletHeight: 7,
+                                              desktopHeight: 8),
+                                      decoration: BoxDecoration(
+                                        color: Colors.white.withOpacity(0.1),
+                                        borderRadius: BorderRadius.circular(3),
+                                      ),
+                                      child: Stack(
+                                        children: [
+                                          // Progress bar
+                                          AnimatedContainer(
+                                            duration: const Duration(
+                                                milliseconds: 200),
+                                            width: ResponsiveHelper
+                                                    .getResponsiveContainerWidth(
+                                                        context,
+                                                        mobileWidth: 200,
+                                                        tabletWidth: 250,
+                                                        desktopWidth: 300) *
+                                                (_loadingProgress / 100),
+                                            decoration: BoxDecoration(
+                                              borderRadius:
+                                                  BorderRadius.circular(3),
+                                              gradient: LinearGradient(
+                                                colors: _isLoadingComplete
+                                                    ? [
+                                                        const Color(0xFF4CAF50),
+                                                        const Color(0xFF2E7D32),
+                                                      ]
+                                                    : [
+                                                        const Color(0xFF9D4EDD),
+                                                        const Color(0xFF00B4D8),
+                                                      ],
+                                              ),
+                                              boxShadow: [
+                                                BoxShadow(
+                                                  color: const Color(0xFF9D4EDD)
+                                                      .withOpacity(0.3),
+                                                  blurRadius: 10,
+                                                  spreadRadius: 2,
+                                                ),
+                                              ],
+                                            ),
+                                          ),
                                         ],
                                       ),
                                     ),
-                                    child: Icon(
-                                      Icons.spa,
-                                      size: 100,
-                                      color: Colors.white.withOpacity(0.9),
+
+                                    SizedBox(
+                                        height: ResponsiveHelper
+                                            .getResponsiveSpacing(context,
+                                                mobileSpacing: 12)),
+
+                                    // Progress percentage
+                                    Text(
+                                      '$_loadingProgress%',
+                                      style: TextStyle(
+                                        fontSize: ResponsiveHelper
+                                            .getResponsiveFontSize(context,
+                                                mobileSize: 12,
+                                                tabletSize: 14,
+                                                desktopSize: 16),
+                                        color: Colors.white.withOpacity(0.7),
+                                        fontWeight: FontWeight.w600,
+                                      ),
                                     ),
-                                  ),
+
+                                    SizedBox(
+                                        height: ResponsiveHelper
+                                            .getResponsiveSpacing(context,
+                                                mobileSpacing: 16)),
+
+                                    // Loading indicator
+                                    Container(
+                                      width: ResponsiveHelper
+                                          .getResponsiveContainerWidth(context,
+                                              mobileWidth: 50,
+                                              tabletWidth: 60,
+                                              desktopWidth: 70),
+                                      height: ResponsiveHelper
+                                          .getResponsiveContainerHeight(context,
+                                              mobileHeight: 50,
+                                              tabletHeight: 60,
+                                              desktopHeight: 70),
+                                      decoration: BoxDecoration(
+                                        shape: BoxShape.circle,
+                                        gradient: LinearGradient(
+                                          colors: [
+                                            Colors.white.withOpacity(0.1),
+                                            Colors.white.withOpacity(0.05),
+                                          ],
+                                        ),
+                                        border: Border.all(
+                                          color: Colors.white.withOpacity(0.2),
+                                          width: 2,
+                                        ),
+                                      ),
+                                      child: Stack(
+                                        alignment: Alignment.center,
+                                        children: [
+                                          // Animated checkmark or spinner
+                                          AnimatedSwitcher(
+                                            duration: const Duration(
+                                                milliseconds: 500),
+                                            child: _isLoadingComplete
+                                                ? Icon(
+                                                    Icons.check_circle,
+                                                    color:
+                                                        const Color(0xFF4CAF50),
+                                                    size: ResponsiveHelper
+                                                        .getResponsiveIconSize(
+                                                            context,
+                                                            mobileSize: 30,
+                                                            tabletSize: 35,
+                                                            desktopSize: 40),
+                                                  )
+                                                : RotationTransition(
+                                                    turns: Tween(
+                                                            begin: 0.0,
+                                                            end: 1.0)
+                                                        .animate(
+                                                            _mainController!),
+                                                    child: Icon(
+                                                      Icons.self_improvement,
+                                                      color: Colors.white
+                                                          .withOpacity(0.9),
+                                                      size: ResponsiveHelper
+                                                          .getResponsiveIconSize(
+                                                              context,
+                                                              mobileSize: 25,
+                                                              tabletSize: 30,
+                                                              desktopSize: 35),
+                                                    ),
+                                                  ),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                  ],
                                 ),
                               ),
                             ),
-                          ),
-
-                          const SizedBox(height: 40),
-
-                          // App name
-                          SlideTransition(
-                            position: _slideAnimation ?? AlwaysStoppedAnimation(Offset.zero),
-                            child: const Text(
-                              'MINDFULNESS\nGARDEN',
-                              textAlign: TextAlign.center,
-                              style: TextStyle(
-                                fontSize: 32,
-                                fontWeight: FontWeight.w900,
-                                color: Colors.white,
-                                letterSpacing: 2,
-                                height: 1.2,
-                              ),
-                            ),
-                          ),
-
-                          const SizedBox(height: 20),
-
-                          // Tagline
-                          AnimatedOpacity(
-                            opacity: _showWelcomeText ? 1.0 : 0.0,
-                            duration: const Duration(milliseconds: 800),
-                            curve: Curves.easeOut,
-                            child: Column(
-                              children: [
-                                Text(
-                                  'Playful Garden Journey',
-                                  style: TextStyle(
-                                    fontSize: 18,
-                                    color: _textColorAnimation?.value ??
-                                        Colors.white,
-                                    fontStyle: FontStyle.italic,
-                                    fontWeight: FontWeight.w300,
-                                    letterSpacing: 1.5,
-                                  ),
-                                ),
-                                const SizedBox(height: 8),
-                                Text(
-                                  'Grow calm adventures with every step',
-                                  style: TextStyle(
-                                    fontSize: 14,
-                                    color: Colors.white.withOpacity(0.8),
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-
-                          const SizedBox(height: 40),
-
-                          // Loading section
-                          AnimatedOpacity(
-                            opacity: _showProgressText ? 1.0 : 0.0,
-                            duration: const Duration(milliseconds: 800),
-                            child: Column(
-                              children: [
-                                // Loading message
-                                Text(
-                                  _loadingMessage,
-                                  style: TextStyle(
-                                    fontSize: 14,
-                                    color: Colors.white.withOpacity(0.9),
-                                    fontStyle: FontStyle.italic,
-                                  ),
-                                ),
-
-                                const SizedBox(height: 20),
-
-                                // Progress bar
-                                Container(
-                                  width: 200,
-                                  height: 4,
-                                  decoration: BoxDecoration(
-                                    color: Colors.white.withOpacity(0.1),
-                                    borderRadius: BorderRadius.circular(2),
-                                  ),
-                                  child: Stack(
-                                    children: [
-                                      // Progress bar
-                                      AnimatedContainer(
-                                        duration:
-                                        const Duration(milliseconds: 200),
-                                        width: 200 * (_loadingProgress / 100),
-                                        decoration: BoxDecoration(
-                                          borderRadius:
-                                          BorderRadius.circular(2),
-                                          gradient: LinearGradient(
-                                            colors: _isLoadingComplete
-                                                ? [
-                                              const Color(0xFF4CAF50),
-                                              const Color(0xFF2E7D32),
-                                            ]
-                                                : [
-                                              const Color(0xFF2196F3),
-                                              const Color(0xFF1976D2),
-                                            ],
-                                          ),
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                ),
-
-                                const SizedBox(height: 10),
-
-                                // Progress percentage
-                                Text(
-                                  '$_loadingProgress%',
-                                  style: TextStyle(
-                                    fontSize: 12,
-                                    color: Colors.white.withOpacity(0.7),
-                                    fontWeight: FontWeight.w600,
-                                  ),
-                                ),
-
-                                const SizedBox(height: 20),
-
-                                // Loading indicator
-                                Container(
-                                  width: 50,
-                                  height: 50,
-                                  decoration: BoxDecoration(
-                                    shape: BoxShape.circle,
-                                    gradient: LinearGradient(
-                                      colors: [
-                                        Colors.white.withOpacity(0.1),
-                                        Colors.white.withOpacity(0.05),
-                                      ],
-                                    ),
-                                    border: Border.all(
-                                      color: Colors.white.withOpacity(0.2),
-                                      width: 1,
-                                    ),
-                                  ),
-                                  child: Stack(
-                                    alignment: Alignment.center,
-                                    children: [
-                                      // Animated checkmark or spinner
-                                      AnimatedSwitcher(
-                                        duration:
-                                        const Duration(milliseconds: 500),
-                                        child: _isLoadingComplete
-                                            ? Icon(
-                                          Icons.check_circle,
-                                          color: const Color(0xFF4CAF50),
-                                          size: 30,
-                                        )
-                                            : RotationTransition(
-                                          turns: Tween(
-                                              begin: 0.0, end: 1.0)
-                                              .animate(_mainController!),
-                                          child: Icon(
-                                            Icons.self_improvement,
-                                            color: Colors.white
-                                                .withOpacity(0.9),
-                                            size: 25,
-                                          ),
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ],
+                          ],
+                        ),
                       ),
                     ),
                   ),

@@ -4,9 +4,9 @@ import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
-import 'package:mindfulness_garden/core/services/ad_service.dart';
-import 'package:mindfulness_garden/core/services/audio_service.dart';
-import 'package:mindfulness_garden/data/local_storage/local_storage_service.dart';
+import 'package:pranaverse/core/services/ad_service.dart';
+import 'package:pranaverse/core/services/audio_service.dart';
+import 'package:pranaverse/data/local_storage/local_storage_service.dart';
 
 // ─── ENUMS ───────────────────────────────────────────────────────────────────
 enum Season { spring, summer, monsoon, autumn, winter, snowfall }
@@ -2010,33 +2010,33 @@ class _GardenScreenState extends State<GardenScreen>
 
         // Weather overlays — all IgnorePointer
         if (_cfg.hasRain)
-          IgnorePointer(
-              child: Positioned.fill(
+          Positioned.fill(
+              child: IgnorePointer(
                   child: CustomPaint(painter: _RainPainter(_rain, size)))),
         if (_cfg.hasSnow)
-          IgnorePointer(
-              child: Positioned.fill(
+          Positioned.fill(
+              child: IgnorePointer(
                   child: CustomPaint(painter: _SnowPainter(_snow, size)))),
         if (_cfg.hasLeaves)
-          IgnorePointer(
-              child: Positioned.fill(
+          Positioned.fill(
+              child: IgnorePointer(
                   child: CustomPaint(painter: _LeafPainter(_leaves, size)))),
         if (_cfg.hasFireflies)
-          IgnorePointer(
-              child: AnimatedBuilder(
-                  animation: _glowAnim,
-                  builder: (_, __) => Positioned.fill(
+          AnimatedBuilder(
+              animation: _glowAnim,
+              builder: (_, __) => Positioned.fill(
+                  child: IgnorePointer(
                       child: CustomPaint(
                           painter: _FireflyPainter(
                               _fireflies, size, _glowAnim.value))))),
 
         // Burst particles + floating labels — IgnorePointer
-        IgnorePointer(
-            child: Positioned.fill(
-                child: CustomPaint(painter: _BurstPainter(_bursts, size)))),
-        IgnorePointer(
-            child: Positioned.fill(
-                child: CustomPaint(painter: _LabelPainter(_labels, size)))),
+          Positioned.fill(
+              child: IgnorePointer(
+                  child: CustomPaint(painter: _BurstPainter(_bursts, size)))),
+          Positioned.fill(
+              child: IgnorePointer(
+                  child: CustomPaint(painter: _LabelPainter(_labels, size)))),
 
         // ── UI LAYERS (interactive) ──────────────────────────────────────────
         _buildTopHUD(size),

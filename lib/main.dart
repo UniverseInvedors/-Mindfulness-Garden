@@ -1,127 +1,83 @@
 import 'dart:ui';
+
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart' as riverpod;
 import 'package:hive_flutter/hive_flutter.dart';
-import 'package:firebase_core/firebase_core.dart';
-import 'firebase_options.dart';
-import 'package:mindfulness_garden/data/repositories/achievement_repository.dart';
-import 'package:mindfulness_garden/core/themes/app_theme.dart';
-import 'package:mindfulness_garden/core/responsive/responsive_context.dart';
-import 'package:mindfulness_garden/presentation/providers/app_provider.dart';
-import 'package:mindfulness_garden/presentation/providers/user_provider.dart';
-import 'package:mindfulness_garden/presentation/providers/session_provider.dart';
-import 'package:mindfulness_garden/presentation/providers/mood_provider.dart';
-import 'package:mindfulness_garden/presentation/providers/achievement_provider.dart';
-import 'package:mindfulness_garden/presentation/providers/challenge_provider.dart';
-import 'package:mindfulness_garden/presentation/providers/subscription_provider.dart';
-import 'package:mindfulness_garden/presentation/providers/wallet_provider.dart';
-import 'package:mindfulness_garden/presentation/providers/auth_provider.dart';
-import 'package:mindfulness_garden/presentation/routes/app_router.dart';
-import 'package:mindfulness_garden/data/models/achievement_model.dart';
-import 'package:mindfulness_garden/data/models/mood_model.dart';
-import 'package:mindfulness_garden/data/models/session_model.dart';
-import 'package:mindfulness_garden/data/models/user_model.dart';
-import 'package:mindfulness_garden/data/models/wallet_model.dart';
-import 'package:mindfulness_garden/core/services/ad_service.dart';
-import 'package:mindfulness_garden/core/services/wallet_service.dart';
-import 'package:mindfulness_garden/data/local_storage/local_storage_service.dart';
+import 'package:provider/provider.dart' as provider;
+import 'package:pranaverse/core/providers/app_settings_provider.dart';
+import 'package:pranaverse/core/responsive/responsive_context.dart';
+import 'package:pranaverse/core/services/auth_service.dart';
+import 'package:pranaverse/core/services/wallet_service.dart';
+import 'package:pranaverse/core/themes/app_theme.dart';
+import 'package:pranaverse/data/local_storage/local_storage_service.dart';
+import 'package:pranaverse/data/repositories/achievement_repository.dart';
+import 'package:pranaverse/l10n/app_localizations.dart';
+import 'package:pranaverse/presentation/providers/achievement_provider.dart';
+import 'package:pranaverse/presentation/providers/auth_provider.dart';
+import 'package:pranaverse/presentation/providers/challenge_provider.dart';
+import 'package:pranaverse/presentation/providers/mood_provider.dart';
+import 'package:pranaverse/presentation/providers/session_provider.dart';
+import 'package:pranaverse/presentation/providers/subscription_provider.dart';
+import 'package:pranaverse/presentation/providers/user_provider.dart';
+import 'package:pranaverse/presentation/providers/wallet_provider.dart';
+import 'package:pranaverse/presentation/routes/app_router.dart';
+import 'package:pranaverse/services/backend_integration_service.dart';
+
+void _log(String message) {
+  if (kDebugMode) {
+    debugPrint(message);
+  }
+}
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  // Handle errors globally
   FlutterError.onError = (details) {
     FlutterError.presentError(details);
-    print('🚨 FLUTTER ERROR: ${details.exception}');
-    print('Stack trace: ${details.stack}');
+    _log('FLUTTER ERROR: ${details.exception}');
+    _log('Stack trace: ${details.stack}');
   };
 
   PlatformDispatcher.instance.onError = (error, stack) {
-    print('🚨 PLATFORM ERROR: $error');
-    print('Stack trace: $stack');
+    _log('PLATFORM ERROR: $error');
+    _log('Stack trace: $stack');
     return true;
   };
 
   try {
-    print('🌱 Initializing Mindfulness Garden...');
+    _log('Initializing PranaVerse: Healing Frequencies...');
 
-    // Initialize Firebase - with error handling
-    try {
-      await Firebase.initializeApp(
-        options: DefaultFirebaseOptions.currentPlatform,
-      );
-      print('🔥 Firebase initialized successfully');
-    } catch (e) {
-      print('⚠️ Firebase initialization failed: $e');
-      // Continue without Firebase for development
-    }
-
-    // Initialize Hive
     await Hive.initFlutter();
-    print('📦 Hive initialized');
+    _log('Hive initialized');
 
-    // Register Hive adapters with unique typeIds to avoid conflicts
-    Hive
-      ..registerAdapter(UserModelAdapter())
-      ..registerAdapter(UserPreferencesAdapter())
-      ..registerAdapter(SessionModelAdapter())
-      ..registerAdapter(MoodModelAdapter())
-      ..registerAdapter(AchievementModelAdapter());
-    // Wallet adapters removed - using SharedPreferences instead
-
-    print('📝 Hive adapters registered');
-
-    // Open Hive boxes with error handling
-    try {
-      await Future.wait([
-        Hive.openBox<UserModel>('users'),
-        Hive.openBox<SessionModel>('sessions'),
-        Hive.openBox<MoodModel>('moods'),
-        Hive.openBox<AchievementModel>('achievements'),
-        Hive.openBox<WalletModel>('user_wallets'),
-      ]);
-      print('🗃️ Hive boxes opened successfully');
-    } catch (e) {
-      print('⚠️ Error opening Hive boxes: $e');
-      // Delete corrupted boxes and retry
-      await Hive.deleteBoxFromDisk('users');
-      await Hive.deleteBoxFromDisk('sessions');
-      await Hive.deleteBoxFromDisk('moods');
-      await Hive.deleteBoxFromDisk('achievements');
-      await Hive.deleteBoxFromDisk('user_wallets');
-
-      await Future.wait([
-        Hive.openBox<UserModel>('users'),
-        Hive.openBox<SessionModel>('sessions'),
-        Hive.openBox<MoodModel>('moods'),
-        Hive.openBox<AchievementModel>('achievements'),
-        Hive.openBox<WalletModel>('user_wallets'),
-      ]);
-      print('🗃️ Hive boxes recreated successfully');
-    }
-
-    print('🚀 App initialized successfully');
-
-    // Initialize Ads
-    try {
-      await AdService().initialize();
-      print('📢 AdMob initialized successfully');
-    } catch (e) {
-      print('⚠️ AdMob initialization failed: $e');
-    }
-
-    // Ensure LocalStorageService is initialized so getSetting() is safe
     try {
       await LocalStorageService.init();
-      print('🔒 LocalStorageService initialized');
+      _log('LocalStorageService initialized');
     } catch (e) {
-      print('⚠️ LocalStorageService initialization failed: $e');
+      _log('LocalStorageService initialization failed: $e');
     }
 
-    runApp(const MindfulnessGardenApp());
+    try {
+      final backendService = BackendIntegrationService();
+      await backendService.initialize();
+      _log('Backend integration service initialized');
+
+      await AuthService.initialize(backendService);
+      _log('Auth service initialized with backend');
+    } catch (e) {
+      _log('Backend integration initialization failed: $e');
+    }
+
+    runApp(
+      const riverpod.ProviderScope(
+        child: MindfulnessGardenApp(),
+      ),
+    );
   } catch (e, s) {
-    print('💥 Fatal error during initialization: $e');
-    print('Stack trace: $s');
+    _log('Fatal error during initialization: $e');
+    _log('Stack trace: $s');
 
     runApp(const _ErrorApp());
   }
@@ -160,51 +116,35 @@ class _ErrorApp extends StatelessWidget {
   }
 }
 
-class MindfulnessGardenApp extends StatefulWidget {
+class MindfulnessGardenApp extends riverpod.ConsumerWidget {
   const MindfulnessGardenApp({super.key});
 
   @override
-  State<MindfulnessGardenApp> createState() => _MindfulnessGardenAppState();
-}
-
-class _MindfulnessGardenAppState extends State<MindfulnessGardenApp> {
-  @override
-  void dispose() {
-    Hive.close();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return MultiProvider(
+  Widget build(BuildContext context, riverpod.WidgetRef ref) {
+    return provider.MultiProvider(
       providers: [
-        ChangeNotifierProvider(create: (_) => AppProvider()),
-        ChangeNotifierProvider(create: (_) => AuthProvider()),
-        ChangeNotifierProvider(create: (_) => UserProvider()),
-        ChangeNotifierProvider(create: (_) => SessionProvider()),
-        ChangeNotifierProvider(create: (_) => MoodProvider()),
-
-        Provider<AchievementRepository>(
+        provider.ChangeNotifierProvider(create: (_) => AppSettingsProvider()),
+        provider.ChangeNotifierProvider(create: (_) => AuthProvider()),
+        provider.ChangeNotifierProvider(create: (_) => UserProvider()),
+        provider.ChangeNotifierProvider(create: (_) => SessionProvider()),
+        provider.ChangeNotifierProvider(create: (_) => MoodProvider()),
+        provider.Provider<AchievementRepository>(
           create: (_) => AchievementRepository(),
         ),
-        ChangeNotifierProvider(
+        provider.ChangeNotifierProvider(
           create: (context) => AchievementProvider(
             context.read<AchievementRepository>(),
           ),
         ),
-
-        ChangeNotifierProvider(create: (_) => ChallengeProvider()),
-        ChangeNotifierProvider(create: (_) => SubscriptionProvider()),
-
-        // Wallet provider with service dependency
-        Provider<WalletService>(
+        provider.ChangeNotifierProvider(create: (_) => ChallengeProvider()),
+        provider.ChangeNotifierProvider(create: (_) => SubscriptionProvider()),
+        provider.Provider<WalletService>(
           create: (_) => WalletService(),
         ),
-        ChangeNotifierProxyProvider<UserProvider, WalletProvider>(
+        provider.ChangeNotifierProxyProvider<UserProvider, WalletProvider>(
           create: (context) => WalletProvider(context.read<WalletService>()),
           update: (context, userProvider, walletProvider) {
             if (userProvider.currentUser != null && walletProvider != null) {
-              // Initialize wallet when user is available
               walletProvider.initializeWallet(userProvider.currentUser!);
             }
             return walletProvider ??
@@ -214,19 +154,29 @@ class _MindfulnessGardenAppState extends State<MindfulnessGardenApp> {
       ],
       child: Builder(
         builder: (context) {
-          final themeMode = context.select<AppProvider, ThemeMode>(
-            (provider) => provider.themeMode,
-          );
-          final uiThemeData = context.select<AppProvider, AppUiThemeData>(
-            (provider) => provider.uiThemeData,
-          );
+          final appSettings = context.watch<AppSettingsProvider>();
+          final themeMode = appSettings.themeMode;
+          final uiThemeData = appSettings.uiThemeData;
+          final locale = appSettings.language.locale;
 
           return MaterialApp.router(
             debugShowCheckedModeBanner: false,
-            title: 'Mindfulness Garden',
-            theme: AppTheme.lightTheme,
-            darkTheme: AppTheme.buildDarkTheme(uiThemeData),
+            title: 'PranaVerse',
+            theme: AppTheme.buildTheme(uiThemeData),
+            darkTheme: AppTheme.buildTheme(uiThemeData),
             themeMode: themeMode,
+            locale: locale,
+            localizationsDelegates: const [
+              AppLocalizations.delegate,
+              GlobalMaterialLocalizations.delegate,
+              GlobalWidgetsLocalizations.delegate,
+              GlobalCupertinoLocalizations.delegate,
+            ],
+            supportedLocales: const [
+              Locale('en'),
+              Locale('bn'),
+              Locale('hi'),
+            ],
             routerConfig: AppRouter.router,
             builder: (context, child) {
               return ResponsiveScope(child: child ?? const SizedBox.shrink());

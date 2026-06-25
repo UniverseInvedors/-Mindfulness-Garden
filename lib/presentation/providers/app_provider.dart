@@ -1,13 +1,18 @@
-import 'package:flutter/material.dart';
-import 'package:mindfulness_garden/core/services/localization_service.dart';
-import 'package:mindfulness_garden/core/services/voice_service.dart';
-import 'package:mindfulness_garden/core/themes/app_theme.dart';
-import 'package:mindfulness_garden/data/local_storage/local_storage_service.dart';
+// DEPRECATED: This file is deprecated. Use AppSettingsProvider instead.
+// This provider duplicates functionality that should be in AppSettingsProvider.
+// All screens should use AppSettingsProvider as the single source of truth.
 
+import 'package:flutter/material.dart';
+import 'package:pranaverse/core/services/voice_service.dart';
+import 'package:pranaverse/core/themes/app_theme.dart';
+import 'package:pranaverse/data/local_storage/local_storage_service.dart';
+import 'package:pranaverse/core/providers/app_settings_provider.dart';
+
+// This class is deprecated. Use AppSettingsProvider instead.
+@Deprecated('Use AppSettingsProvider instead')
 class AppProvider with ChangeNotifier {
   ThemeMode _themeMode = ThemeMode.dark;
-  AppUiTheme _uiTheme = AppUiTheme.cosmicDark;
-  AppLanguage _appLanguage = AppLanguage.english;
+  AppUiTheme _uiTheme = AppUiTheme.midnightZen;
   VoicePersonality _voicePersonality = VoicePersonality.buddha;
   int _streakDays = 24;
   int _totalMinutes = 240;
@@ -15,7 +20,6 @@ class AppProvider with ChangeNotifier {
 
   ThemeMode get themeMode => _themeMode;
   AppUiTheme get uiTheme => _uiTheme;
-  AppLanguage get appLanguage => _appLanguage;
   AppUiThemeData get uiThemeData => appUiThemes[_uiTheme]!;
   int get streakDays => _streakDays;
   int get totalMinutes => _totalMinutes;
@@ -23,7 +27,7 @@ class AppProvider with ChangeNotifier {
 
   AppProvider() {
     _loadTheme();
-    _loadLanguage();
+    _loadVoicePersonality();
   }
 
   void _loadTheme() {
@@ -41,16 +45,7 @@ class AppProvider with ChangeNotifier {
     }
   }
 
-  void _loadLanguage() {
-    final saved = LocalStorageService.getSetting('app_language');
-    if (saved is String) {
-      _appLanguage = LocalizationService.languageFromName(saved);
-    } else {
-      final voiceLang = LocalStorageService.getSetting('voice_language');
-      if (voiceLang is String) {
-        _appLanguage = LocalizationService.languageFromCode(voiceLang);
-      }
-    }
+  void _loadVoicePersonality() {
     // Load voice personality preference
     final p = LocalStorageService.getSetting('voice_personality');
     if (p is String) {
@@ -95,22 +90,6 @@ class AppProvider with ChangeNotifier {
 
   void setMood(String mood) {
     _currentMood = mood;
-    notifyListeners();
-  }
-
-  Future<void> setAppLanguage(AppLanguage language) async {
-    _appLanguage = language;
-    await LocalStorageService.saveSetting('app_language', language.displayName);
-    await LocalStorageService.saveSetting(
-        'voice_language', language.localeCode);
-    await VoiceService().setAppLanguage(language);
-    // Announce the change using the voice system (voice-first UX)
-    try {
-      final template =
-          LocalizationService.translate('language_set', _appLanguage);
-      final phrase = template.replaceAll('{language}', language.displayName);
-      await VoiceService().speak(phrase);
-    } catch (_) {}
     notifyListeners();
   }
 

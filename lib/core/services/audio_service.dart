@@ -13,68 +13,67 @@ class AudioService {
       'id': 'ocean',
       'name': 'Ocean Waves',
       'asset': 'sounds/ocean.mp3',
-      'icon': '🌊',
+      'icon': 'waves',
     },
     {
       'id': 'rain',
       'name': 'Gentle Rain',
       'asset': 'sounds/rain.mp3',
-      'icon': '🌧️',
+      'icon': 'rain',
     },
     {
       'id': 'forest',
       'name': 'Forest Birds',
       'asset': 'sounds/forest.mp3',
-      'icon': '🌲',
+      'icon': 'forest',
     },
     {
       'id': 'bowl',
       'name': 'Singing Bowl',
       'asset': 'sounds/bowl.mp3',
-      'icon': '🛎️',
+      'icon': 'bowl',
     },
     {
       'id': 'white',
       'name': 'White Noise',
-      'asset': 'sounds/white.mp3',
-      'icon': '📻',
+      'asset': 'sounds/rainforest.mp3',
+      'icon': 'noise',
     },
     {
       'id': 'piano',
       'name': 'Calm Piano',
       'asset': 'sounds/piano.mp3',
-      'icon': '🎹',
+      'icon': 'piano',
     },
-    // Add more sounds for scenes
     {
       'id': 'waterfall',
       'name': 'Waterfall',
       'asset': 'sounds/waterfall.mp3',
-      'icon': '💧',
+      'icon': 'waterfall',
     },
     {
       'id': 'birds',
       'name': 'Forest Birds',
       'asset': 'sounds/birds.mp3',
-      'icon': '🐦',
+      'icon': 'birds',
     },
     {
       'id': 'wind',
       'name': 'Wind Sounds',
       'asset': 'sounds/wind.mp3',
-      'icon': '💨',
+      'icon': 'wind',
     },
     {
       'id': 'crickets',
       'name': 'Night Crickets',
       'asset': 'sounds/crickets.mp3',
-      'icon': '🦗',
+      'icon': 'crickets',
     },
     {
       'id': 'river',
       'name': 'River Stream',
-      'asset': 'sounds/river.mp3',
-      'icon': '🌊',
+      'asset': 'sounds/river.wav',
+      'icon': 'river',
     },
   ];
 
@@ -93,54 +92,47 @@ class AudioService {
     await _audioPlayer.setReleaseMode(ReleaseMode.loop);
     await _audioPlayer.setVolume(_volume);
   }
-  // In AudioService class, replace the existing playLoopingSound method:
-  Future<void> playLoopingSound(String soundId) async {
+
+  Future<void> playLoopingSound(String soundId) {
     return playSound(soundId, loop: true);
   }
+
   Future<void> stopAll() async {
     try {
       await _audioPlayer.stop();
+      _isPlaying = false;
+      _currentSoundId = null;
+      _isLooping = false;
     } catch (e) {
-      print('Error stopping all sounds: $e');
+      if (kDebugMode) {
+        debugPrint('Error stopping all sounds: $e');
+      }
     }
   }
-  // Play predefined sound by ID
+
   Future<void> playSound(String soundId, {bool loop = false}) async {
     try {
-      final sound = _sounds.firstWhere((s) => s['id'] == soundId,
-          orElse: () => {'id': soundId, 'asset': soundId, 'name': soundId});
+      final sound = _sounds.firstWhere(
+        (s) => s['id'] == soundId,
+        orElse: () => {
+          'id': soundId,
+          'asset': 'sounds/$soundId.mp3',
+          'name': soundId,
+        },
+      );
 
-      if (_currentSoundId == sound['asset'] && _isPlaying) {
-        return;
-      }
-
-      if (_isPlaying) {
-        await _audioPlayer.stop();
-      }
-
-      await _audioPlayer.play(AssetSource(sound['asset']));
-      _currentSoundId = sound['asset'];
-      _isPlaying = true;
-      _isLooping = loop;
-
-      if (loop) {
-        await _audioPlayer.setReleaseMode(ReleaseMode.loop);
-      } else {
-        await _audioPlayer.setReleaseMode(ReleaseMode.release);
-      }
+      await playSoundFile(sound['asset'] as String, loop: loop);
     } catch (e) {
       if (kDebugMode) {
-        print('Error playing sound: $e');
+        debugPrint('Error playing sound: $e');
       }
-      // Fallback: try to play as direct path
-      await playSoundFile(soundId, loop: loop);
     }
   }
 
-  // Play any sound file by path - for backward compatibility
   Future<void> playSoundFile(String path, {bool loop = false}) async {
     try {
-      if (_isPlaying && _currentSoundId == path) {
+      final assetPath = path.replaceFirst('assets/', '');
+      if (_isPlaying && _currentSoundId == assetPath) {
         return;
       }
 
@@ -148,31 +140,16 @@ class AudioService {
         await _audioPlayer.stop();
       }
 
-      await _audioPlayer.play(AssetSource(path));
-      _currentSoundId = path;
+      await _audioPlayer.setReleaseMode(
+        loop ? ReleaseMode.loop : ReleaseMode.release,
+      );
+      await _audioPlayer.play(AssetSource(assetPath));
+      _currentSoundId = assetPath;
       _isPlaying = true;
       _isLooping = loop;
-
-      if (loop) {
-        await _audioPlayer.setReleaseMode(ReleaseMode.loop);
-      } else {
-        await _audioPlayer.setReleaseMode(ReleaseMode.release);
-      }
     } catch (e) {
       if (kDebugMode) {
-        print('Error playing sound file $path: $e');
-      }
-      // Try alternative path format
-      try {
-        final fixedPath = path.replaceFirst('assets/', '');
-        await _audioPlayer.play(AssetSource(fixedPath));
-        _currentSoundId = fixedPath;
-        _isPlaying = true;
-        _isLooping = loop;
-      } catch (e2) {
-        if (kDebugMode) {
-          print('Error with alternative path: $e2');
-        }
+        debugPrint('Error playing sound file $path: $e');
       }
     }
   }
@@ -185,14 +162,12 @@ class AudioService {
       _isLooping = false;
     } catch (e) {
       if (kDebugMode) {
-        print('Error stopping sound: $e');
+        debugPrint('Error stopping sound: $e');
       }
     }
   }
 
-  Future<void> stop() async {
-    await stopSound();
-  }
+  Future<void> stop() => stopSound();
 
   Future<void> pauseAll() async {
     try {
@@ -200,18 +175,14 @@ class AudioService {
       _isPlaying = false;
     } catch (e) {
       if (kDebugMode) {
-        print('Error pausing sound: $e');
+        debugPrint('Error pausing sound: $e');
       }
     }
   }
 
-  Future<void> pauseSound() async {
-    await pauseAll();
-  }
+  Future<void> pauseSound() => pauseAll();
 
-  Future<void> pause() async {
-    await pauseAll();
-  }
+  Future<void> pause() => pauseAll();
 
   Future<void> resumeSound() async {
     try {
@@ -221,14 +192,12 @@ class AudioService {
       }
     } catch (e) {
       if (kDebugMode) {
-        print('Error resuming sound: $e');
+        debugPrint('Error resuming sound: $e');
       }
     }
   }
 
-  Future<void> resume() async {
-    await resumeSound();
-  }
+  Future<void> resume() => resumeSound();
 
   Future<void> setVolume(double volume) async {
     try {
@@ -236,37 +205,26 @@ class AudioService {
       await _audioPlayer.setVolume(_volume);
     } catch (e) {
       if (kDebugMode) {
-        print('Error setting volume: $e');
+        debugPrint('Error setting volume: $e');
       }
     }
   }
 
   Future<void> toggleLoop() async {
-    try {
-      if (_currentSoundId != null) {
-        _isLooping = !_isLooping;
-        if (_isLooping) {
-          await _audioPlayer.setReleaseMode(ReleaseMode.loop);
-        } else {
-          await _audioPlayer.setReleaseMode(ReleaseMode.release);
-        }
-      }
-    } catch (e) {
-      if (kDebugMode) {
-        print('Error toggling loop: $e');
-      }
-    }
+    await setLoop(!_isLooping);
   }
 
   Future<void> toggleSound(String soundId) async {
-    if (_currentSoundId == soundId && _isPlaying) {
+    final sound = getSound(soundId);
+    final asset = sound?['asset'] as String?;
+    if (_isPlaying &&
+        (_currentSoundId == soundId || _currentSoundId == asset)) {
       await stopSound();
     } else {
       await playSound(soundId);
     }
   }
 
-  // Get sound by ID
   Map<String, dynamic>? getSound(String soundId) {
     try {
       return _sounds.firstWhere((s) => s['id'] == soundId);
@@ -275,68 +233,61 @@ class AudioService {
     }
   }
 
-  // Get all sounds for a category
   List<Map<String, dynamic>> getSoundsByCategory(String category) {
     return _sounds.where((sound) => sound['category'] == category).toList();
   }
 
-  // Check if sound is playing
   bool isSoundPlaying(String soundId) {
-    return _isPlaying && _currentSoundId == soundId;
+    final sound = getSound(soundId);
+    return _isPlaying &&
+        (_currentSoundId == soundId || _currentSoundId == sound?['asset']);
   }
 
-  // Set loop mode
   Future<void> setLoop(bool loop) async {
     try {
       _isLooping = loop;
-      if (loop) {
-        await _audioPlayer.setReleaseMode(ReleaseMode.loop);
-      } else {
-        await _audioPlayer.setReleaseMode(ReleaseMode.release);
-      }
+      await _audioPlayer.setReleaseMode(
+        loop ? ReleaseMode.loop : ReleaseMode.release,
+      );
     } catch (e) {
       if (kDebugMode) {
-        print('Error setting loop mode: $e');
+        debugPrint('Error setting loop mode: $e');
       }
     }
   }
 
-  // Seek to position
   Future<void> seek(Duration position) async {
     try {
       await _audioPlayer.seek(position);
     } catch (e) {
       if (kDebugMode) {
-        print('Error seeking: $e');
+        debugPrint('Error seeking: $e');
       }
     }
   }
 
-  // Get current position
   Future<Duration> getPosition() async {
     try {
       return await _audioPlayer.getCurrentPosition() ?? Duration.zero;
     } catch (e) {
       if (kDebugMode) {
-        print('Error getting position: $e');
+        debugPrint('Error getting position: $e');
       }
       return Duration.zero;
     }
   }
 
-  // Get duration
   Future<Duration> getDuration() async {
     try {
       return await _audioPlayer.getDuration() ?? Duration.zero;
     } catch (e) {
       if (kDebugMode) {
-        print('Error getting duration: $e');
+        debugPrint('Error getting duration: $e');
       }
       return Duration.zero;
     }
   }
 
-  // Cleanup
   void dispose() {
     _audioPlayer.dispose();
   }

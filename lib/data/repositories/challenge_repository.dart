@@ -1,5 +1,5 @@
-import 'package:mindfulness_garden/data/models/challenge_model.dart';
-import 'package:mindfulness_garden/data/local_storage/local_storage_service.dart';
+import 'package:pranaverse/data/models/challenge_model.dart';
+import 'package:pranaverse/data/local_storage/local_storage_service.dart';
 
 class ChallengeRepository {
   static final List<Map<String, dynamic>> _allChallenges = [

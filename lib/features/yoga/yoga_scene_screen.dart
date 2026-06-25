@@ -2,9 +2,13 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
-import 'package:mindfulness_garden/core/widgets/meditation_scene_widget.dart';
-import 'package:mindfulness_garden/core/services/voice_service.dart';
-import 'package:mindfulness_garden/core/services/localization_service.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:pranaverse/core/widgets/meditation_scene_widget.dart';
+import 'package:pranaverse/core/widgets/character/teacher_personality.dart';
+import 'package:pranaverse/core/services/voice_service.dart';
+import 'package:pranaverse/core/services/localization_service.dart';
+import 'package:pranaverse/core/providers/app_settings_provider.dart';
+import 'package:pranaverse/l10n/app_localizations.dart';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // YogaSceneScreen
@@ -14,14 +18,14 @@ import 'package:mindfulness_garden/core/services/localization_service.dart';
 // transition and the breathing phase in real time.
 // ─────────────────────────────────────────────────────────────────────────────
 
-class YogaSceneScreen extends StatefulWidget {
+class YogaSceneScreen extends ConsumerStatefulWidget {
   const YogaSceneScreen({super.key});
 
   @override
-  State<YogaSceneScreen> createState() => _YogaSceneScreenState();
+  ConsumerState<YogaSceneScreen> createState() => _YogaSceneScreenState();
 }
 
-class _YogaSceneScreenState extends State<YogaSceneScreen>
+class _YogaSceneScreenState extends ConsumerState<YogaSceneScreen>
     with TickerProviderStateMixin {
   // ── Session state ──────────────────────────────────────────────────────────
   bool _isActive = false;
@@ -346,16 +350,22 @@ class _YogaSceneScreenState extends State<YogaSceneScreen>
           // ── 2.5D Scene (hero) ──────────────────────────────────────────
           Expanded(
             flex: 5,
-            child: MeditationSceneWidget(
-              breathPhase: _breathPhase,
-              pose: _currentStep.pose,
-              environment: _environment,
-              timeOfDay: _timeOfDay,
-              instruction: _isActive
-                  ? _currentStep.instruction
-                  : 'Choose your environment',
-              isActive: _isActive && !_isPaused,
-              height: double.infinity,
+            child: Consumer(
+              builder: (context, ref, _) {
+                final themeSettings = ref.watch(themePreferenceProvider);
+                return MeditationSceneWidget(
+                  breathPhase: _breathPhase,
+                  pose: _currentStep.pose,
+                  environment: _isActive ? _environment : themeSettings.environment,
+                  timeOfDay: _isActive ? _timeOfDay : themeSettings.timeOfDay,
+                  instruction: _isActive
+                      ? _currentStep.instruction
+                      : 'Choose your environment',
+                  isActive: _isActive && !_isPaused,
+                  height: double.infinity,
+                  teacher: ref.watch(teacherPreferenceProvider),
+                );
+              },
             ),
           ),
           // ── Controls panel — bottom safe area handled here ─────────────
@@ -553,6 +563,65 @@ class _YogaSceneScreenState extends State<YogaSceneScreen>
               },
             ),
           ),
+          const SizedBox(height: 16),
+          _sectionLabel('TEACHER'),
+          const SizedBox(height: 10),
+          SizedBox(
+            height: 72,
+            child: ListView.separated(
+              scrollDirection: Axis.horizontal,
+              itemCount: TeacherPersonality.values.length,
+              separatorBuilder: (_, __) => const SizedBox(width: 10),
+              itemBuilder: (_, i) {
+                final personality = TeacherPersonality.values[i];
+                final appearance = TeacherAppearance.personalities[personality]!;
+                final currentTeacher = ref.watch(teacherPreferenceProvider);
+                final selected = personality == currentTeacher;
+                return GestureDetector(
+                  onTap: () async {
+                    await ref.read(teacherPreferenceProvider.notifier).setTeacher(personality);
+                  },
+                  child: AnimatedContainer(
+                    duration: const Duration(milliseconds: 200),
+                    width: 72,
+                    decoration: BoxDecoration(
+                      color: selected
+                          ? appearance.auraPrimary.withAlpha(60)
+                          : Colors.white.withAlpha(10),
+                      borderRadius: BorderRadius.circular(16),
+                      border: Border.all(
+                        color: selected
+                            ? appearance.auraPrimary
+                            : Colors.white.withAlpha(30),
+                        width: selected ? 2 : 1,
+                      ),
+                    ),
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(
+                          _getTeacherIcon(personality),
+                          color: selected ? appearance.auraPrimary : Colors.white54,
+                          size: 22,
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          appearance.name,
+                          style: TextStyle(
+                            color: selected ? Colors.white : Colors.white54,
+                            fontSize: 10,
+                            fontWeight: selected
+                                ? FontWeight.w700
+                                : FontWeight.normal,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                );
+              },
+            ),
+          ),
           const SizedBox(height: 20),
           _sectionLabel('SEQUENCE PREVIEW'),
           const SizedBox(height: 10),
@@ -631,8 +700,8 @@ class _YogaSceneScreenState extends State<YogaSceneScreen>
   }
 
   void _showBenefits() {
-    final lang = VoiceService().appLanguage;
-    final text = LocalizationService.translate('benefits_yoga', lang);
+    final l10n = AppLocalizations.of(context)!;
+    final text = l10n.benefitsBreathing;
     VoiceService().speak(text);
     showDialog(
       context: context,
@@ -642,19 +711,19 @@ class _YogaSceneScreenState extends State<YogaSceneScreen>
         child: Padding(
           padding: const EdgeInsets.all(18),
           child: Column(mainAxisSize: MainAxisSize.min, children: [
-            const Text('Benefits',
-                style: TextStyle(
+            Text(l10n.benefitsBreathing,
+                style: const TextStyle(
                     color: Colors.white,
                     fontSize: 18,
                     fontWeight: FontWeight.w800)),
             const SizedBox(height: 12),
-            Text(text,
+            Text(l10n.breathingBenefits,
                 style: const TextStyle(color: Colors.white70, fontSize: 14)),
             const SizedBox(height: 12),
             TextButton(
                 onPressed: () => Navigator.pop(context),
-                child: const Text('Close',
-                    style: TextStyle(color: Colors.white70)))
+                child: Text(l10n.back,
+                    style: const TextStyle(color: Colors.white70)))
           ]),
         ),
       ),
@@ -857,6 +926,17 @@ class _YogaSceneScreenState extends State<YogaSceneScreen>
           fontSize: 11,
           fontWeight: FontWeight.w700,
           letterSpacing: 1.5));
+
+  IconData _getTeacherIcon(TeacherPersonality personality) {
+    switch (personality) {
+      case TeacherPersonality.buddha:
+        return Icons.self_improvement;
+      case TeacherPersonality.zeno:
+        return Icons.person;
+      case TeacherPersonality.monk:
+        return Icons.accessibility;
+    }
+  }
 }
 
 // ─────────────────────────────────────────────────────────────────────────────

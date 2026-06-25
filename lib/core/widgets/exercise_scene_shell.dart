@@ -1,6 +1,8 @@
 // ignore_for_file: deprecated_member_use
 import 'package:flutter/material.dart';
-import 'package:mindfulness_garden/core/widgets/meditation_scene_widget.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:pranaverse/core/widgets/meditation_scene_widget.dart';
+import 'package:pranaverse/core/widgets/character/teacher_personality.dart';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // ExerciseSceneShell
@@ -22,7 +24,7 @@ import 'package:mindfulness_garden/core/widgets/meditation_scene_widget.dart';
 //   )
 // ─────────────────────────────────────────────────────────────────────────────
 
-class ExerciseSceneShell extends StatefulWidget {
+class ExerciseSceneShell extends ConsumerWidget {
   final String title;
   final BreathPhase breathPhase;
   final String instruction;
@@ -49,10 +51,49 @@ class ExerciseSceneShell extends StatefulWidget {
   });
 
   @override
-  State<ExerciseSceneShell> createState() => _ExerciseSceneShellState();
+  Widget build(BuildContext context, WidgetRef ref) {
+    return _ExerciseSceneShellContent(
+      title: title,
+      breathPhase: breathPhase,
+      instruction: instruction,
+      isActive: isActive,
+      onBack: onBack,
+      headerActions: headerActions,
+      bottomPanel: bottomPanel,
+      initialEnvironment: initialEnvironment,
+      initialTimeOfDay: initialTimeOfDay,
+    );
+  }
 }
 
-class _ExerciseSceneShellState extends State<ExerciseSceneShell> {
+class _ExerciseSceneShellContent extends StatefulWidget {
+  final String title;
+  final BreathPhase breathPhase;
+  final String instruction;
+  final bool isActive;
+  final VoidCallback onBack;
+  final List<Widget> headerActions;
+  final Widget bottomPanel;
+  final SceneEnvironment initialEnvironment;
+  final SceneTimeOfDay initialTimeOfDay;
+
+  const _ExerciseSceneShellContent({
+    required this.title,
+    required this.breathPhase,
+    required this.instruction,
+    required this.isActive,
+    required this.onBack,
+    required this.bottomPanel,
+    this.headerActions = const [],
+    this.initialEnvironment = SceneEnvironment.forest,
+    this.initialTimeOfDay = SceneTimeOfDay.morning,
+  });
+
+  @override
+  State<_ExerciseSceneShellContent> createState() => _ExerciseSceneShellContentState();
+}
+
+class _ExerciseSceneShellContentState extends State<_ExerciseSceneShellContent> {
   late SceneEnvironment _env;
   late SceneTimeOfDay _time;
   bool _showEnvPicker = false;
@@ -84,6 +125,7 @@ class _ExerciseSceneShellState extends State<ExerciseSceneShell> {
 
   @override
   Widget build(BuildContext context) {
+    print('EXERCISE SCENE SHELL: build called, title: ${widget.title}');
     return WillPopScope(
       onWillPop: () async {
         widget.onBack();
@@ -95,14 +137,20 @@ class _ExerciseSceneShellState extends State<ExerciseSceneShell> {
           children: [
             // ── Full-screen 2.5D scene ─────────────────────────────────
             Positioned.fill(
-              child: MeditationSceneWidget(
-                breathPhase: widget.breathPhase,
-                pose: ZenoPose.sitting,
-                environment: _env,
-                timeOfDay: _time,
-                instruction: widget.instruction,
-                isActive: widget.isActive,
-                height: double.infinity,
+              child: Consumer(
+                builder: (context, ref, _) {
+                  final themeSettings = ref.watch(themePreferenceProvider);
+                  return MeditationSceneWidget(
+                    breathPhase: widget.breathPhase,
+                    pose: ZenoPose.sitting,
+                    environment: _env,
+                    timeOfDay: _time,
+                    instruction: widget.instruction,
+                    isActive: widget.isActive,
+                    height: double.infinity,
+                    teacher: ref.watch(teacherPreferenceProvider),
+                  );
+                },
               ),
             ),
 
@@ -117,23 +165,26 @@ class _ExerciseSceneShellState extends State<ExerciseSceneShell> {
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     Padding(
-                      padding: const EdgeInsets.fromLTRB(8, 8, 8, 0),
+                      padding: const EdgeInsets.fromLTRB(4, 8, 4, 0),
                       child: Row(
                         children: [
                           // Back button
                           _glassButton(
                             child: const Icon(Icons.arrow_back,
-                                color: Colors.white, size: 20),
+                                color: Colors.white, size: 16),
                             onTap: widget.onBack,
                           ),
-                          const SizedBox(width: 10),
+                          const SizedBox(width: 4),
                           // Title
                           Expanded(
                             child: Text(
                               widget.title,
+                              textAlign: TextAlign.center,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
                               style: const TextStyle(
                                 color: Colors.white,
-                                fontSize: 18,
+                                fontSize: 14,
                                 fontWeight: FontWeight.w700,
                                 shadows: [
                                   Shadow(color: Colors.black54, blurRadius: 8)
@@ -141,21 +192,22 @@ class _ExerciseSceneShellState extends State<ExerciseSceneShell> {
                               ),
                             ),
                           ),
+                          const SizedBox(width: 4),
                           // Environment picker toggle
                           _glassButton(
                             child: Text(
                               _envs.firstWhere((e) => e.env == _env).emoji,
-                              style: const TextStyle(fontSize: 18),
+                              style: const TextStyle(fontSize: 14),
                             ),
                             onTap: () => setState(
                                 () => _showEnvPicker = !_showEnvPicker),
                           ),
-                          const SizedBox(width: 6),
+                          const SizedBox(width: 2),
                           // Time picker
                           _glassButton(
                             child: Text(
                               _times.firstWhere((t) => t.time == _time).emoji,
-                              style: const TextStyle(fontSize: 18),
+                              style: const TextStyle(fontSize: 14),
                             ),
                             onTap: () {
                               final idx =
@@ -166,7 +218,7 @@ class _ExerciseSceneShellState extends State<ExerciseSceneShell> {
                           ),
                           // Extra actions
                           ...widget.headerActions.map((a) => Padding(
-                                padding: const EdgeInsets.only(left: 6),
+                                padding: const EdgeInsets.only(left: 2),
                                 child: a,
                               )),
                         ],
@@ -267,8 +319,8 @@ class _ExerciseSceneShellState extends State<ExerciseSceneShell> {
     return GestureDetector(
       onTap: onTap,
       child: Container(
-        width: 40,
-        height: 40,
+        width: 32,
+        height: 32,
         decoration: BoxDecoration(
           color: Colors.white.withOpacity(0.08),
           shape: BoxShape.circle,

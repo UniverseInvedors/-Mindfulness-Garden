@@ -1,8 +1,8 @@
 import 'dart:ui';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:integration_test/integration_test.dart';
-import 'package:mindfulness_garden/main.dart' as app;
-import 'package:mindfulness_garden/data/repositories/session_repository.dart';
+import 'package:pranaverse/main.dart' as app;
+import 'package:pranaverse/data/repositories/session_repository.dart';
 import 'package:flutter/material.dart';
 
 Future<void> _goBack(WidgetTester tester) async {
@@ -84,4 +84,3 @@ void main() {
     expect(find.text('Quick Actions'), findsOneWidget);
   });
 }
-

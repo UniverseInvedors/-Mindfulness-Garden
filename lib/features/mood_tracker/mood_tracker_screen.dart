@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
-import 'package:mindfulness_garden/presentation/providers/mood_provider.dart';
-import 'package:mindfulness_garden/data/local_storage/local_storage_service.dart';
-import 'package:mindfulness_garden/data/models/mood_model.dart';
+import 'package:pranaverse/presentation/providers/mood_provider.dart';
+import 'package:pranaverse/data/local_storage/local_storage_service.dart';
+import 'package:pranaverse/data/models/mood_model.dart';
 
 class MoodTrackerScreen extends StatefulWidget {
   const MoodTrackerScreen({super.key});

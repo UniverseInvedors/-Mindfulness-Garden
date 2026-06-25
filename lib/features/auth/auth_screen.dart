@@ -1,8 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:go_router/go_router.dart';
-import 'package:firebase_auth/firebase_auth.dart';
-import 'package:mindfulness_garden/presentation/providers/auth_provider.dart'
+import 'package:pranaverse/presentation/providers/auth_provider.dart'
     as app_auth;
 
 class AuthScreen extends StatefulWidget {
@@ -69,8 +68,6 @@ class _AuthScreenState extends State<AuthScreen> {
 
       if (!mounted) return;
       Navigator.pop(context);
-    } on FirebaseAuthException catch (e) {
-      _showError(_getErrorMessage(e.code));
     } catch (e) {
       _showError('Auth failed: ${e.toString()}');
     }
@@ -86,25 +83,6 @@ class _AuthScreenState extends State<AuthScreen> {
     );
   }
 
-  String _getErrorMessage(String code) {
-    switch (code) {
-      case 'email-already-in-use':
-        return 'Email already in use';
-      case 'weak-password':
-        return 'Password is too weak';
-      case 'invalid-email':
-        return 'Invalid email address';
-      case 'user-not-found':
-        return 'User not found';
-      case 'wrong-password':
-        return 'Wrong password';
-      case 'too-many-requests':
-        return 'Too many login attempts. Try again later.';
-      default:
-        return code;
-    }
-  }
-
   @override
   Widget build(BuildContext context) {
     final authProv = context.watch<app_auth.AuthProvider>();
@@ -116,7 +94,13 @@ class _AuthScreenState extends State<AuthScreen> {
         elevation: 0,
         leading: IconButton(
           icon: const Icon(Icons.arrow_back, color: Colors.white),
-          onPressed: () => Navigator.pop(context),
+          onPressed: () {
+            if (Navigator.canPop(context)) {
+              Navigator.pop(context);
+            } else {
+              context.go('/main');
+            }
+          },
         ),
       ),
       backgroundColor: const Color(0xFF0a0a1a),

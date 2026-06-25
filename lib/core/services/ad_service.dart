@@ -8,11 +8,13 @@ class AdService {
   AdService._internal();
 
   // ── Real Ad Unit IDs ──────────────────────────────────────────────
-  static const String _bannerIdProd = 'ca-app-pub-8436172731596367/1842302530';
+  static const String _bannerIdProd = 'ca-app-pub-8759032363251002/9917112645';
   static const String _interstitialIdProd =
-      'ca-app-pub-8436172731596367/9529220864';
+      'ca-app-pub-8759032363251002/7946221708';
   static const String _rewardedIdProd =
-      'ca-app-pub-8436172731596367/7072098393';
+      'ca-app-pub-8759032363251002/3009796315';
+  static const String _rewardedInterstitialIdProd =
+      'ca-app-pub-8759032363251002/6635671042';
 
   // Google test IDs (used in debug builds so you never click real ads)
   static const String _bannerIdTest = 'ca-app-pub-3940256099942544/6300978111';

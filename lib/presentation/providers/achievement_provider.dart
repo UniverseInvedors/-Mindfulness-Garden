@@ -1,6 +1,6 @@
 import 'package:flutter/foundation.dart';
-import 'package:mindfulness_garden/data/models/achievement_model.dart';
-import 'package:mindfulness_garden/data/repositories/achievement_repository.dart';
+import 'package:pranaverse/data/models/achievement_model.dart';
+import 'package:pranaverse/data/repositories/achievement_repository.dart';
 
 class AchievementProvider with ChangeNotifier {
   final AchievementRepository _repository;

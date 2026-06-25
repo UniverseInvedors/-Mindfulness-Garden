@@ -198,10 +198,8 @@ class AssetService {
   Future<void> preloadAssets() async {
     final essentialAssets = [
       'assets/animations/mindfulness_logo.json',
-      'assets/sounds/nature/forest.mp3',
-      'assets/sounds/meditation/bowl.mp3',
-      'assets/images/icons/meditation.png',
-      'assets/images/garden/garden_bg.png',
+      'assets/sounds/forest.mp3',
+      'assets/sounds/bowl.mp3',
     ];
 
     for (final asset in essentialAssets) {

@@ -1,5 +1,5 @@
-import 'package:mindfulness_garden/data/models/achievement_model.dart';
-import 'package:mindfulness_garden/data/local_storage/local_storage_service.dart';
+import 'package:pranaverse/data/models/achievement_model.dart';
+import 'package:pranaverse/data/local_storage/local_storage_service.dart';
 
 class AchievementRepository {
   Future<List<AchievementModel>> getAchievements() async {

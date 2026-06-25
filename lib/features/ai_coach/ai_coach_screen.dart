@@ -1,6 +1,6 @@
-Ôªøimport 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-import 'package:mindfulness_garden/core/services/ai_service.dart';
+import 'package:pranaverse/core/services/ai_service.dart';
 
 class _ChatMessage {
   final String text;
@@ -37,12 +37,12 @@ class _AiCoachScreenState extends State<AiCoachScreen> {
   String _selectedGoal = '';
 
   static const List<Map<String, String>> _moods = [
-    {'emoji': 'üòä', 'label': 'Happy'},
-    {'emoji': 'üò∞', 'label': 'Stressed'},
-    {'emoji': 'üò¢', 'label': 'Sad'},
-    {'emoji': 'üò†', 'label': 'Angry'},
-    {'emoji': 'üò¥', 'label': 'Tired'},
-    {'emoji': 'üòê', 'label': 'Neutral'},
+    {'emoji': '??', 'label': 'Happy'},
+    {'emoji': '??', 'label': 'Stressed'},
+    {'emoji': '??', 'label': 'Sad'},
+    {'emoji': '??', 'label': 'Angry'},
+    {'emoji': '??', 'label': 'Tired'},
+    {'emoji': '??', 'label': 'Neutral'},
   ];
 
   static const List<String> _healthConditions = [
@@ -52,7 +52,7 @@ class _AiCoachScreenState extends State<AiCoachScreen> {
   ];
 
   static const List<String> _ageGroups = [
-    'Under 18', '18‚Äì25', '26‚Äì35', '36‚Äì45', '46‚Äì55', '55+',
+    'Under 18', '18ñ25', '26ñ35', '36ñ45', '46ñ55', '55+',
   ];
 
   static const List<String> _goals = [
@@ -107,7 +107,7 @@ class _AiCoachScreenState extends State<AiCoachScreen> {
     String route;
     if (conditions.contains('Insomnia') || goal.contains('Sleep') || hour >= 21 || hour <= 5) {
       type = MeditationType.sleep;
-      reason = conditions.contains('Insomnia') ? 'Based on your insomnia, sleep meditation calms your nervous system' : 'Evening ‚Äî wind down for deep sleep';
+      reason = conditions.contains('Insomnia') ? 'Based on your insomnia, sleep meditation calms your nervous system' : 'Evening ó wind down for deep sleep';
       confidence = 0.94; route = '/breathing/478';
     } else if (conditions.contains('Anxiety') || conditions.contains('Panic Attacks') || conditions.contains('PTSD')) {
       type = MeditationType.breathAwareness;
@@ -115,7 +115,7 @@ class _AiCoachScreenState extends State<AiCoachScreen> {
       confidence = 0.92; route = '/breathing/awareness';
     } else if (conditions.contains('High Blood Pressure') || conditions.contains('Chronic Stress') || p.stressLevel > 70) {
       type = MeditationType.stressRelief;
-      reason = p.stressLevel > 70 ? 'Elevated stress detected ‚Äî box breathing will help' : 'For high blood pressure, box breathing lowers cortisol';
+      reason = p.stressLevel > 70 ? 'Elevated stress detected ó box breathing will help' : 'For high blood pressure, box breathing lowers cortisol';
       confidence = 0.90; route = '/breathing/box';
     } else if (conditions.contains('ADHD') || goal.contains('focus') || goal.contains('productivity')) {
       type = MeditationType.breathAwareness;
@@ -158,9 +158,9 @@ class _AiCoachScreenState extends State<AiCoachScreen> {
     if (p.todayMood != null) ctx += ' ${p.todayMood!} mood signature detected.';
     String note = '';
     if (conditions.isNotEmpty && !conditions.contains('None of the above')) {
-      note = ' Health matrix loaded (${conditions.take(2).join(', ')}) ‚Äî protocols calibrated.';
+      note = ' Health matrix loaded (${conditions.take(2).join(', ')}) ó protocols calibrated.';
     }
-    _addBotMessage('$greeting, operative.$ctx$note\n\nI am ZENO ‚Äî your neural mindfulness interface. How is your biometric state right now? Select a mood or transmit your thoughts.');
+    _addBotMessage('$greeting, operative.$ctx$note\n\nI am ZENO ó your neural mindfulness interface. How is your biometric state right now? Select a mood or transmit your thoughts.');
   }
 
   void _addBotMessage(String text, {List<_ActionButton>? actions}) {
@@ -200,17 +200,17 @@ class _AiCoachScreenState extends State<AiCoachScreen> {
     if (lower.contains('stress') || lower.contains('anxious') || lower.contains('overwhelm') || lower.contains('anxiety') || lower.contains('panic') || lower.contains('worry')) {
       final extra = conditions.contains('Anxiety') || conditions.contains('Panic Attacks')
           ? '\n\nGiven your anxiety history, start with just 3 minutes of box breathing. Short sessions beat forcing long ones.'
-          : conditions.contains('High Blood Pressure') ? '\n\nWith your blood pressure data, box breathing is critical ‚Äî it activates the vagus nerve and lowers cortisol.' : '';
+          : conditions.contains('High Blood Pressure') ? '\n\nWith your blood pressure data, box breathing is critical ó it activates the vagus nerve and lowers cortisol.' : '';
       return _ChatMessage(
-        text: 'Signal received. Stress detected.$extra\n\nExecute now: inhale 4, hold 4, exhale 4. Repeat 3 cycles.\n\nStress index from mood logs: ${p.stressLevel.toInt()}/100. ${p.stressLevel > 70 ? "Elevated ‚Äî initiating countermeasures." : "Within manageable range."}',
+        text: 'Signal received. Stress detected.$extra\n\nExecute now: inhale 4, hold 4, exhale 4. Repeat 3 cycles.\n\nStress index from mood logs: ${p.stressLevel.toInt()}/100. ${p.stressLevel > 70 ? "Elevated ó initiating countermeasures." : "Within manageable range."}',
         isUser: false,
         actions: [_ActionButton('Box Breathing', '/breathing/box'), _ActionButton('Zeno Breathing', '/breathing/zeno')],
       );
     }
     if (lower.contains('sleep') || lower.contains('insomnia') || lower.contains('tired') || lower.contains("can't sleep") || lower.contains('wake up')) {
-      final extra = conditions.contains('Insomnia') ? '\n\nFor chronic insomnia, deploy 4-7-8 every night at the same time ‚Äî it retrains your nervous system over 2‚Äì3 weeks.' : '';
+      final extra = conditions.contains('Insomnia') ? '\n\nFor chronic insomnia, deploy 4-7-8 every night at the same time ó it retrains your nervous system over 2ñ3 weeks.' : '';
       return _ChatMessage(
-        text: 'Sleep disruption detected.$extra\n\n4-7-8 protocol: inhale 4, hold 7, exhale 8. Extended exhale activates your parasympathetic system.\n\nOptimise: 18‚Äì20¬∞C, no screens 30 min before shutdown, consistent sleep cycle.',
+        text: 'Sleep disruption detected.$extra\n\n4-7-8 protocol: inhale 4, hold 7, exhale 8. Extended exhale activates your parasympathetic system.\n\nOptimise: 18ñ20∞C, no screens 30 min before shutdown, consistent sleep cycle.',
         isUser: false,
         actions: [_ActionButton('4-7-8 Breathing', '/breathing/478'), _ActionButton('Sleep Meditation', '/guided-meditation')],
       );
@@ -218,13 +218,13 @@ class _AiCoachScreenState extends State<AiCoachScreen> {
     if (lower.contains('focus') || lower.contains('concentrate') || lower.contains('distract') || lower.contains('adhd') || lower.contains('productive')) {
       final extra = conditions.contains('ADHD') ? '\n\nFor ADHD, alternate nostril breathing synchronises both brain hemispheres and improves executive function.' : '';
       return _ChatMessage(
-        text: 'Focus module activated.$extra\n\nBox breathing sharpens concentration in under 5 minutes. Elite operatives use it before high-stakes missions.\n\nProtocol: 25 min focused work ‚Üí 5 min mindful breathing ‚Üí repeat.',
+        text: 'Focus module activated.$extra\n\nBox breathing sharpens concentration in under 5 minutes. Elite operatives use it before high-stakes missions.\n\nProtocol: 25 min focused work ? 5 min mindful breathing ? repeat.',
         isUser: false,
         actions: [_ActionButton('Alternate Nostril', '/breathing/alternate'), _ActionButton('Box Breathing', '/breathing/box')],
       );
     }
     if (lower.contains('sad') || lower.contains('depress') || lower.contains('down') || lower.contains('hopeless') || lower.contains('grief') || lower.contains('lonely')) {
-      final extra = conditions.contains('Depression') || conditions.contains('Grief') ? '\n\nWith depression in your profile, 5 minutes of loving-kindness daily shows measurable improvement. Start small ‚Äî it compounds.' : '';
+      final extra = conditions.contains('Depression') || conditions.contains('Grief') ? '\n\nWith depression in your profile, 5 minutes of loving-kindness daily shows measurable improvement. Start small ó it compounds.' : '';
       return _ChatMessage(
         text: 'Emotional distress signal received.$extra\n\nGratitude practice is one of the most researched mood-lifters. Naming 3 small things shifts brain chemistry.\n\nMood signature: ${_getMoodTrendText(p)}.',
         isUser: false,
@@ -233,7 +233,7 @@ class _AiCoachScreenState extends State<AiCoachScreen> {
     }
     if (lower.contains('angry') || lower.contains('frustrat') || lower.contains('mad') || lower.contains('irritat')) {
       return _ChatMessage(
-        text: 'Anger signal detected ‚Äî it means something matters to you.\n\nExecute: exhale slowly for 8 counts. This activates your parasympathetic system and gives your prefrontal cortex time to engage.\n\nDiaphragmatic breathing slows heart rate within 90 seconds.',
+        text: 'Anger signal detected ó it means something matters to you.\n\nExecute: exhale slowly for 8 counts. This activates your parasympathetic system and gives your prefrontal cortex time to engage.\n\nDiaphragmatic breathing slows heart rate within 90 seconds.',
         isUser: false,
         actions: [_ActionButton('Diaphragmatic Breathing', '/breathing/diaphragmatic'), _ActionButton('Box Breathing', '/breathing/box')],
       );
@@ -254,7 +254,7 @@ class _AiCoachScreenState extends State<AiCoachScreen> {
     }
     if (lower.contains('burnout') || lower.contains('exhausted') || lower.contains('drained') || lower.contains('empty')) {
       return _ChatMessage(
-        text: 'Burnout detected ‚Äî your system needs recovery, not more output.\n\nDiaphragmatic breathing stimulates the vagus nerve and reduces cortisol without demanding anything from you.\n\nReduce session length. Even 3 minutes counts. Consistency beats duration.',
+        text: 'Burnout detected ó your system needs recovery, not more output.\n\nDiaphragmatic breathing stimulates the vagus nerve and reduces cortisol without demanding anything from you.\n\nReduce session length. Even 3 minutes counts. Consistency beats duration.',
         isUser: false,
         actions: [_ActionButton('Diaphragmatic Breathing', '/breathing/diaphragmatic'), _ActionButton('Zeno Breathing', '/breathing/zeno')],
       );
@@ -268,14 +268,14 @@ class _AiCoachScreenState extends State<AiCoachScreen> {
     }
     if (lower.contains('breath') || lower.contains('exercise') || lower.contains('technique')) {
       return _ChatMessage(
-        text: 'Neural database ‚Äî optimal protocols:\n\n‚Ä¢ Box Breathing ‚Äî stress, focus, high BP\n‚Ä¢ 4-7-8 ‚Äî sleep, anxiety, panic\n‚Ä¢ Zeno Breathing ‚Äî general stress relief\n‚Ä¢ Alternate Nostril ‚Äî ADHD, balance, energy\n‚Ä¢ Diaphragmatic ‚Äî burnout, chronic pain, anger\n‚Ä¢ Breath Awareness ‚Äî anxiety, depression, beginners\n\nCalibrated for your profile: ${_getTopRecommendationName()}.',
+        text: 'Neural database ó optimal protocols:\n\nï Box Breathing ó stress, focus, high BP\nï 4-7-8 ó sleep, anxiety, panic\nï Zeno Breathing ó general stress relief\nï Alternate Nostril ó ADHD, balance, energy\nï Diaphragmatic ó burnout, chronic pain, anger\nï Breath Awareness ó anxiety, depression, beginners\n\nCalibrated for your profile: ${_getTopRecommendationName()}.',
         isUser: false,
         actions: [_ActionButton('All Exercises', '/breathing')],
       );
     }
     if (lower.contains('progress') || lower.contains('stats') || lower.contains('how am i') || lower.contains('streak')) {
       return _ChatMessage(
-        text: 'Operative status report:\n\nüî• Streak: ${p.meditationStreak} days\nüßò Sessions: ${p.totalSessions}\n‚è± Minutes: ${p.totalMinutes}\nüìä Avg: ${p.averageDuration.inMinutes} min\nüòä Mood: ${_getMoodTrendText(p)}\nüíÜ Stress: ${p.stressLevel.toInt()}/100\n\n${_getProgressInsight(p)}',
+        text: 'Operative status report:\n\n?? Streak: ${p.meditationStreak} days\n?? Sessions: ${p.totalSessions}\n? Minutes: ${p.totalMinutes}\n?? Avg: ${p.averageDuration.inMinutes} min\n?? Mood: ${_getMoodTrendText(p)}\n?? Stress: ${p.stressLevel.toInt()}/100\n\n${_getProgressInsight(p)}',
         isUser: false,
         actions: [_ActionButton('View Full Progress', '/progress')],
       );
@@ -283,7 +283,7 @@ class _AiCoachScreenState extends State<AiCoachScreen> {
     final defaults = [
       'Transmit more data. I want to give you the most targeted guidance based on your neural profile.',
       'Signal received. Based on your profile, a short breathing protocol could help right now. What feels most challenging?',
-      'Acknowledged. How does your body feel ‚Äî any tension, tightness, or system overload?',
+      'Acknowledged. How does your body feel ó any tension, tightness, or system overload?',
       'Emotions and physical sensations are deeply linked. A body scan meditation might help you tune in. Initiating?',
     ];
     return _ChatMessage(text: defaults[DateTime.now().second % defaults.length], isUser: false);
@@ -294,15 +294,15 @@ class _AiCoachScreenState extends State<AiCoachScreen> {
     final r = p.todayMoodRating!;
     if (r >= 4) return 'positive (${r.toStringAsFixed(1)}/5)';
     if (r >= 3) return 'neutral (${r.toStringAsFixed(1)}/5)';
-    return 'low (${r.toStringAsFixed(1)}/5) ‚Äî initiating recovery protocol';
+    return 'low (${r.toStringAsFixed(1)}/5) ó initiating recovery protocol';
   }
 
   String _getProgressInsight(UserProfile p) {
-    if (p.totalSessions == 0) return 'Begin your first mission today ‚Äî even 3 minutes rewires neural pathways.';
-    if (p.meditationStreak >= 7) return 'Incredible ‚Äî 7+ day streak! Your nervous system is genuinely transforming.';
+    if (p.totalSessions == 0) return 'Begin your first mission today ó even 3 minutes rewires neural pathways.';
+    if (p.meditationStreak >= 7) return 'Incredible ó 7+ day streak! Your nervous system is genuinely transforming.';
     if (p.meditationStreak >= 3) return 'Strong consistency! 3+ days builds real habit momentum.';
     if (p.stressLevel > 70) return 'Stress index elevated. Deploy at least one session today.';
-    return 'Keep going ‚Äî every session compounds toward lasting change.';
+    return 'Keep going ó every session compounds toward lasting change.';
   }
 
   String _getPersonalisedRecommendation(UserProfile p) {
@@ -319,12 +319,12 @@ class _AiCoachScreenState extends State<AiCoachScreen> {
         MeditationType.stressRelief: 'Stress Relief', MeditationType.sleep: 'Sleep Meditation',
         MeditationType.energyBoost: 'Energy Boost',
       };
-      base += 'üéØ ${names[_currentRecommendation!.type]} (${_currentRecommendation!.duration.inMinutes} min)\n';
-      base += 'üìå ${_currentRecommendation!.reason}\n';
-      base += '‚úÖ ${(_currentRecommendation!.confidence * 100).toInt()}% match for your profile';
+      base += '?? ${names[_currentRecommendation!.type]} (${_currentRecommendation!.duration.inMinutes} min)\n';
+      base += '?? ${_currentRecommendation!.reason}\n';
+      base += '? ${(_currentRecommendation!.confidence * 100).toInt()}% match for your profile';
     }
-    if (conditions.isNotEmpty && !conditions.contains('None of the above')) base += '\n\nHealth matrix: ${conditions.join(', ')} ‚Äî all protocols calibrated.';
-    if (goal.isNotEmpty) base += '\n\nMission objective: $goal ‚Äî you are on course.';
+    if (conditions.isNotEmpty && !conditions.contains('None of the above')) base += '\n\nHealth matrix: ${conditions.join(', ')} ó all protocols calibrated.';
+    if (goal.isNotEmpty) base += '\n\nMission objective: $goal ó you are on course.';
     return base;
   }
 
@@ -348,7 +348,7 @@ class _AiCoachScreenState extends State<AiCoachScreen> {
       return const Scaffold(
         backgroundColor: Color(0xFF050510),
         body: Center(child: Column(mainAxisSize: MainAxisSize.min, children: [
-          Text('‚¨°', style: TextStyle(fontSize: 48, color: Color(0xFF9d4edd))),
+          Text('?', style: TextStyle(fontSize: 48, color: Color(0xFF9d4edd))),
           SizedBox(height: 16),
           CircularProgressIndicator(color: Color(0xFF9d4edd)),
           SizedBox(height: 16),
@@ -363,7 +363,7 @@ class _AiCoachScreenState extends State<AiCoachScreen> {
         backgroundColor: const Color(0xFF050510),
         elevation: 0,
         leading: IconButton(icon: const Icon(Icons.arrow_back, color: Colors.white), onPressed: () => context.canPop() ? context.pop() : context.go('/main')),
-        title: const Text('ZENO ¬∑ NEURAL INTERFACE', style: TextStyle(color: Colors.white, fontWeight: FontWeight.w800, fontSize: 14, letterSpacing: 1.5)),
+        title: const Text('ZENO ∑ NEURAL INTERFACE', style: TextStyle(color: Colors.white, fontWeight: FontWeight.w800, fontSize: 14, letterSpacing: 1.5)),
         actions: [
           if (_profile != null) IconButton(icon: const Icon(Icons.manage_accounts_outlined, color: Color(0xFF9d4edd)), onPressed: () => setState(() => _showHealthSetup = true)),
           if (_currentRecommendation != null) IconButton(icon: const Icon(Icons.auto_awesome, color: Color(0xFF00b4d8)), onPressed: _showRecommendation),
@@ -400,7 +400,7 @@ class _AiCoachScreenState extends State<AiCoachScreen> {
       body: SingleChildScrollView(
         padding: const EdgeInsets.fromLTRB(24, 16, 24, 40),
         child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          const Center(child: Text('‚¨°', style: TextStyle(fontSize: 64, color: Color(0xFF9d4edd)))),
+          const Center(child: Text('?', style: TextStyle(fontSize: 64, color: Color(0xFF9d4edd)))),
           const SizedBox(height: 16),
           const Center(child: Text('CALIBRATE YOUR NEURAL MATRIX', style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.w800, letterSpacing: 1))),
           const SizedBox(height: 8),
@@ -502,7 +502,7 @@ class _AiCoachScreenState extends State<AiCoachScreen> {
         Row(mainAxisAlignment: msg.isUser ? MainAxisAlignment.end : MainAxisAlignment.start, crossAxisAlignment: CrossAxisAlignment.end, children: [
           if (!msg.isUser) ...[
             Container(width: 30, height: 30, decoration: const BoxDecoration(gradient: LinearGradient(colors: [Color(0xFF9d4edd), Color(0xFF00b4d8)]), shape: BoxShape.circle),
-              child: const Center(child: Text('‚¨°', style: TextStyle(fontSize: 14, color: Colors.white)))),
+              child: const Center(child: Text('?', style: TextStyle(fontSize: 14, color: Colors.white)))),
             const SizedBox(width: 8),
           ],
           Flexible(child: Container(
@@ -535,7 +535,7 @@ class _AiCoachScreenState extends State<AiCoachScreen> {
   Widget _buildTypingIndicator() {
     return Padding(padding: const EdgeInsets.only(bottom: 12), child: Row(children: [
       Container(width: 30, height: 30, decoration: const BoxDecoration(gradient: LinearGradient(colors: [Color(0xFF9d4edd), Color(0xFF00b4d8)]), shape: BoxShape.circle),
-        child: const Center(child: Text('‚¨°', style: TextStyle(fontSize: 14, color: Colors.white)))),
+        child: const Center(child: Text('?', style: TextStyle(fontSize: 14, color: Colors.white)))),
       const SizedBox(width: 8),
       Container(
         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),

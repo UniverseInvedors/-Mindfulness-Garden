@@ -16,14 +16,14 @@
     <uses-permission android:name="android.permission.RECORD_AUDIO" tools:node="remove" />
 
     <application
-        android:label="Mindfulness Garden"
+        android:label="PranaVerse: Healing Frequencies"
         android:name="${applicationName}"
         android:icon="@mipmap/ic_launcher"
         android:enableOnBackInvokedCallback="true">
 
         <meta-data
             android:name="com.google.android.gms.ads.APPLICATION_ID"
-            android:value="ca-app-pub-8436172731596367~2856156834" />
+            android:value="ca-app-pub-8759032363251002~2856156834" />
 
         <activity
             android:name=".MainActivity"

@@ -1,7 +1,9 @@
 // ignore_for_file: deprecated_member_use
 import 'package:flutter/material.dart';
-import 'package:mindfulness_garden/core/widgets/meditation_scene_widget.dart';
-import 'package:mindfulness_garden/core/services/voice_service.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:pranaverse/core/widgets/meditation_scene_widget.dart';
+import 'package:pranaverse/core/widgets/character/teacher_personality.dart';
+import 'package:pranaverse/core/services/voice_service.dart';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // BreathingSceneSetup
@@ -21,7 +23,7 @@ import 'package:mindfulness_garden/core/services/voice_service.dart';
 //   ));
 // ─────────────────────────────────────────────────────────────────────────────
 
-class BreathingSceneSetup extends StatefulWidget {
+class BreathingSceneSetup extends ConsumerWidget {
   final String title;
   final String subtitle;
   final Color accentColor;
@@ -36,10 +38,34 @@ class BreathingSceneSetup extends StatefulWidget {
   });
 
   @override
-  State<BreathingSceneSetup> createState() => _BreathingSceneSetupState();
+  Widget build(BuildContext context, WidgetRef ref) {
+    return _BreathingSceneSetupContent(
+      title: title,
+      subtitle: subtitle,
+      accentColor: accentColor,
+      onBegin: onBegin,
+    );
+  }
 }
 
-class _BreathingSceneSetupState extends State<BreathingSceneSetup> {
+class _BreathingSceneSetupContent extends StatefulWidget {
+  final String title;
+  final String subtitle;
+  final Color accentColor;
+  final void Function(SceneEnvironment env, SceneTimeOfDay time) onBegin;
+
+  const _BreathingSceneSetupContent({
+    required this.title,
+    required this.subtitle,
+    required this.onBegin,
+    this.accentColor = const Color(0xFF9d4edd),
+  });
+
+  @override
+  State<_BreathingSceneSetupContent> createState() => _BreathingSceneSetupContentState();
+}
+
+class _BreathingSceneSetupContentState extends State<_BreathingSceneSetupContent> {
   SceneEnvironment _env = SceneEnvironment.forest;
   SceneTimeOfDay _time = SceneTimeOfDay.morning;
 
@@ -137,14 +163,20 @@ class _BreathingSceneSetupState extends State<BreathingSceneSetup> {
             // ── Live 2.5D preview ────────────────────────────────────
             Expanded(
               flex: 5,
-              child: MeditationSceneWidget(
-                breathPhase: BreathPhase.idle,
-                pose: ZenoPose.sitting,
-                environment: _env,
-                timeOfDay: _time,
-                instruction: 'Choose your world',
-                isActive: true,
-                height: double.infinity,
+              child: Consumer(
+                builder: (context, ref, _) {
+                  final themeSettings = ref.watch(themePreferenceProvider);
+                  return MeditationSceneWidget(
+                    breathPhase: BreathPhase.idle,
+                    pose: ZenoPose.sitting,
+                    environment: _env,
+                    timeOfDay: _time,
+                    instruction: 'Choose your world',
+                    isActive: true,
+                    height: double.infinity,
+                    teacher: ref.watch(teacherPreferenceProvider),
+                  );
+                },
               ),
             ),
 

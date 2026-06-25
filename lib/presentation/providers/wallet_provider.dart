@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:mindfulness_garden/core/services/wallet_service.dart';
-import 'package:mindfulness_garden/data/models/user_model.dart';
-import 'package:mindfulness_garden/data/models/wallet_model.dart';
+import 'package:pranaverse/core/services/wallet_service.dart';
+import 'package:pranaverse/data/models/user_model.dart';
+import 'package:pranaverse/data/models/wallet_model.dart';
 
 /// Provider that manages the unified wallet across all game features
 class WalletProvider extends ChangeNotifier {

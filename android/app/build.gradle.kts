@@ -5,8 +5,6 @@ plugins {
     id("com.android.application")
     id("kotlin-android")
     id("dev.flutter.flutter-gradle-plugin")
-    id("com.google.gms.google-services")
-    id("com.google.firebase.crashlytics")
 }
 
 // Load keystore properties
@@ -18,7 +16,7 @@ if (hasReleaseKeystore) {
 }
 
 android {
-    namespace = "com.mindfulgarden.mindfulness_garden"
+    namespace = "com.universeinvedors.pranaverse"
     compileSdk = 36
     ndkVersion = flutter.ndkVersion
 
@@ -33,7 +31,7 @@ android {
     }
 
     defaultConfig {
-        applicationId = "com.mindfulgarden.mindfulness_garden"
+        applicationId = "com.universeinvedors.pranaverse"
         minSdk = 26
         targetSdk = flutter.targetSdkVersion
         versionCode = flutter.versionCode
@@ -59,19 +57,14 @@ android {
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
             )
-            signingConfig = signingConfigs.getByName(
-                if (hasReleaseKeystore) "release" else "debug"
-            )
+            // Use debug signing for now - will update with production keystore after Google Play setup
+            signingConfig = signingConfigs.getByName("debug")
         }
     }
 }
 
 dependencies {
     coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:2.1.4")
-}
-
-configurations.all {
-    exclude(group = "com.google.firebase", module = "firebase-iid")
 }
 
 flutter {

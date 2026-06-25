@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:mindfulness_garden/data/models/user_model.dart';
-import 'package:mindfulness_garden/data/repositories/user_repository.dart';
+import 'package:pranaverse/data/models/user_model.dart';
+import 'package:pranaverse/data/repositories/user_repository.dart';
 
 class UserProvider extends ChangeNotifier {
   final UserRepository _repository = UserRepository();

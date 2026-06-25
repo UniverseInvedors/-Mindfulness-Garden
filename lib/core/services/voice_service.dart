@@ -1,6 +1,7 @@
 import 'package:flutter_tts/flutter_tts.dart';
-import 'package:mindfulness_garden/core/services/localization_service.dart';
-import 'package:mindfulness_garden/data/local_storage/local_storage_service.dart';
+import 'package:pranaverse/core/providers/app_settings_provider.dart';
+import 'package:pranaverse/core/services/localization_service.dart';
+import 'package:pranaverse/data/local_storage/local_storage_service.dart';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // VoiceService — app-wide TTS singleton
@@ -45,17 +46,6 @@ class VoiceService {
     if (enabled is bool) _enabled = enabled;
     final rate = LocalStorageService.getSetting('voice_rate');
     if (rate is double) _rate = rate;
-    final lang = LocalStorageService.getSetting('voice_language');
-    if (lang is String) {
-      _language = lang;
-      _appLanguage = LocalizationService.languageFromCode(lang);
-    }
-
-    final appLangSetting = LocalStorageService.getSetting('app_language');
-    if (appLangSetting is String) {
-      _appLanguage = LocalizationService.languageFromName(appLangSetting);
-      _language = _appLanguage.localeCode;
-    }
 
     final p = LocalStorageService.getSetting('voice_personality');
     if (p is String) {
@@ -63,6 +53,9 @@ class VoiceService {
         _personality = VoicePersonality.values.firstWhere((v) => v.name == p);
       } catch (_) {}
     }
+
+    // Language is now managed by AppSettingsProvider, but we still need to initialize TTS
+    _language = _getTtsLanguageCode(_appLanguage);
 
     // Resolve and apply best-available TTS language (with fallbacks)
     try {
@@ -76,6 +69,24 @@ class VoiceService {
     await _tts.setPitch(_pitch);
     await _tts.setVolume(_volume);
     await _tts.awaitSpeakCompletion(false); // non-blocking by default
+  }
+
+  // Update language from global provider
+  Future<void> updateLanguage(AppLanguage language) async {
+    _appLanguage = language;
+    _language = _getTtsLanguageCode(language);
+    await setLanguage(_language);
+  }
+
+  String _getTtsLanguageCode(AppLanguage language) {
+    switch (language) {
+      case AppLanguage.english:
+        return 'en-US';
+      case AppLanguage.bengali:
+        return 'bn-IN';
+      case AppLanguage.hindi:
+        return 'hi-IN';
+    }
   }
 
   // ── Public API ────────────────────────────────────────────────────────────
@@ -121,13 +132,6 @@ class VoiceService {
         await _tts.setLanguage(_language);
       } catch (_) {}
     }
-    await LocalStorageService.saveSetting('voice_language', _language);
-  }
-
-  Future<void> setAppLanguage(AppLanguage language) async {
-    _appLanguage = language;
-    await setLanguage(language.localeCode);
-    await LocalStorageService.saveSetting('app_language', language.displayName);
   }
 
   // Attempt to find a suitable TTS language supported by the platform.

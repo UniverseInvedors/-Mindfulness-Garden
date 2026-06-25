@@ -170,9 +170,7 @@ class _MemoryOptimizedScreenState extends State<MemoryOptimizedScreen>
 
   Future<void> _precacheAssets() async {
     final images = [
-      'assets/images/background.png',
-      'assets/images/logo.png',
-      'assets/images/garden.png',
+      'assets/images/mindful_garden_icon.png',
     ];
 
     for (final image in images) {

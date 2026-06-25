@@ -1,60 +1,11 @@
-/// App-wide text and voice translations for Mindfulness Garden.
-///
-/// This service is intentionally lightweight and stores language maps for
-/// UI labels, voice prompts, and pose instructions.
-/// Use `LocalizationService.translate(key, language)` for text and
-/// `LocalizationService.translateList(key, language)` for voice phrase lists.
+/// DEPRECATED: Use AppLocalizations instead.
+/// 
+/// This service is deprecated in favor of Flutter's official localization system (AppLocalizations).
+/// All new code should use AppLocalizations.of(context) for UI strings.
+/// This service is kept only for voice prompts and pose instructions which are not in ARB files.
 library;
 
-enum AppLanguage {
-  english,
-  hindi,
-  bengali,
-  spanish,
-  french,
-  german,
-  chinese,
-}
-
-extension AppLanguageExtension on AppLanguage {
-  String get displayName {
-    switch (this) {
-      case AppLanguage.hindi:
-        return 'Hindi';
-      case AppLanguage.bengali:
-        return 'Bengali';
-      case AppLanguage.spanish:
-        return 'Spanish';
-      case AppLanguage.french:
-        return 'French';
-      case AppLanguage.german:
-        return 'German';
-      case AppLanguage.chinese:
-        return 'Chinese';
-      default:
-        return 'English';
-    }
-  }
-
-  String get localeCode {
-    switch (this) {
-      case AppLanguage.hindi:
-        return 'hi-IN';
-      case AppLanguage.bengali:
-        return 'bn-IN';
-      case AppLanguage.spanish:
-        return 'es-ES';
-      case AppLanguage.french:
-        return 'fr-FR';
-      case AppLanguage.german:
-        return 'de-DE';
-      case AppLanguage.chinese:
-        return 'zh-CN';
-      default:
-        return 'en-US';
-    }
-  }
-}
+import 'package:pranaverse/core/providers/app_settings_provider.dart';
 
 class LocalizationService {
   LocalizationService._();
@@ -86,7 +37,7 @@ class LocalizationService {
 
   static AppLanguage languageFromCode(String value) {
     return AppLanguage.values.firstWhere(
-      (lang) => lang.localeCode.toLowerCase() == value.toLowerCase(),
+      (lang) => lang.code.toLowerCase() == value.toLowerCase(),
       orElse: () => AppLanguage.english,
     );
   }
@@ -220,7 +171,7 @@ class LocalizationService {
       'session_complete':
           'आपका सत्र पूरा हुआ। इस शांति को अपने दिन भर के साथ रखें।',
       'select_language': 'भाषा चुनें',
-      'language_set': 'भाषा सेट করা হয়েছে: {language}',
+      'language_set': 'भाषा सेट करा हय़ेछे: {language}',
       'benefits_breathing':
           'साँस लेने के व्यायाम तंत्रिका तंत्र को शांत करते हैं, चिंता घटाते हैं, नींद और ध्यान सुधारते हैं। तनाव होने पर या सोने से पहले उपयोग करें।',
       'benefits_yoga':
@@ -265,126 +216,6 @@ class LocalizationService {
           'যোগ শারীরিক শক্তি, ভারসাম্য ও নমনীয়তা বাড়ায় এবং চাপ কমায়। উদ্দীপক হতে বা ঘুমের আগে শান্ত হতে সিকোয়েন্স ব্যবহার করুন।',
       'benefits_meditation':
           'ধ্যান মনকে শান্ত করে, চাপ কমায় এবং মনোযোগ উন্নত করে। যখন আপনাকে শান্ত শক্তি বা একটি শান্তি পূর্ন বিরতি দরকার, তখন এটি ব্যবহার করুন।',
-    },
-    AppLanguage.spanish: {
-      'breathing_exercises_title': 'Ejercicios de Respiración',
-      'breathing_exercises_subtitle':
-          'Domina tu respiración para dominar tu mente',
-      'breathing_guide':
-          'Sigue el círculo animado. Inhala cuando se expande y exhala cuando se contrae.',
-      'yoga_title': 'Yoga con Zeno',
-      'yoga_subtitle': 'Experiencia inmersiva 2.5D',
-      'start_yoga_session': 'Iniciar sesión de yoga',
-      'select_environment': 'Seleccionar ambiente',
-      'select_time_of_day': 'Seleccionar hora del día',
-      'sequence_preview': 'Vista previa de la secuencia',
-      'back_to_main_menu': 'Volver al menú principal',
-      'best_time': 'Mejor hora',
-      'recommended_time_morning': 'Mañana',
-      'recommended_time_evening': 'Tarde',
-      'recommended_time_night': 'Noche',
-      'recommended_time_midday': 'Mediodía',
-      'pose_status': 'Postura {current} de {total}',
-      'next_pose': 'Siguiente postura',
-      'home_language': 'Idioma',
-      'start': 'Iniciar',
-      'pause': 'Pausa',
-      'resume': 'Continuar',
-      'complete': 'Completar',
-      'session_start':
-          'La sesión guiada empieza ahora. Sigue la respiración y muévete con facilidad.',
-      'session_complete':
-          'Tu sesión ha concluido. Lleva esta calma contigo todo el día.',
-      'select_language': 'Selecciona idioma',
-    },
-    AppLanguage.french: {
-      'breathing_exercises_title': 'Exercices de Respiration',
-      'breathing_exercises_subtitle':
-          'Maîtrisez votre respiration pour maîtriser votre esprit',
-      'breathing_guide':
-          'Suivez le cercle animé. Inspirez quand il s’agrandit, expirez quand il se contracte.',
-      'yoga_title': 'Yoga avec Zeno',
-      'yoga_subtitle': 'Expérience immersive 2.5D',
-      'start_yoga_session': 'Commencer la séance de yoga',
-      'select_environment': 'Choisir l’environnement',
-      'select_time_of_day': 'Choisir le moment de la journée',
-      'sequence_preview': 'Aperçu de la séquence',
-      'back_to_main_menu': 'Retour au menu principal',
-      'best_time': 'Meilleur moment',
-      'recommended_time_morning': 'Matin',
-      'recommended_time_evening': 'Soir',
-      'recommended_time_night': 'Nuit',
-      'recommended_time_midday': 'Midi',
-      'pose_status': 'Posture {current} sur {total}',
-      'next_pose': 'Prochaine posture',
-      'home_language': 'Langue',
-      'start': 'Démarrer',
-      'pause': 'Pause',
-      'resume': 'Reprendre',
-      'complete': 'Terminé',
-      'session_start':
-          'La séance guidée commence maintenant. Suis le souffle et bouge avec aisance.',
-      'session_complete':
-          'Ta séance est terminée. Emporte ce calme avec toi toute la journée.',
-      'select_language': 'Sélectionnez la langue',
-    },
-    AppLanguage.german: {
-      'breathing_exercises_title': 'Atemübungen',
-      'breathing_exercises_subtitle':
-          'Meistere deinen Atem, um deinen Geist zu meistern',
-      'breathing_guide':
-          'Folge dem animierten Kreis. Atme ein, wenn er sich ausdehnt, atme aus, wenn er sich zusammenzieht.',
-      'yoga_title': 'Yoga mit Zeno',
-      'yoga_subtitle': 'Immersives 2.5D-Erlebnis',
-      'start_yoga_session': 'Yoga-Sitzung starten',
-      'select_environment': 'Umgebung wählen',
-      'select_time_of_day': 'Tageszeit wählen',
-      'sequence_preview': 'Sequenzvorschau',
-      'back_to_main_menu': 'Zurück zum Hauptmenü',
-      'best_time': 'Beste Zeit',
-      'recommended_time_morning': 'Morgen',
-      'recommended_time_evening': 'Abend',
-      'recommended_time_night': 'Nacht',
-      'recommended_time_midday': 'Mittag',
-      'pose_status': 'Pose {current} von {total}',
-      'next_pose': 'Nächste Pose',
-      'home_language': 'Sprache',
-      'start': 'Start',
-      'pause': 'Pause',
-      'resume': 'Fortsetzen',
-      'complete': 'Fertig',
-      'session_start':
-          'Die geführte Sitzung beginnt jetzt. Folge dem Atem und bewege dich mit Leichtigkeit.',
-      'session_complete':
-          'Deine Sitzung ist beendet. Nimm diese Ruhe den ganzen Tag mit.',
-      'select_language': 'Sprache wählen',
-    },
-    AppLanguage.chinese: {
-      'breathing_exercises_title': '呼吸练习',
-      'breathing_exercises_subtitle': '掌控你的呼吸，掌控你的心智',
-      'breathing_guide': '跟随动画圆圈。它扩大时吸气，收缩时呼气。',
-      'yoga_title': '与 Zeno 一起瑜伽',
-      'yoga_subtitle': '2.5D 沉浸式体验',
-      'start_yoga_session': '开始瑜伽课程',
-      'select_environment': '选择环境',
-      'select_time_of_day': '选择一天中的时间',
-      'sequence_preview': '序列预览',
-      'back_to_main_menu': '返回主菜单',
-      'best_time': '最佳时间',
-      'recommended_time_morning': '早晨',
-      'recommended_time_evening': '傍晚',
-      'recommended_time_night': '夜晚',
-      'recommended_time_midday': '中午',
-      'pose_status': '体式 {current} / {total}',
-      'next_pose': '下一个体式',
-      'home_language': '语言',
-      'start': '开始',
-      'pause': '暂停',
-      'resume': '继续',
-      'complete': '完成',
-      'session_start': '引导课程现在开始。跟随呼吸，轻松移动。',
-      'session_complete': '你的课程已完成。将这份平静带到整天。',
-      'select_language': '选择语言',
     },
   };
 
@@ -501,154 +332,6 @@ class LocalizationService {
         'তুমি ঠিক সেখানে আছো যেখানে তোমাকে থাকতে হবে।',
       ],
     },
-    AppLanguage.spanish: {
-      'breathingIntro': [
-        'Bienvenido, buscador. Estoy aquí para guiarte. Comencemos con la respiración, el puente entre el cuerpo y la mente.',
-        'La paz esté contigo. La respiración es tu ancla. Respiremos juntos y encontremos quietud.',
-        'Saludos. La mente es como el agua — cuando está quieta, refleja todo claramente. Vamos a calmar las aguas.',
-      ],
-      'inhalePrompts': [
-        'Inhala... llena cada célula de vida.',
-        'Inhala... siente el universo llenándote.',
-        'Respira profundamente... estás recibiendo.',
-      ],
-      'holdPrompts': [
-        'Mantén... descansa en este momento de plenitud.',
-        'Permanece en calma... este es el espacio entre mundos.',
-        'Sujeta con suavidad... ni agarrando ni soltando.',
-      ],
-      'exhalePrompts': [
-        'Suelta... deja ir lo que no te sirve.',
-        'Exhala... entrégate a lo que no puedes controlar.',
-        'Expulsa el aire... vuelve al vacío, que es plenitud.',
-      ],
-      'poseTransitions': [
-        'Ahora nos movemos a la siguiente postura. Deja que el cuerpo siga a la respiración.',
-        'Transiciona con conciencia. Cada movimiento es una meditación.',
-        'Cambia suavemente. El cuerpo es un templo — muévete dentro de él con reverencia.',
-      ],
-      'sessionCompleteLines': [
-        'Has hecho bien, buscador. Lleva esta quietud a tu día.',
-        'La práctica está completa. Recuerda — la paz que encontraste aquí vive dentro de ti siempre.',
-        'Bien hecho. El loto crece del barro, pero permanece inmaculado. Así también serás tú.',
-      ],
-      'encouragement': [
-        'La mente vaga — esa es su naturaleza. Vuelve suavemente, sin juicio.',
-        'No hay fracaso en la práctica. Solo volver, una y otra vez.',
-        'Estás exactamente donde necesitas estar.',
-      ],
-    },
-    AppLanguage.french: {
-      'breathingIntro': [
-        'Bienvenue, chercheur. Je suis ici pour te guider. Commençons par la respiration — le pont entre le corps et l’esprit.',
-        'Que la paix soit avec toi. La respiration est ton ancre. Respirons ensemble et trouvons la quiétude.',
-        'Salutations. L’esprit est comme l’eau — quand il est immobile, il reflète tout clairement. Calmons les eaux.',
-      ],
-      'inhalePrompts': [
-        'Inspire... remplis chaque cellule de vie.',
-        'Inspire... sens l’univers te remplir.',
-        'Inspire profondément... tu reçois.',
-      ],
-      'holdPrompts': [
-        'Retiens... repose dans ce moment de plénitude.',
-        'Reste immobile... c’est l’espace entre les mondes.',
-        'Retiens doucement... ni ne t’accroche, ni ne relâche.',
-      ],
-      'exhalePrompts': [
-        'Libère... laisse partir ce qui ne te sert pas.',
-        'Expire... abandonne ce que tu ne peux pas contrôler.',
-        'Sors l’air... retourne au vide, qui est plénitude.',
-      ],
-      'poseTransitions': [
-        'Nous passons maintenant à la posture suivante. Laisse le corps suivre la respiration.',
-        'Transite avec conscience. Chaque mouvement est une méditation.',
-        'Déplace-toi doucement. Le corps est un temple — bouge à l’intérieur avec révérence.',
-      ],
-      'sessionCompleteLines': [
-        'Tu as bien fait, chercheur. Emporte cette tranquillité dans ta journée.',
-        'La pratique est terminée. Souviens-toi — la paix que tu as trouvée ici vit toujours en toi.',
-        'Bien joué. Le lotus pousse dans la boue, mais reste immaculé. Il en sera de même pour toi.',
-      ],
-      'encouragement': [
-        'L’esprit vagabonde — telle est sa nature. Reviens doucement, sans jugement.',
-        'Il n’y a pas d’échec dans la pratique. Seulement retourner, encore et encore.',
-        'Tu es exactement là où tu dois être.',
-      ],
-    },
-    AppLanguage.german: {
-      'breathingIntro': [
-        'Willkommen, Suchender. Ich bin hier, um dich zu führen. Lass uns mit dem Atem beginnen — der Brücke zwischen Körper und Geist.',
-        'Frieden sei mit dir. Der Atem ist dein Anker. Lass uns gemeinsam atmen und Stille finden.',
-        'Grüße. Der Geist ist wie Wasser — wenn er still ist, spiegelt er alles klar wider. Lass uns das Wasser beruhigen.',
-      ],
-      'inhalePrompts': [
-        'Atme ein... fülle jede Zelle mit Leben.',
-        'Atme ein... spüre, wie das Universum dich erfüllt.',
-        'Atme tief ein... du empfängst.',
-      ],
-      'holdPrompts': [
-        'Halte... ruhe in diesem Moment der Fülle.',
-        'Sei still... dies ist der Raum zwischen den Welten.',
-        'Halte sanft... weder greifen noch loslassen.',
-      ],
-      'exhalePrompts': [
-        'Lass los... gib frei, was dir nicht dient.',
-        'Atme aus... übergib dich dem, was du nicht kontrollieren kannst.',
-        'Atme aus... kehre zurück zur Leere, die Fülle ist.',
-      ],
-      'poseTransitions': [
-        'Jetzt gehen wir in die nächste Haltung. Lass den Körper dem Atem folgen.',
-        'Wechsle bewusst. Jede Bewegung ist Meditation.',
-        'Bewege dich sanft. Der Körper ist ein Tempel — bewege dich mit Ehrfurcht darin.',
-      ],
-      'sessionCompleteLines': [
-        'Du hast gut gemacht, Suchender. Trage diese Stille in deinen Tag.',
-        'Die Praxis ist abgeschlossen. Denk daran — der Frieden, den du hier gefunden hast, lebt immer in dir.',
-        'Gut gemacht. Die Lotusblume wächst aus Schlamm, bleibt aber makellos. So wirst auch du sein.',
-      ],
-      'encouragement': [
-        'Der Geist wandert — das ist seine Natur. Kehre sanft zurück, ohne zu urteilen.',
-        'Es gibt kein Scheitern in der Praxis. Nur Rückkehr, immer wieder.',
-        'Du bist genau dort, wo du sein musst.',
-      ],
-    },
-    AppLanguage.chinese: {
-      'breathingIntro': [
-        '欢迎，探索者。我在这里引导你。让我们从呼吸开始——身体与心灵之间的桥梁。',
-        '愿平安与你同在。呼吸是你的锚。让我们一起呼吸，找到宁静。',
-        '问候。心灵如水——当它平静时，一切都清晰地反射。让我们让水安静。',
-      ],
-      'inhalePrompts': [
-        '吸气...将生命注入每一个细胞。',
-        '吸气...感受宇宙充满你。',
-        '深吸一口气...你正在接收。',
-      ],
-      'holdPrompts': [
-        '保持...在这片刻的充盈中休息。',
-        '保持静止...这是世界之间的空间。',
-        '轻轻保持...既不抓紧也不释放。',
-      ],
-      'exhalePrompts': [
-        '释放...放下不再服务于你的事物。',
-        '呼气...顺从你无法控制的事物。',
-        '呼出...返回到虚无，那就是圆满。',
-      ],
-      'poseTransitions': [
-        '现在我们进入下一个体式。让身体随着呼吸移动。',
-        '用觉知转换。每一个动作都是一次冥想。',
-        '轻柔地转换。身体是庙宇——在其中以敬意移动。',
-      ],
-      'sessionCompleteLines': [
-        '你做得很好，探索者。将这份宁静带入你的一天。',
-        '练习完成。记住——你在这里找到的平静会永远留在你体内。',
-        '干得好。莲花从泥中生长，却仍然纯洁。你也会如此。',
-      ],
-      'encouragement': [
-        '心灵漂泊——这是它的本性。轻柔地回归，不评判。',
-        '练习中没有失败。只有一而再再而三的回归。',
-        '你正处在你需要在的位置。',
-      ],
-    },
   };
 
   static final Map<AppLanguage, Map<String, String>> _poseInstructionStrings = {
@@ -694,67 +377,10 @@ class LocalizationService {
       "Warrior I (other)":
           'অন্য দিকে স্যুইচ করো। তোমার শক্তি মাটিতে রেখো এবং তোমার শ্বাস স্থির রাখো।',
       "Child's Pose":
-          'মাটিতে ফিরে যাও। এখানে বিশ্রাম করো। এই মুহূর্তে তোমার প্রচেষ্টা করার দরকার নেই।',
+          'পৃথ্বীর দিকে ফিরে যাও। এখানে আরাম করো। এই মুহূর্তে তোমার প্রচেষ্টার প্রয়োজন নেই।',
       'Downward Dog':
-          'মেরুদণ্ডটি দীর্ঘ করো। ভারসাম্যকে কাজ করতে দাও। আসনে আত্মসমর্পণ করো।',
+          'রীঢ় দীর্ঘ করো। মাধ্যাকর্ষণকে কাজ করতে দাও। আসনে আত্মসমর্পণ করো।',
       'Lotus Meditation': 'স্থিরভাবে বসো। পদ্ম কাদায় ফোটে — তেমনি জ্ঞানও।',
-    },
-    AppLanguage.spanish: {
-      'Mountain Pose':
-          'Párate como una montaña — enraizada, inmóvil, pero abierta al cielo.',
-      'Warrior I':
-          'Sé el guerrero de la paz. Planta tus pies. Extiéndete hacia los cielos.',
-      'Tree Pose':
-          'Encuentra tu centro. El árbol se inclina con el viento pero sus raíces se mantienen firmes.',
-      "Warrior I (other)":
-          'Cambia de lado. Mantén tu energía centrada y tu respiración constante.',
-      "Child's Pose":
-          'Vuelve a la tierra. Descansa aquí. No necesitas esforzarte en este momento.',
-      'Downward Dog':
-          'Alarga la columna. Deja que la gravedad haga el trabajo. Ríndete a la postura.',
-      'Lotus Meditation':
-          'Siéntate en quietud. El loto florece en agua fangosa — así también la sabiduría.',
-    },
-    AppLanguage.french: {
-      'Mountain Pose':
-          'Tiens-toi comme une montagne — enraciné, immobile, mais ouvert au ciel.',
-      'Warrior I':
-          'Sois le guerrier de la paix. Enracine tes pieds. Étends-toi vers les cieux.',
-      'Tree Pose':
-          'Trouve ton centre. L’arbre se plie dans le vent mais ses racines tiennent bon.',
-      "Warrior I (other)":
-          'Change de côté. Garde ton énergie ancrée et ta respiration stable.',
-      "Child's Pose":
-          'Reviens à la terre. Repose-toi ici. Tu n’as pas besoin de t’efforcer en ce moment.',
-      'Downward Dog':
-          'Allonge la colonne. Laisse la gravité faire le travail. Abandonne-toi à la posture.',
-      'Lotus Meditation':
-          'Assieds-toi dans le silence. Le lotus fleurit dans la boue — tel est aussi la sagesse.',
-    },
-    AppLanguage.german: {
-      'Mountain Pose':
-          'Steh wie ein Berg — verwurzelt, unbeweglich, aber offen zum Himmel.',
-      'Warrior I':
-          'Sei der Krieger des Friedens. Erd deine Füße. Strecke dich gen Himmel.',
-      'Tree Pose':
-          'Finde dein Zentrum. Der Baum beugt sich im Wind, aber seine Wurzeln halten fest.',
-      "Warrior I (other)":
-          'Wechsle die Seite. Halte deine Energie geerdet und deinen Atem ruhig.',
-      "Child's Pose":
-          'Kehre zur Erde zurück. Ruh dich hier aus. Du musst dich in diesem Moment nicht anstrengen.',
-      'Downward Dog':
-          'Strecke die Wirbelsäule. Lass die Schwerkraft die Arbeit tun. Gib dich der Haltung hin.',
-      'Lotus Meditation':
-          'Sitze in Stille. Die Lotusblume blüht im Schlamm — so auch die Weisheit.',
-    },
-    AppLanguage.chinese: {
-      'Mountain Pose': '像山一样站立——根深蒂固，不动摇，但向天空敞开。',
-      'Warrior I': '成为和平的战士。稳住双脚。向天空伸展。',
-      'Tree Pose': '找到你的中心。树在风中弯曲，但根牢牢扎在地里。',
-      "Warrior I (other)": '换边。保持你的能量扎根，呼吸稳定。',
-      "Child's Pose": '回归大地。在这里休息。此刻你无需努力。',
-      'Downward Dog': '拉长脊柱。让重力工作。向体式投降。',
-      'Lotus Meditation': '静坐。莲花在泥中开放——智慧亦然。',
     },
   };
 }

@@ -1,13 +1,20 @@
 ﻿import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
-import 'package:mindfulness_garden/presentation/providers/user_provider.dart';
-import 'package:mindfulness_garden/presentation/providers/auth_provider.dart';
-import 'package:mindfulness_garden/presentation/providers/app_provider.dart';
-import 'package:mindfulness_garden/core/services/voice_service.dart';
-import 'package:mindfulness_garden/core/services/localization_service.dart';
-import 'package:mindfulness_garden/core/services/ai_service.dart';
-import 'package:mindfulness_garden/data/local_storage/local_storage_service.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart' as riverpod;
+import 'package:pranaverse/presentation/providers/user_provider.dart';
+import 'package:pranaverse/presentation/providers/auth_provider.dart';
+import 'package:pranaverse/core/providers/app_settings_provider.dart';
+import 'package:pranaverse/core/services/voice_service.dart';
+import 'package:pranaverse/core/services/ai_service.dart';
+import 'package:pranaverse/services/backend_integration_service.dart';
+import 'package:pranaverse/data/local_storage/local_storage_service.dart';
+import 'package:pranaverse/core/widgets/glassmorphism/glass_container.dart';
+import 'package:pranaverse/core/widgets/glassmorphism/glass_card.dart';
+import 'package:pranaverse/core/widgets/glassmorphism/glass_button.dart';
+import 'package:pranaverse/core/widgets/glassmorphism/glass_icon.dart';
+import 'package:pranaverse/core/utils/responsive_helper.dart';
+import 'package:pranaverse/l10n/app_localizations.dart';
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
@@ -20,7 +27,11 @@ class _ProfileScreenState extends State<ProfileScreen>
   final _nameCtrl = TextEditingController();
   final _emailCtrl = TextEditingController();
   final _bioCtrl = TextEditingController();
+  final _passwordCtrl = TextEditingController();
+  final _firstNameCtrl = TextEditingController();
+  final _lastNameCtrl = TextEditingController();
   final _aiService = AiService();
+  final _backendService = BackendIntegrationService();
   late TabController _tabCtrl;
 
   String _avatar = '🧘';
@@ -30,23 +41,41 @@ class _ProfileScreenState extends State<ProfileScreen>
   bool _notificationsOn = true;
   bool _soundsOn = true;
   String _reminderTime = '08:00';
+  
+  // Auth state
+  bool _isLoginMode = true;
+  bool _isAuthLoading = false;
+  bool _isAuthenticated = false;
+  
+  // Backend data
+  int _backendStreak = 0;
+  int _backendPlants = 0;
+  int _backendSessions = 0;
+  int _backendMinutes = 0;
+  bool _isLoadingBackendData = false;
 
   static const _avatars = [
     '🧘',
-    '🌿',
     '🌸',
-    '🌻',
+    '🌿',
     '🦋',
-    '🌙',
-    '⭐',
-    '🌊',
-    '🍃',
     '🌺',
-    '🔥',
-    '💎',
-    '🦁',
-    '🐉',
-    '🌈'
+    '🍃',
+    '🌼',
+    '🌻',
+    '🌷',
+    '💐',
+    '🌹',
+    '🪷',
+    '🍀',
+    '🌴',
+    '🌵',
+    '🌲',
+    '🌳',
+    '🌱',
+    '🌾',
+    '🌰',
+    '🎋'
   ];
   static const _ages = ['Under 18', '18–25', '26–35', '36–45', '46–55', '55+'];
   static const _goals = [
@@ -58,6 +87,7 @@ class _ProfileScreenState extends State<ProfileScreen>
     'Recover from burnout',
     'General wellbeing',
   ];
+  // TODO: Move these to AppLocalizations for proper i18n
   static const _healthConditions = [
     'Anxiety',
     'Depression',
@@ -87,8 +117,9 @@ class _ProfileScreenState extends State<ProfileScreen>
   @override
   void initState() {
     super.initState();
-    _tabCtrl = TabController(length: 3, vsync: this);
+    _tabCtrl = TabController(length: 4, vsync: this);
     _load();
+    _checkAuthStatus();
   }
 
   void _load() {
@@ -115,10 +146,115 @@ class _ProfileScreenState extends State<ProfileScreen>
     if (c is List) _conditions.addAll(List<String>.from(c));
   }
 
+  Future<void> _checkAuthStatus() async {
+    await _backendService.initialize();
+    final client = _backendService.client;
+    if (client != null && client.tokenManager.getAccessToken() != null) {
+      setState(() => _isAuthenticated = true);
+      await _loadBackendData();
+    }
+  }
+
+  Future<void> _loadBackendData() async {
+    if (!_isAuthenticated) return;
+    setState(() => _isLoadingBackendData = true);
+    try {
+      final allProgress = await _backendService.getAllProgress();
+      setState(() {
+        _backendStreak = allProgress['current_streak'] ?? 0;
+        _backendPlants = allProgress['plants_grown'] ?? 0;
+        _backendSessions = allProgress['total_sessions'] ?? 0;
+        _backendMinutes = allProgress['total_minutes'] ?? 0;
+      });
+    } catch (e) {
+      print('Failed to load backend data: $e');
+    } finally {
+      setState(() => _isLoadingBackendData = false);
+    }
+  }
+
+  Future<void> _handleLogin() async {
+    final l10n = AppLocalizations.of(context)!;
+    final email = _emailCtrl.text.trim();
+    final password = _passwordCtrl.text.trim();
+    
+    if (email.isEmpty || password.isEmpty) {
+      _snack(l10n.pleaseEnterEmailPassword, Colors.red);
+      return;
+    }
+
+    setState(() => _isAuthLoading = true);
+    try {
+      await _backendService.initialize();
+      final success = await _backendService.login(email, password);
+      if (success) {
+        setState(() => _isAuthenticated = true);
+        await _loadBackendData();
+        _snack(l10n.loginSuccessful, const Color(0xFF38b000));
+        _passwordCtrl.clear();
+      } else {
+        _snack(l10n.loginFailed, Colors.red);
+      }
+    } catch (e) {
+      _snack('${l10n.loginError} ${e.toString()}', Colors.red);
+    } finally {
+      setState(() => _isAuthLoading = false);
+    }
+  }
+
+  Future<void> _handleSignup() async {
+    final l10n = AppLocalizations.of(context)!;
+    final email = _emailCtrl.text.trim();
+    final password = _passwordCtrl.text.trim();
+    final firstName = _firstNameCtrl.text.trim();
+    final lastName = _lastNameCtrl.text.trim();
+    
+    if (email.isEmpty || password.isEmpty || firstName.isEmpty || lastName.isEmpty) {
+      _snack(l10n.pleaseFillAllFields, Colors.red);
+      return;
+    }
+
+    if (password.length < 6) {
+      _snack(l10n.passwordTooShort, Colors.red);
+      return;
+    }
+
+    setState(() => _isAuthLoading = true);
+    try {
+      await _backendService.initialize();
+      final success = await _backendService.register(email, password, firstName, lastName);
+      if (success) {
+        setState(() => _isAuthenticated = true);
+        _snack(l10n.registrationSuccessful, const Color(0xFF38b000));
+        _passwordCtrl.clear();
+        _firstNameCtrl.clear();
+        _lastNameCtrl.clear();
+      } else {
+        _snack(l10n.registrationFailed, Colors.red);
+      }
+    } catch (e) {
+      _snack('${l10n.registrationError} ${e.toString()}', Colors.red);
+    } finally {
+      setState(() => _isAuthLoading = false);
+    }
+  }
+
+  Future<void> _handleLogout() async {
+    final l10n = AppLocalizations.of(context)!;
+    try {
+      await _backendService.logout();
+      setState(() => _isAuthenticated = false);
+      _snack(l10n.logoutSuccessful, const Color(0xFF38b000));
+    } catch (e) {
+      _snack('${l10n.logoutError} ${e.toString()}', Colors.red);
+    }
+  }
+
   Future<void> _save() async {
+    final l10n = AppLocalizations.of(context)!;
     final name = _nameCtrl.text.trim();
     if (name.isEmpty) {
-      _snack('Please enter your name', Colors.red);
+      _snack(l10n.pleaseEnterName, Colors.red);
       return;
     }
     setState(() => _saving = true);
@@ -138,7 +274,7 @@ class _ProfileScreenState extends State<ProfileScreen>
     await _aiService.saveHealthProfile(
         age: _age, goal: _goal, conditions: _conditions);
     setState(() => _saving = false);
-    _snack('Profile saved!', const Color(0xFF38b000));
+    _snack(l10n.profileSaved, const Color(0xFF38b000));
   }
 
   void _snack(String msg, Color color) {
@@ -155,208 +291,380 @@ class _ProfileScreenState extends State<ProfileScreen>
     _nameCtrl.dispose();
     _emailCtrl.dispose();
     _bioCtrl.dispose();
+    _passwordCtrl.dispose();
+    _firstNameCtrl.dispose();
+    _lastNameCtrl.dispose();
     _tabCtrl.dispose();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+    final size = MediaQuery.of(context).size;
+    final isMobile = ResponsiveHelper.isMobile(context);
+    
     return Scaffold(
-      backgroundColor: const Color(0xFF0a0a1a),
-      appBar: AppBar(
-        backgroundColor: const Color(0xFF0a0a1a),
-        elevation: 0,
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: Colors.white),
-          onPressed: () =>
-              context.canPop() ? context.pop() : context.go('/main'),
-        ),
-        title: const Text('My Profile',
-            style: TextStyle(color: Colors.white, fontWeight: FontWeight.w800)),
-        actions: [
-          Builder(builder: (ctx) {
-            final user = ctx.watch<UserProvider>().user;
-            if (user == null || user.email.isEmpty) {
-              return TextButton(
-                onPressed: () => context.go('/auth'),
-                child: const Text('Sign In',
-                    style: TextStyle(color: Colors.white)),
-              );
-            }
-            return const SizedBox.shrink();
-          }),
-          TextButton(
-            onPressed: _saving ? null : _save,
-            child: _saving
-                ? const SizedBox(
-                    width: 18,
-                    height: 18,
-                    child: CircularProgressIndicator(
-                        strokeWidth: 2, color: Color(0xFF9d4edd)))
-                : const Text('Save',
-                    style: TextStyle(
-                        color: Color(0xFF9d4edd),
-                        fontWeight: FontWeight.w700,
-                        fontSize: 16)),
+      backgroundColor: Theme.of(context).colorScheme.background,
+      body: Container(
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [
+              Theme.of(context).colorScheme.background,
+              Theme.of(context).colorScheme.surface,
+              Theme.of(context).colorScheme.surface,
+            ],
           ),
-        ],
-        bottom: TabBar(
-          controller: _tabCtrl,
-          indicatorColor: const Color(0xFF9d4edd),
-          labelColor: Colors.white,
-          unselectedLabelColor: const Color(0x66FFFFFF),
-          labelStyle:
-              const TextStyle(fontWeight: FontWeight.w700, fontSize: 12),
-          tabs: const [
-            Tab(text: 'PROFILE'),
-            Tab(text: 'HEALTH'),
-            Tab(text: 'SETTINGS')
+        ),
+        child: Stack(
+          children: [
+            // Decorative gradient circles
+            Positioned(
+              top: -size.height * 0.15,
+              right: -size.width * 0.15,
+              child: Container(
+                width: size.width * 0.4,
+                height: size.width * 0.4,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  gradient: RadialGradient(
+                    colors: [
+                      Theme.of(context).colorScheme.primary.withOpacity(0.2),
+                      Colors.transparent,
+                    ],
+                  ),
+                ),
+              ),
+            ),
+            
+            Positioned(
+              bottom: -size.height * 0.1,
+              left: -size.width * 0.1,
+              child: Container(
+                width: size.width * 0.3,
+                height: size.width * 0.3,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  gradient: RadialGradient(
+                    colors: [
+                      Theme.of(context).colorScheme.secondary.withOpacity(0.15),
+                      Colors.transparent,
+                    ],
+                  ),
+                ),
+              ),
+            ),
+            
+            // Main content
+            Column(
+              children: [
+                // Custom app bar
+                SafeArea(
+                  child: Padding(
+                    padding: EdgeInsets.symmetric(
+                      horizontal: ResponsiveHelper.getResponsivePadding(context, mobilePadding: 16),
+                      vertical: ResponsiveHelper.getResponsivePadding(context, mobilePadding: 12),
+                    ),
+                    child: Row(
+                      children: [
+                        GlassIcon(
+                          icon: Icons.arrow_back,
+                          onTap: () => context.canPop() ? context.pop() : context.go('/main'),
+                          size: ResponsiveHelper.getResponsiveIconSize(context, mobileSize: 24, tabletSize: 26, desktopSize: 28),
+                          iconColor: Colors.white,
+                          blur: 10,
+                          opacity: 0.1,
+                        ),
+                        SizedBox(width: ResponsiveHelper.getResponsiveSpacing(context, mobileSpacing: 16)),
+                        Expanded(
+                          child: Text(l10n.myProfile,
+                              style: TextStyle(
+                                color: Colors.white,
+                                fontWeight: FontWeight.w800,
+                                fontSize: ResponsiveHelper.getResponsiveFontSize(context, mobileSize: 20, tabletSize: 22, desktopSize: 24),
+                              )),
+                        ),
+                        Builder(builder: (ctx) {
+                          final user = ctx.watch<UserProvider>().user;
+                          if (user == null || user.email.isEmpty) {
+                            return GlassIcon(
+                              icon: Icons.login,
+                              onTap: () => context.go('/auth'),
+                              size: ResponsiveHelper.getResponsiveIconSize(context, mobileSize: 24, tabletSize: 26, desktopSize: 28),
+                              iconColor: Colors.white,
+                              blur: 10,
+                              opacity: 0.1,
+                            );
+                          }
+                          return const SizedBox.shrink();
+                        }),
+                        SizedBox(width: ResponsiveHelper.getResponsiveSpacing(context, mobileSpacing: 12)),
+                        GlassIcon(
+                          icon: _saving ? Icons.hourglass_empty : Icons.save,
+                          onTap: _saving ? null : _save,
+                          size: ResponsiveHelper.getResponsiveIconSize(context, mobileSize: 24, tabletSize: 26, desktopSize: 28),
+                          iconColor: Colors.white,
+                          blur: 10,
+                          opacity: 0.1,
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+                
+                // Tab bar
+                Container(
+                  margin: EdgeInsets.symmetric(
+                    horizontal: ResponsiveHelper.getResponsivePadding(context, mobilePadding: 16),
+                    vertical: ResponsiveHelper.getResponsivePadding(context, mobilePadding: 8),
+                  ),
+                  decoration: BoxDecoration(
+                    color: Colors.white.withOpacity(0.05),
+                    borderRadius: BorderRadius.circular(
+                      ResponsiveHelper.getResponsiveBorderRadius(context, mobileRadius: 16),
+                    ),
+                  ),
+                  child: TabBar(
+                    controller: _tabCtrl,
+                    indicatorColor: Theme.of(context).colorScheme.primary,
+                    labelColor: Colors.white,
+                    unselectedLabelColor: const Color(0x66FFFFFF),
+                    labelStyle:
+                        TextStyle(fontWeight: FontWeight.w700, fontSize: ResponsiveHelper.getResponsiveFontSize(context, mobileSize: 12, tabletSize: 13, desktopSize: 14)),
+                    indicatorSize: TabBarIndicatorSize.tab,
+                    dividerColor: Colors.transparent,
+                    tabs: [
+                      Tab(text: l10n.profile),
+                      Tab(text: l10n.health),
+                      Tab(text: l10n.settings),
+                      Tab(text: l10n.premium)
+                    ],
+                  ),
+                ),
+                
+                // Tab content
+                Expanded(
+                  child: TabBarView(
+                    controller: _tabCtrl,
+                    children: [_buildProfileTab(), _buildHealthTab(), _buildSettingsTab(), _buildPremiumTab()],
+                  ),
+                ),
+              ],
+            ),
           ],
         ),
-      ),
-      body: TabBarView(
-        controller: _tabCtrl,
-        children: [_buildProfileTab(), _buildHealthTab(), _buildSettingsTab()],
       ),
     );
   }
 
-  // ─── PROFILE TAB ──────────────────────────────────────────────────────────
+  // --- PROFILE TAB ----------------------------------------------------------
 
   Widget _buildProfileTab() {
+    final l10n = AppLocalizations.of(context)!;
+    // Show login/signup form if not authenticated
+    if (!_isAuthenticated) {
+      return _buildAuthSection();
+    }
+
     final user = context.watch<UserProvider>().user;
-    final streak = LocalStorageService.getCurrentStreak();
+    // Use backend data when available, fallback to local storage
+    final streak = _isAuthenticated ? _backendStreak : LocalStorageService.getCurrentStreak();
     final sessions = LocalStorageService.getSessions();
-    final totalMin = sessions.fold(0, (s, e) => s + e.durationMinutes);
+    final totalMin = _isAuthenticated ? _backendMinutes : sessions.fold(0, (s, e) => s + e.durationMinutes);
     final moods = LocalStorageService.getAllMoods();
-    final plants = LocalStorageService.getSetting('garden_plants_grown') ?? 0;
+    final plants = _isAuthenticated ? _backendPlants : (LocalStorageService.getSetting('garden_plants_grown') ?? 0);
+    final sessionCount = _isAuthenticated ? _backendSessions : sessions.length;
 
     return SingleChildScrollView(
-      padding: const EdgeInsets.all(20),
+      padding: EdgeInsets.all(
+        ResponsiveHelper.getResponsivePadding(context, mobilePadding: 20),
+      ),
       child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-        // Avatar + name hero
-        Center(
-            child: Column(children: [
-          Stack(children: [
-            Container(
-              width: 100,
-              height: 100,
-              decoration: const BoxDecoration(
-                gradient: LinearGradient(
-                    colors: [Color(0xFF9d4edd), Color(0xFF00b4d8)]),
-                shape: BoxShape.circle,
-                boxShadow: [
-                  BoxShadow(
-                      color: Color(0x669d4edd), blurRadius: 24, spreadRadius: 4)
-                ],
-              ),
-              child: Center(
-                  child: Text(_avatar, style: const TextStyle(fontSize: 50))),
-            ),
-            Positioned(
-                bottom: 0,
-                right: 0,
-                child: GestureDetector(
-                  onTap: _showAvatarPicker,
-                  child: Container(
-                    width: 30,
-                    height: 30,
-                    decoration: const BoxDecoration(
-                        color: Color(0xFF9d4edd), shape: BoxShape.circle),
-                    child:
-                        const Icon(Icons.edit, color: Colors.white, size: 16),
-                  ),
-                )),
-          ]),
-          const SizedBox(height: 12),
-          Text(user?.name ?? 'Mindful Gardener',
-              style: const TextStyle(
-                  color: Colors.white,
-                  fontSize: 22,
-                  fontWeight: FontWeight.w800)),
-          if (_emailCtrl.text.isNotEmpty)
-            Text(_emailCtrl.text,
-                style: const TextStyle(color: Color(0x80FFFFFF), fontSize: 13)),
-          const SizedBox(height: 6),
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-            decoration: BoxDecoration(
-                color: const Color(0x339d4edd),
-                borderRadius: BorderRadius.circular(20)),
-            child: Text('Garden Level ${user?.gardenLevel ?? 1}',
-                style: const TextStyle(
-                    color: Color(0xFF9d4edd),
-                    fontWeight: FontWeight.w700,
-                    fontSize: 12)),
+        // Avatar + name hero with glassmorphism
+        GlassCard(
+          padding: EdgeInsets.all(
+            ResponsiveHelper.getResponsivePadding(context, mobilePadding: 24),
           ),
-        ])),
-        const SizedBox(height: 24),
+          borderRadius: BorderRadius.circular(ResponsiveHelper.getResponsiveBorderRadius(context, mobileRadius: 24)),
+          blur: 20,
+          opacity: 0.1,
+          gradient: LinearGradient(
+            colors: [
+              const Color(0xFF9D4EDD).withOpacity(0.2),
+              const Color(0xFF00B4D8).withOpacity(0.1),
+            ],
+          ),
+          child: Column(
+            children: [
+              Stack(children: [
+                Container(
+                  width: ResponsiveHelper.getResponsiveContainerWidth(context, mobileWidth: 100, tabletWidth: 110, desktopWidth: 120),
+                  height: ResponsiveHelper.getResponsiveContainerHeight(context, mobileHeight: 100, tabletHeight: 110, desktopHeight: 120),
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                        colors: [
+                          Theme.of(context).colorScheme.primary,
+                          Theme.of(context).colorScheme.secondary
+                        ]),
+                    shape: BoxShape.circle,
+                    boxShadow: [
+                      BoxShadow(
+                          color: Theme.of(context).colorScheme.primary.withOpacity(0.4), blurRadius: 24, spreadRadius: 4)
+                    ],
+                  ),
+                  child: Center(
+                      child: Text(_avatar, style: TextStyle(fontSize: ResponsiveHelper.getResponsiveFontSize(context, mobileSize: 50, tabletSize: 55, desktopSize: 60)))),
+                ),
+                Positioned(
+                    bottom: 0,
+                    right: 0,
+                    child: GestureDetector(
+                      onTap: _showAvatarPicker,
+                      child: GlassContainer(
+                        width: ResponsiveHelper.getResponsiveContainerWidth(context, mobileWidth: 32, tabletWidth: 36, desktopWidth: 40),
+                        height: ResponsiveHelper.getResponsiveContainerHeight(context, mobileHeight: 32, tabletHeight: 36, desktopHeight: 40),
+                        borderRadius: BorderRadius.circular(16),
+                        blur: 10,
+                        opacity: 0.2,
+                        gradient: LinearGradient(
+                          colors: [
+                            Theme.of(context).colorScheme.primary.withOpacity(0.4),
+                            Theme.of(context).colorScheme.secondary.withOpacity(0.3),
+                          ],
+                        ),
+                        child: Icon(Icons.edit, color: Colors.white, size: ResponsiveHelper.getResponsiveIconSize(context, mobileSize: 16, tabletSize: 18, desktopSize: 20)),
+                      ),
+                    )),
+              ]),
+              SizedBox(height: ResponsiveHelper.getResponsiveSpacing(context, mobileSpacing: 16)),
+              Center(
+                child: Text(user?.name ?? l10n.myProfile,
+                    style: TextStyle(
+                        color: Colors.white,
+                        fontSize: ResponsiveHelper.getResponsiveFontSize(context, mobileSize: 22, tabletSize: 24, desktopSize: 26),
+                        fontWeight: FontWeight.w800)),
+              ),
+              if (_emailCtrl.text.isNotEmpty)
+                Center(
+                  child: Padding(
+                    padding: EdgeInsets.only(top: ResponsiveHelper.getResponsiveSpacing(context, mobileSpacing: 4)),
+                    child: Text(_emailCtrl.text,
+                        style: TextStyle(color: Colors.white.withOpacity(0.5), fontSize: ResponsiveHelper.getResponsiveFontSize(context, mobileSize: 13, tabletSize: 14, desktopSize: 15))),
+                  ),
+                ),
+              SizedBox(height: ResponsiveHelper.getResponsiveSpacing(context, mobileSpacing: 12)),
+              GlassContainer(
+                padding: EdgeInsets.symmetric(
+                  horizontal: ResponsiveHelper.getResponsivePadding(context, mobilePadding: 16),
+                  vertical: ResponsiveHelper.getResponsivePadding(context, mobilePadding: 6),
+                ),
+                borderRadius: BorderRadius.circular(20),
+                blur: 10,
+                opacity: 0.15,
+                gradient: LinearGradient(
+                  colors: [
+                    Theme.of(context).colorScheme.primary.withOpacity(0.3),
+                    Theme.of(context).colorScheme.secondary.withOpacity(0.2),
+                  ],
+                ),
+                child: Text('${l10n.gardenLevel} ${user?.gardenLevel ?? 1}',
+                    style: TextStyle(
+                        color: Theme.of(context).colorScheme.primary,
+                        fontWeight: FontWeight.w700,
+                        fontSize: ResponsiveHelper.getResponsiveFontSize(context, mobileSize: 12, tabletSize: 13, desktopSize: 14))),
+              ),
+            ],
+          ),
+        ),
+        SizedBox(height: ResponsiveHelper.getResponsiveSpacing(context, mobileSpacing: 24)),
 
-        // Stats grid
+        // Stats grid with glassmorphism cards
         GridView.count(
           shrinkWrap: true,
           physics: const NeverScrollableScrollPhysics(),
           crossAxisCount: 3,
-          crossAxisSpacing: 10,
-          mainAxisSpacing: 10,
+          crossAxisSpacing: ResponsiveHelper.getResponsiveSpacing(context, mobileSpacing: 10),
+          mainAxisSpacing: ResponsiveHelper.getResponsiveSpacing(context, mobileSpacing: 10),
           childAspectRatio: 1.1,
           children: [
-            _statCard('🔥', '$streak', 'Streak', const Color(0xFFf77f00)),
-            _statCard('🧘', '${sessions.length}', 'Sessions',
-                const Color(0xFF9d4edd)),
-            _statCard('⏱', '$totalMin', 'Minutes', const Color(0xFF00b4d8)),
+            _statCard('🔥', '$streak', l10n.streak, Theme.of(context).colorScheme.tertiary),
+            _statCard('🧘', '${sessions.length}', l10n.sessions,
+                Theme.of(context).colorScheme.primary),
+            _statCard('⏱️', '$totalMin', l10n.minutes, Theme.of(context).colorScheme.secondary),
             _statCard(
-                '😊', '${moods.length}', 'Mood Logs', const Color(0xFFf72585)),
-            _statCard('🌱', '$plants', 'Plants', const Color(0xFF38b000)),
-            _statCard('⭐', 'Lv.${user?.gardenLevel ?? 1}', 'Garden',
-                const Color(0xFFFFD700)),
+                '📊', '${moods.length}', l10n.moodLogs, Theme.of(context).colorScheme.error),
+            _statCard('🌱', '$plants', l10n.plants, Colors.green),
+            _statCard('🏆', 'Lv.${user?.gardenLevel ?? 1}', l10n.garden,
+                Colors.amber),
           ],
         ),
-        const SizedBox(height: 24),
+        SizedBox(height: ResponsiveHelper.getResponsiveSpacing(context, mobileSpacing: 24)),
 
-        // Personal info
-        _label('PERSONAL INFO'),
-        const SizedBox(height: 10),
-        _field(_nameCtrl, 'Your Name', Icons.person_outline),
-        const SizedBox(height: 10),
-        _field(_emailCtrl, 'Email (optional)', Icons.email_outlined),
-        const SizedBox(height: 10),
-        _multiField(_bioCtrl, 'Bio — tell us about yourself (optional)',
+        // Personal info with glassmorphism
+        _label(l10n.personalInfo),
+        SizedBox(height: ResponsiveHelper.getResponsiveSpacing(context, mobileSpacing: 10)),
+        _field(_nameCtrl, l10n.yourName, Icons.person_outline),
+        SizedBox(height: ResponsiveHelper.getResponsiveSpacing(context, mobileSpacing: 10)),
+        _field(_emailCtrl, l10n.emailOptional, Icons.email_outlined),
+        SizedBox(height: ResponsiveHelper.getResponsiveSpacing(context, mobileSpacing: 10)),
+        _multiField(_bioCtrl, l10n.bio,
             Icons.notes_outlined, 3),
-        const SizedBox(height: 24),
+        SizedBox(height: ResponsiveHelper.getResponsiveSpacing(context, mobileSpacing: 24)),
 
-        // Joined date
+        // Joined date with glassmorphism
         if (user != null)
-          Container(
-            padding: const EdgeInsets.all(14),
-            decoration: BoxDecoration(
-                color: const Color(0xFF1a1a2e),
-                borderRadius: BorderRadius.circular(14),
-                border: Border.all(color: const Color(0x1AFFFFFF))),
+          GlassCard(
+            padding: EdgeInsets.all(
+              ResponsiveHelper.getResponsivePadding(context, mobilePadding: 14),
+            ),
+            borderRadius: BorderRadius.circular(ResponsiveHelper.getResponsiveBorderRadius(context, mobileRadius: 14)),
+            blur: 15,
+            opacity: 0.1,
             child: Row(children: [
-              const Icon(Icons.calendar_today_outlined,
-                  color: Color(0x80FFFFFF), size: 18),
-              const SizedBox(width: 10),
-              Text('Member since ${_fmtDate(user.joinedDate)}',
+              Icon(Icons.calendar_today_outlined,
+                  color: Colors.white.withOpacity(0.5), size: ResponsiveHelper.getResponsiveIconSize(context, mobileSize: 18, tabletSize: 20, desktopSize: 22)),
+              SizedBox(width: ResponsiveHelper.getResponsiveSpacing(context, mobileSpacing: 10)),
+              Text('${l10n.memberSince} ${_fmtDate(user.joinedDate)}',
                   style:
-                      const TextStyle(color: Color(0x80FFFFFF), fontSize: 13)),
+                      TextStyle(color: Colors.white.withOpacity(0.5), fontSize: ResponsiveHelper.getResponsiveFontSize(context, mobileSize: 13, tabletSize: 14, desktopSize: 15))),
             ]),
           ),
-        const SizedBox(height: 24),
+        SizedBox(height: ResponsiveHelper.getResponsiveSpacing(context, mobileSpacing: 24)),
 
         SizedBox(
             width: double.infinity,
             child: ElevatedButton(
               onPressed: _saving ? null : _save,
               style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFF9d4edd),
+                backgroundColor: Theme.of(context).colorScheme.primary,
                 padding: const EdgeInsets.symmetric(vertical: 16),
                 shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(14)),
               ),
-              child: const Text('Save Profile',
+              child: Text(l10n.saveProfile,
                   style: TextStyle(
-                      color: Colors.white,
+                      color: Theme.of(context).colorScheme.onPrimary,
+                      fontWeight: FontWeight.w700,
+                      fontSize: 16)),
+            )),
+        SizedBox(height: ResponsiveHelper.getResponsiveSpacing(context, mobileSpacing: 16)),
+        
+        // Logout button
+        SizedBox(
+            width: double.infinity,
+            child: ElevatedButton(
+              onPressed: _handleLogout,
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Theme.of(context).colorScheme.error.withOpacity(0.8),
+                padding: const EdgeInsets.symmetric(vertical: 16),
+                shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(14)),
+              ),
+              child: Text(l10n.signOut,
+                  style: TextStyle(
+                      color: Theme.of(context).colorScheme.onError,
                       fontWeight: FontWeight.w700,
                       fontSize: 16)),
             )),
@@ -366,25 +674,244 @@ class _ProfileScreenState extends State<ProfileScreen>
   }
 
   Widget _statCard(String emoji, String value, String label, Color color) {
-    return Container(
-      decoration: BoxDecoration(
-        color: Color.fromARGB(30, color.red, color.green, color.blue),
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(
-            color: Color.fromARGB(60, color.red, color.green, color.blue)),
+    return GlassCard(
+      padding: EdgeInsets.all(
+        ResponsiveHelper.getResponsivePadding(context, mobilePadding: 8),
+      ),
+      borderRadius: BorderRadius.circular(ResponsiveHelper.getResponsiveBorderRadius(context, mobileRadius: 16)),
+      blur: 15,
+      opacity: 0.1,
+      gradient: LinearGradient(
+        colors: [
+          color.withOpacity(0.3),
+          color.withOpacity(0.1),
+        ],
       ),
       child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
-        Text(emoji, style: const TextStyle(fontSize: 22)),
-        const SizedBox(height: 4),
+        Text(emoji, style: TextStyle(fontSize: ResponsiveHelper.getResponsiveFontSize(context, mobileSize: 20, tabletSize: 22, desktopSize: 24))),
+        SizedBox(height: ResponsiveHelper.getResponsiveSpacing(context, mobileSpacing: 2)),
         Text(value,
-            style: const TextStyle(
-                color: Colors.white,
+            style: TextStyle(
+                color: Theme.of(context).colorScheme.onSurface,
                 fontWeight: FontWeight.w800,
-                fontSize: 16)),
+                fontSize: ResponsiveHelper.getResponsiveFontSize(context, mobileSize: 14, tabletSize: 16, desktopSize: 18))),
         Text(label,
             style: TextStyle(
-                color: Color.fromARGB(153, color.red, color.green, color.blue),
-                fontSize: 10)),
+                color: color.withOpacity(0.6),
+                fontSize: ResponsiveHelper.getResponsiveFontSize(context, mobileSize: 9, tabletSize: 10, desktopSize: 11))),
+      ]),
+    );
+  }
+
+  // --- AUTH SECTION ----------------------------------------------------------
+
+  Widget _buildAuthSection() {
+    final l10n = AppLocalizations.of(context)!;
+    return SingleChildScrollView(
+      padding: EdgeInsets.all(
+        ResponsiveHelper.getResponsivePadding(context, mobilePadding: 20),
+      ),
+      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        // Auth card with glassmorphism
+        GlassCard(
+          padding: EdgeInsets.all(
+            ResponsiveHelper.getResponsivePadding(context, mobilePadding: 24),
+          ),
+          borderRadius: BorderRadius.circular(ResponsiveHelper.getResponsiveBorderRadius(context, mobileRadius: 24)),
+          blur: 20,
+          opacity: 0.1,
+          gradient: LinearGradient(
+            colors: [
+              const Color(0xFF9D4EDD).withOpacity(0.2),
+              const Color(0xFF00B4D8).withOpacity(0.1),
+            ],
+          ),
+          child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            Text(_isLoginMode ? l10n.signIn : l10n.createAccount,
+                style: TextStyle(
+                  color: Colors.white,
+                  fontWeight: FontWeight.w800,
+                  fontSize: ResponsiveHelper.getResponsiveFontSize(context, mobileSize: 24, tabletSize: 26, desktopSize: 28),
+                )),
+            SizedBox(height: ResponsiveHelper.getResponsiveSpacing(context, mobileSpacing: 8)),
+            Text(_isLoginMode ? l10n.accessPremiumFeatures : l10n.joinMindfulnessGarden,
+                style: TextStyle(
+                  color: Colors.white.withOpacity(0.7),
+                  fontSize: ResponsiveHelper.getResponsiveFontSize(context, mobileSize: 14, tabletSize: 15, desktopSize: 16),
+                )),
+            SizedBox(height: ResponsiveHelper.getResponsiveSpacing(context, mobileSpacing: 24)),
+            
+            // Email field
+            _field(_emailCtrl, l10n.email, Icons.email_outlined),
+            SizedBox(height: ResponsiveHelper.getResponsiveSpacing(context, mobileSpacing: 16)),
+            
+            // Password field
+            _field(_passwordCtrl, l10n.password, Icons.lock_outlined, isPassword: true),
+            SizedBox(height: ResponsiveHelper.getResponsiveSpacing(context, mobileSpacing: 16)),
+            
+            // Name fields for signup
+            if (!_isLoginMode) ...[
+              _field(_firstNameCtrl, l10n.firstName, Icons.person_outline),
+              SizedBox(height: ResponsiveHelper.getResponsiveSpacing(context, mobileSpacing: 16)),
+              _field(_lastNameCtrl, l10n.lastName, Icons.person_outline),
+              SizedBox(height: ResponsiveHelper.getResponsiveSpacing(context, mobileSpacing: 16)),
+            ],
+            
+            // Login/Signup button
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton(
+                onPressed: _isAuthLoading ? null : (_isLoginMode ? _handleLogin : _handleSignup),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFF9d4edd),
+                  padding: const EdgeInsets.symmetric(vertical: 16),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                ),
+                child: _isAuthLoading
+                    ? const SizedBox(
+                        height: 20,
+                        width: 20,
+                        child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
+                    : Text(_isLoginMode ? l10n.signIn : l10n.createAccount,
+                        style: const TextStyle(
+                            color: Colors.white,
+                            fontWeight: FontWeight.w700,
+                            fontSize: 16)),
+              ),
+            ),
+            SizedBox(height: ResponsiveHelper.getResponsiveSpacing(context, mobileSpacing: 16)),
+            
+            // Toggle between login/signup
+            Center(
+              child: TextButton(
+                onPressed: () => setState(() => _isLoginMode = !_isLoginMode),
+                child: Text(_isLoginMode ? "${l10n.dontHaveAccount} ${l10n.createAccount}" : "${l10n.alreadyHaveAccount} ${l10n.signIn}",
+                    style: TextStyle(
+                      color: const Color(0xFF9d4edd),
+                      fontSize: ResponsiveHelper.getResponsiveFontSize(context, mobileSize: 14, tabletSize: 15, desktopSize: 16),
+                    )),
+              ),
+            ),
+          ]),
+        ),
+      ]),
+    );
+  }
+
+  // --- PREMIUM TAB -----------------------------------------------------------
+
+  Widget _buildPremiumTab() {
+    return SingleChildScrollView(
+      padding: EdgeInsets.all(
+        ResponsiveHelper.getResponsivePadding(context, mobilePadding: 20),
+      ),
+      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        // Premium header
+        GlassCard(
+          padding: EdgeInsets.all(
+            ResponsiveHelper.getResponsivePadding(context, mobilePadding: 24),
+          ),
+          borderRadius: BorderRadius.circular(ResponsiveHelper.getResponsiveBorderRadius(context, mobileRadius: 24)),
+          blur: 20,
+          opacity: 0.1,
+          gradient: LinearGradient(
+            colors: [
+              const Color(0xFFFFD700).withOpacity(0.2),
+              const Color(0xFFFFA500).withOpacity(0.1),
+            ],
+          ),
+          child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            Row(children: [
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  gradient: const LinearGradient(colors: [Color(0xFFFFD700), Color(0xFFFFA500)]),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: const Icon(Icons.workspace_premium, color: Colors.white, size: 28),
+              ),
+              SizedBox(width: ResponsiveHelper.getResponsiveSpacing(context, mobileSpacing: 16)),
+              Expanded(
+                child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                  Text('Premium Features',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontWeight: FontWeight.w800,
+                        fontSize: ResponsiveHelper.getResponsiveFontSize(context, mobileSize: 22, tabletSize: 24, desktopSize: 26),
+                      )),
+                  Text(_isAuthenticated ? 'You are logged in' : 'Sign in to unlock premium features',
+                      style: TextStyle(
+                        color: Colors.white.withOpacity(0.7),
+                        fontSize: ResponsiveHelper.getResponsiveFontSize(context, mobileSize: 14, tabletSize: 15, desktopSize: 16),
+                      )),
+                ]),
+              ),
+            ]),
+          ]),
+        ),
+        SizedBox(height: ResponsiveHelper.getResponsiveSpacing(context, mobileSpacing: 24)),
+        
+        // Premium features list
+        _buildPremiumFeature('?????', 'Advanced Meditations', 'Access to 500+ guided sessions'),
+        _buildPremiumFeature('??', 'Premium Audio', 'High-quality binaural beats & music'),
+        _buildPremiumFeature('??', 'Detailed Analytics', 'Track your mindfulness journey'),
+        _buildPremiumFeature('??', 'Exclusive Plants', 'Unlock rare garden plants'),
+        _buildPremiumFeature('??', 'Achievements', 'Earn badges and compete on leaderboards'),
+        _buildPremiumFeature('??', 'Community', 'Join groups and share experiences'),
+        
+        SizedBox(height: ResponsiveHelper.getResponsiveSpacing(context, mobileSpacing: 24)),
+        
+        // Logout button if authenticated
+        if (_isAuthenticated)
+          SizedBox(
+            width: double.infinity,
+            child: ElevatedButton(
+              onPressed: _handleLogout,
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.red.withOpacity(0.8),
+                padding: const EdgeInsets.symmetric(vertical: 16),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+              ),
+              child: const Text('Sign Out',
+                  style: TextStyle(
+                      color: Colors.white,
+                      fontWeight: FontWeight.w700,
+                      fontSize: 16)),
+            ),
+          ),
+      ]),
+    );
+  }
+
+  Widget _buildPremiumFeature(String emoji, String title, String description) {
+    return GlassCard(
+      margin: EdgeInsets.only(bottom: ResponsiveHelper.getResponsiveSpacing(context, mobileSpacing: 12)),
+      padding: EdgeInsets.all(
+        ResponsiveHelper.getResponsivePadding(context, mobilePadding: 16),
+      ),
+      borderRadius: BorderRadius.circular(ResponsiveHelper.getResponsiveBorderRadius(context, mobileRadius: 16)),
+      blur: 15,
+      opacity: 0.1,
+      child: Row(children: [
+        Text(emoji, style: const TextStyle(fontSize: 32)),
+        SizedBox(width: ResponsiveHelper.getResponsiveSpacing(context, mobileSpacing: 16)),
+        Expanded(
+          child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            Text(title,
+                style: TextStyle(
+                  color: Colors.white,
+                  fontWeight: FontWeight.w700,
+                  fontSize: ResponsiveHelper.getResponsiveFontSize(context, mobileSize: 16, tabletSize: 17, desktopSize: 18),
+                )),
+            SizedBox(height: ResponsiveHelper.getResponsiveSpacing(context, mobileSpacing: 4)),
+            Text(description,
+                style: TextStyle(
+                  color: Colors.white.withOpacity(0.6),
+                  fontSize: ResponsiveHelper.getResponsiveFontSize(context, mobileSize: 13, tabletSize: 14, desktopSize: 15),
+                )),
+          ]),
+        ),
+        Icon(Icons.lock_outline, color: _isAuthenticated ? Colors.green : Colors.grey, size: 20),
       ]),
     );
   }
@@ -447,9 +974,10 @@ class _ProfileScreenState extends State<ProfileScreen>
     );
   }
 
-  // ─── HEALTH TAB ───────────────────────────────────────────────────────────
+  // --- HEALTH TAB -----------------------------------------------------------
 
   Widget _buildHealthTab() {
+    final l10n = AppLocalizations.of(context)!;
     return SingleChildScrollView(
       padding: const EdgeInsets.all(20),
       child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
@@ -465,7 +993,7 @@ class _ProfileScreenState extends State<ProfileScreen>
             border: Border.fromBorderSide(BorderSide(color: Color(0x339d4edd))),
           ),
           child: Row(children: [
-            const Text('🧬', style: TextStyle(fontSize: 36)),
+            const Text('??', style: TextStyle(fontSize: 36)),
             const SizedBox(width: 14),
             Expanded(
                 child: Column(
@@ -538,14 +1066,14 @@ class _ProfileScreenState extends State<ProfileScreen>
             child: ElevatedButton(
               onPressed: _saving ? null : _save,
               style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFF9d4edd),
+                backgroundColor: Theme.of(context).colorScheme.primary,
                 padding: const EdgeInsets.symmetric(vertical: 16),
                 shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(14)),
               ),
-              child: const Text('Save Health Profile',
+              child: Text(l10n.saveProfile,
                   style: TextStyle(
-                      color: Colors.white,
+                      color: Theme.of(context).colorScheme.onPrimary,
                       fontWeight: FontWeight.w700,
                       fontSize: 16)),
             )),
@@ -554,7 +1082,7 @@ class _ProfileScreenState extends State<ProfileScreen>
     );
   }
 
-  // ─── SETTINGS TAB ─────────────────────────────────────────────────────────
+  // --- SETTINGS TAB ---------------------------------------------------------
 
   Widget _buildSettingsTab() {
     return SingleChildScrollView(
@@ -591,51 +1119,45 @@ class _ProfileScreenState extends State<ProfileScreen>
         // Guided voice language selector (only expose three voices)
         _label('GUIDED VOICE LANGUAGE'),
         const SizedBox(height: 10),
-        Builder(builder: (ctx) {
-          final appLang = ctx.watch<AppProvider>().appLanguage;
+        riverpod.Consumer(builder: (ctx, ref, _) {
           return Wrap(spacing: 8, runSpacing: 8, children: [
             _chip(
                 AppLanguage.english.displayName,
-                appLang == AppLanguage.english,
-                () => ctx
-                    .read<AppProvider>()
-                    .setAppLanguage(AppLanguage.english)),
+                false,
+                () => context.read<AppSettingsProvider>().setLanguage(AppLanguage.english)),
             _chip(
                 AppLanguage.hindi.displayName,
-                appLang == AppLanguage.hindi,
-                () =>
-                    ctx.read<AppProvider>().setAppLanguage(AppLanguage.hindi)),
+                false,
+                () => context.read<AppSettingsProvider>().setLanguage(AppLanguage.hindi)),
             _chip(
                 AppLanguage.bengali.displayName,
-                appLang == AppLanguage.bengali,
-                () => ctx
-                    .read<AppProvider>()
-                    .setAppLanguage(AppLanguage.bengali)),
+                false,
+                () => context.read<AppSettingsProvider>().setLanguage(AppLanguage.bengali)),
           ]);
         }),
         const SizedBox(height: 20),
         _label('VOICE PERSONALITY'),
         const SizedBox(height: 10),
         Builder(builder: (ctx) {
-          final current = ctx.watch<AppProvider>().voicePersonality;
+          final current = ctx.watch<AppSettingsProvider>().voicePersonality;
           return Wrap(spacing: 8, runSpacing: 8, children: [
             _chip(
                 'Buddha',
                 current == VoicePersonality.buddha,
                 () => ctx
-                    .read<AppProvider>()
+                    .read<AppSettingsProvider>()
                     .setVoicePersonality(VoicePersonality.buddha)),
             _chip(
                 'Zeno',
                 current == VoicePersonality.zeno,
                 () => ctx
-                    .read<AppProvider>()
+                    .read<AppSettingsProvider>()
                     .setVoicePersonality(VoicePersonality.zeno)),
             _chip(
                 'Monk',
                 current == VoicePersonality.monk,
                 () => ctx
-                    .read<AppProvider>()
+                    .read<AppSettingsProvider>()
                     .setVoicePersonality(VoicePersonality.monk)),
           ]);
         }),
@@ -692,9 +1214,9 @@ class _ProfileScreenState extends State<ProfileScreen>
           child: Column(children: [
             _aboutRow('App', 'Mindfulness Garden'),
             _aboutRow('Version', '1.0.7'),
-            _aboutRow('Package', 'com.mindfulgarden.mindfulness_garden'),
+            _aboutRow('Package', 'com.mindfulgarden.pranaverse'),
             Builder(builder: (ctx) {
-              final p = ctx.watch<AppProvider>().voicePersonality;
+              final p = ctx.watch<AppSettingsProvider>().voicePersonality;
               final name = p.name.toUpperCase();
               return _aboutRow('AI Coach', '$name Neural Interface');
             }),
@@ -875,7 +1397,7 @@ class _ProfileScreenState extends State<ProfileScreen>
             ));
   }
 
-  // ─── HELPERS ──────────────────────────────────────────────────────────────
+  // --- HELPERS --------------------------------------------------------------
 
   Widget _label(String t) => Text(t,
       style: const TextStyle(
@@ -884,62 +1406,71 @@ class _ProfileScreenState extends State<ProfileScreen>
           fontSize: 11,
           letterSpacing: 1.5));
 
-  Widget _field(TextEditingController ctrl, String hint, IconData icon) {
-    return Theme(
-      data: ThemeData(
-          inputDecorationTheme: const InputDecorationTheme(
-              border: InputBorder.none,
-              enabledBorder: InputBorder.none,
+  Widget _field(TextEditingController ctrl, String hint, IconData icon, {bool isPassword = false}) {
+    return GlassCard(
+      padding: EdgeInsets.symmetric(
+        horizontal: ResponsiveHelper.getResponsivePadding(context, mobilePadding: 16),
+        vertical: ResponsiveHelper.getResponsivePadding(context, mobilePadding: 12),
+      ),
+      borderRadius: BorderRadius.circular(ResponsiveHelper.getResponsiveBorderRadius(context, mobileRadius: 14)),
+      blur: 15,
+      opacity: 0.1,
+      child: Theme(
+        data: ThemeData(
+            inputDecorationTheme: const InputDecorationTheme(
+                border: InputBorder.none,
+                enabledBorder: InputBorder.none,
               focusedBorder: InputBorder.none,
               filled: false)),
-      child: Container(
-        decoration: BoxDecoration(
-            color: const Color(0xFF1a1a2e),
-            borderRadius: BorderRadius.circular(14),
-            border: Border.all(color: const Color(0x1AFFFFFF))),
-        child: TextField(
-          controller: ctrl,
-          style: const TextStyle(color: Colors.white, fontSize: 15),
-          decoration: InputDecoration(
-            hintText: hint,
-            hintStyle: const TextStyle(color: Color(0x4DFFFFFF), fontSize: 15),
-            prefixIcon: Icon(icon, color: const Color(0x66FFFFFF), size: 20),
-            border: InputBorder.none,
-            enabledBorder: InputBorder.none,
-            focusedBorder: InputBorder.none,
-            filled: false,
-            contentPadding:
-                const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+      child: TextField(
+        controller: ctrl,
+        obscureText: isPassword,
+        style: TextStyle(color: Colors.white, fontSize: ResponsiveHelper.getResponsiveFontSize(context, mobileSize: 15, tabletSize: 16, desktopSize: 17)),
+        decoration: InputDecoration(
+          hintText: hint,
+          hintStyle: TextStyle(color: const Color(0x4DFFFFFF), fontSize: ResponsiveHelper.getResponsiveFontSize(context, mobileSize: 15, tabletSize: 16, desktopSize: 17)),
+          prefixIcon: Icon(icon, color: const Color(0x66FFFFFF), size: ResponsiveHelper.getResponsiveIconSize(context, mobileSize: 20, tabletSize: 22, desktopSize: 24)),
+          border: InputBorder.none,
+          enabledBorder: InputBorder.none,
+          focusedBorder: InputBorder.none,
+          filled: false,
+          contentPadding: EdgeInsets.symmetric(
+            horizontal: ResponsiveHelper.getResponsivePadding(context, mobilePadding: 16),
+            vertical: ResponsiveHelper.getResponsivePadding(context, mobilePadding: 14),
           ),
         ),
+      ),
       ),
     );
   }
 
   Widget _multiField(
       TextEditingController ctrl, String hint, IconData icon, int lines) {
-    return Theme(
-      data: ThemeData(
-          inputDecorationTheme: const InputDecorationTheme(
-              border: InputBorder.none,
-              enabledBorder: InputBorder.none,
-              focusedBorder: InputBorder.none,
-              filled: false)),
-      child: Container(
-        decoration: BoxDecoration(
-            color: const Color(0xFF1a1a2e),
-            borderRadius: BorderRadius.circular(14),
-            border: Border.all(color: const Color(0x1AFFFFFF))),
+    return GlassCard(
+      padding: EdgeInsets.symmetric(
+        horizontal: ResponsiveHelper.getResponsivePadding(context, mobilePadding: 16),
+        vertical: ResponsiveHelper.getResponsivePadding(context, mobilePadding: 12),
+      ),
+      borderRadius: BorderRadius.circular(ResponsiveHelper.getResponsiveBorderRadius(context, mobileRadius: 14)),
+      blur: 15,
+      opacity: 0.1,
+      child: Theme(
+        data: ThemeData(
+            inputDecorationTheme: const InputDecorationTheme(
+                border: InputBorder.none,
+                enabledBorder: InputBorder.none,
+                focusedBorder: InputBorder.none,
+                filled: false)),
         child: TextField(
           controller: ctrl,
           maxLines: lines,
-          style: const TextStyle(color: Colors.white, fontSize: 14),
+          style: TextStyle(color: Colors.white, fontSize: ResponsiveHelper.getResponsiveFontSize(context, mobileSize: 14, tabletSize: 15, desktopSize: 16)),
           decoration: InputDecoration(
             hintText: hint,
-            hintStyle: const TextStyle(color: Color(0x4DFFFFFF), fontSize: 14),
+            hintStyle: TextStyle(color: const Color(0x4DFFFFFF), fontSize: ResponsiveHelper.getResponsiveFontSize(context, mobileSize: 14, tabletSize: 15, desktopSize: 16)),
             prefixIcon: Padding(
-                padding: const EdgeInsets.only(bottom: 40),
-                child: Icon(icon, color: const Color(0x66FFFFFF), size: 20)),
+                padding: EdgeInsets.only(bottom: lines * 20),
+                child: Icon(icon, color: const Color(0x66FFFFFF), size: ResponsiveHelper.getResponsiveIconSize(context, mobileSize: 20, tabletSize: 22, desktopSize: 24))),
             border: InputBorder.none,
             enabledBorder: InputBorder.none,
             focusedBorder: InputBorder.none,
@@ -1023,3 +1554,10 @@ class _ProfileScreenState extends State<ProfileScreen>
         'Dec'
       ][d.month - 1]} ${d.year}';
 }
+
+
+
+
+
+
+

@@ -1,8 +1,8 @@
 import 'dart:async';
 import 'dart:convert';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:mindfulness_garden/data/models/wallet_model.dart';
-import 'package:mindfulness_garden/data/models/user_model.dart';
+import 'package:pranaverse/data/models/wallet_model.dart';
+import 'package:pranaverse/data/models/user_model.dart';
 
 /// Unified wallet service for managing currency across all game features
 class WalletService {

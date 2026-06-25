@@ -1,6 +1,6 @@
 import 'package:flutter/foundation.dart';
-import 'package:mindfulness_garden/data/models/challenge_model.dart';
-import 'package:mindfulness_garden/data/repositories/challenge_repository.dart';
+import 'package:pranaverse/data/models/challenge_model.dart';
+import 'package:pranaverse/data/repositories/challenge_repository.dart';
 
 class ChallengeProvider with ChangeNotifier {
   final ChallengeRepository _repository = ChallengeRepository();

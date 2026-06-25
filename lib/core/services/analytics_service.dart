@@ -1,7 +1,7 @@
 // lib/core/services/analytics_service.dart
-import 'package:firebase_analytics/firebase_analytics.dart';
-import 'package:firebase_crashlytics/firebase_crashlytics.dart';
 import 'package:flutter/foundation.dart';
+import 'package:sentry_flutter/sentry_flutter.dart';
+import 'package:posthog_flutter/posthog_flutter.dart';
 import 'dart:async';
 
 import 'package:flutter/material.dart';
@@ -11,38 +11,39 @@ class AnalyticsService {
   factory AnalyticsService() => _instance;
   AnalyticsService._internal();
 
-  final FirebaseAnalytics _analytics = FirebaseAnalytics.instance;
-  final FirebaseCrashlytics _crashlytics = FirebaseCrashlytics.instance;
-
   Future<void> initialize() async {
-    if (kDebugMode) {
-      // Disable Crashlytics in debug mode
-      await _crashlytics.setCrashlyticsCollectionEnabled(false);
-    } else {
-      await _crashlytics.setCrashlyticsCollectionEnabled(true);
-    }
-
-    // Set user properties
-    await _analytics.setUserProperty(
-      name: 'premium_user',
-      value: 'false', // Update based on subscription status
+    // Initialize Sentry for crash reporting
+    await SentryFlutter.init(
+      (options) {
+        options.dsn = 'YOUR_SENTRY_DSN'; // Replace with your Sentry DSN
+        options.tracesSampleRate = kDebugMode ? 1.0 : 0.1;
+        options.environment = kDebugMode ? 'development' : 'production';
+      },
     );
+
+    // Initialize PostHog for analytics
+    await PosthogFlutter().start(
+      apiKey: 'YOUR_POSTHOG_API_KEY', // Replace with your PostHog API key
+      host: 'https://app.posthog.com',
+    );
+
+    if (kDebugMode) {
+      print('📊 Analytics service initialized (Sentry + PostHog)');
+    }
   }
 
   // Screen Tracking
   Future<void> logScreenView(String screenName) async {
-    await _analytics.logScreenView(screenName: screenName);
+    await PosthogFlutter().screen(screenName: screenName);
   }
 
   Future<void> logEvent({
     required String name,
     Map<String, dynamic>? parameters,
   }) async {
-    await _analytics.logEvent(
-      name: name,
-      parameters: parameters?.map(
-        (key, value) => MapEntry(key, value as Object),
-      ),
+    await PosthogFlutter().capture(
+      eventName: name,
+      properties: parameters,
     );
   }
 
@@ -113,23 +114,26 @@ class AnalyticsService {
     String? reason,
     bool fatal = false,
   }) async {
-    await _crashlytics.recordError(
+    await Sentry.captureException(
       exception,
-      stackTrace,
-      reason: reason,
-      fatal: fatal,
+      stackTrace: stackTrace,
+      hint: reason,
     );
   }
 
   // User Identification
   Future<void> setUserId(String userId) async {
-    await _analytics.setUserId(id: userId);
-    await _crashlytics.setUserIdentifier(userId);
+    await PosthogFlutter().identify(userId: userId);
+    Sentry.configureScope((scope) => scope.setUser(SentryUser(id: userId)));
   }
 
   // Custom Attributes
   Future<void> setCustomKey(String key, dynamic value) async {
-    await _crashlytics.setCustomKey(key, value);
+    await PosthogFlutter().capture(
+      eventName: '$key_set',
+      properties: {key: value},
+    );
+    Sentry.configureScope((scope) => scope.setExtra(key, value));
   }
 }
 

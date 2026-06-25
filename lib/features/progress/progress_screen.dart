@@ -2,12 +2,12 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:provider/provider.dart';
-import 'package:mindfulness_garden/data/local_storage/local_storage_service.dart';
-import 'package:mindfulness_garden/data/models/session_model.dart';
-import 'package:mindfulness_garden/data/models/mood_model.dart';
-import 'package:mindfulness_garden/presentation/providers/user_provider.dart';
-import 'package:mindfulness_garden/presentation/providers/session_provider.dart';
-import 'package:mindfulness_garden/presentation/providers/challenge_provider.dart';
+import 'package:pranaverse/data/local_storage/local_storage_service.dart';
+import 'package:pranaverse/data/models/session_model.dart';
+import 'package:pranaverse/data/models/mood_model.dart';
+import 'package:pranaverse/presentation/providers/user_provider.dart';
+import 'package:pranaverse/presentation/providers/session_provider.dart';
+import 'package:pranaverse/presentation/providers/challenge_provider.dart';
 
 class ProgressScreen extends StatefulWidget {
   const ProgressScreen({super.key});

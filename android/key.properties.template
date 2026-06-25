@@ -1,0 +1,8 @@
+# Keystore configuration template for production signing
+# Copy this file to key.properties and fill in your actual values
+# DO NOT commit key.properties to version control
+
+storeFile=your-keystore-file.jks
+keyAlias=your-key-alias
+storePassword=your-store-password
+keyPassword=your-key-password

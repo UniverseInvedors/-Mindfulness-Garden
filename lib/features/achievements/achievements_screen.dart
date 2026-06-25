@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:go_router/go_router.dart';
-import 'package:mindfulness_garden/presentation/providers/achievement_provider.dart';
-import 'package:mindfulness_garden/data/models/achievement_model.dart';
+import 'package:pranaverse/presentation/providers/achievement_provider.dart';
+import 'package:pranaverse/data/models/achievement_model.dart';
 
 class AchievementsScreen extends StatefulWidget {
   const AchievementsScreen({super.key});

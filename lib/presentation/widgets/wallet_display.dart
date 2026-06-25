@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:mindfulness_garden/presentation/providers/wallet_provider.dart';
+import 'package:pranaverse/presentation/providers/wallet_provider.dart';
 
 /// Wallet display widget for showing currency balances across the app
 class WalletDisplay extends StatelessWidget {

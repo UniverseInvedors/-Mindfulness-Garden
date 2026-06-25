@@ -1,9 +1,9 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
-import 'package:mindfulness_garden/data/models/session_model.dart';
-import 'package:mindfulness_garden/presentation/routes/app_router.dart';
-import 'package:mindfulness_garden/data/repositories/session_repository.dart';
-import 'package:firebase_auth/firebase_auth.dart';
+import 'package:pranaverse/data/models/session_model.dart';
+import 'package:pranaverse/presentation/routes/app_router.dart';
+import 'package:pranaverse/data/repositories/session_repository.dart';
+import 'package:pranaverse/core/services/auth_service.dart';
 
 class SessionProvider with ChangeNotifier {
   final SessionRepository _sessionRepository = SessionRepository();
@@ -49,9 +49,8 @@ class SessionProvider with ChangeNotifier {
     List<String> soundsUsed = const [],
   }) async {
     try {
-      // Check if user is signed in via Firebase
-      final firebaseUser = FirebaseAuth.instance.currentUser;
-      final isSignedIn = firebaseUser != null;
+      // Check if user is signed in via backend
+      final isSignedIn = AuthService().isAuthenticated;
 
       await _sessionRepository.saveSession(
         durationMinutes: durationMinutes,

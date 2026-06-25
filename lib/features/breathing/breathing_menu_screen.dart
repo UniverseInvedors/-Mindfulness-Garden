@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:pranaverse/core/utils/responsive_helper.dart';
+import 'package:pranaverse/core/widgets/glassmorphism/glass_container.dart';
+import 'package:pranaverse/core/widgets/glassmorphism/glass_icon.dart';
 
 class BreathingMenuScreen extends StatefulWidget {
   const BreathingMenuScreen({super.key});
@@ -17,25 +20,12 @@ class _BreathingMenuScreenState extends State<BreathingMenuScreen>
 
   final List<ExerciseData> _exercises = [
     ExerciseData(
-      title: 'Yoga with Zeno',
-      subtitle: '2.5D immersive yoga session',
-      duration: '15 min',
-      icon: Icons.self_improvement,
-      color: const Color(0xFF9d4edd),
-      gradient: const [Color(0xFF9d4edd), Color(0xFF3a0ca3)],
-      route: '/yoga',
-      difficulty: 'All Levels',
-      description: 'Guided yoga poses in a beautiful 2.5D world',
-      benefits: ['Flexibility', 'Strength', 'Mindfulness'],
-      tags: ['Yoga', 'Immersive', 'All Levels'],
-    ),
-    ExerciseData(
       title: 'Zeno Breathing',
       subtitle: 'Release stress & tension',
       duration: '5 min',
       icon: Icons.psychology_outlined,
-      color: const Color(0xFF00b4d8),
-      gradient: const [Color(0xFF00b4d8), Color(0xFF0077b6)],
+      color: const Color(0xFF4CAF50),
+      gradient: const [Color(0xFF4CAF50), Color(0xFF2E7D32)],
       route: '/breathing/zeno',
       difficulty: 'Easy',
       description: 'Gentle guided breathing for stress relief',
@@ -47,8 +37,8 @@ class _BreathingMenuScreenState extends State<BreathingMenuScreen>
       subtitle: 'For anxiety & sleep',
       duration: '4 min',
       icon: Icons.nightlight_round_outlined,
-      color: const Color(0xFF9d4edd),
-      gradient: const [Color(0xFF9d4edd), Color(0xFF560bad)],
+      color: const Color(0xFF66BB6A),
+      gradient: const [Color(0xFF66BB6A), Color(0xFF43A047)],
       route: '/breathing/478',
       difficulty: 'Medium',
       description: 'Deep breathing pattern for relaxation',
@@ -60,8 +50,8 @@ class _BreathingMenuScreenState extends State<BreathingMenuScreen>
       subtitle: 'Improve focus & calm',
       duration: '5 min',
       icon: Icons.crop_square_outlined,
-      color: const Color(0xFF38b000),
-      gradient: const [Color(0xFF38b000), Color(0xFF2d6a4f)],
+      color: const Color(0xFF81C784),
+      gradient: const [Color(0xFF81C784), Color(0xFF4CAF50)],
       route: '/breathing/box',
       difficulty: 'Easy',
       description: 'Military technique for focus and control',
@@ -73,8 +63,8 @@ class _BreathingMenuScreenState extends State<BreathingMenuScreen>
       subtitle: 'Mindfulness meditation',
       duration: '10 min',
       icon: Icons.self_improvement_outlined,
-      color: const Color(0xFFffb700),
-      gradient: const [Color(0xFFffb700), Color(0xFFf48c06)],
+      color: const Color(0xFFA5D6A7),
+      gradient: const [Color(0xFFA5D6A7), Color(0xFF66BB6A)],
       route: '/breathing/awareness',
       difficulty: 'Beginner',
       description: 'Mindful observation of natural breath',
@@ -90,8 +80,8 @@ class _BreathingMenuScreenState extends State<BreathingMenuScreen>
       subtitle: 'Balance & energy flow',
       duration: '7 min',
       icon: Icons.air_outlined,
-      color: const Color(0xFFf72585),
-      gradient: const [Color(0xFFf72585), Color(0xFFb5179e)],
+      color: const Color(0xFFC8E6C9),
+      gradient: const [Color(0xFFC8E6C9), Color(0xFF81C784)],
       route: '/breathing/alternate',
       difficulty: 'Medium',
       description: 'Traditional technique for balancing energy',
@@ -103,8 +93,8 @@ class _BreathingMenuScreenState extends State<BreathingMenuScreen>
       subtitle: 'Full relaxation',
       duration: '8 min',
       icon: Icons.waves_outlined,
-      color: const Color(0xFF4361ee),
-      gradient: const [Color(0xFF4361ee), Color(0xFF3a0ca3)],
+      color: const Color(0xFF43A047),
+      gradient: const [Color(0xFF43A047), Color(0xFF2E7D32)],
       route: '/breathing/diaphragmatic',
       difficulty: 'Easy',
       description: 'Deep belly breathing for complete relaxation',
@@ -120,14 +110,13 @@ class _BreathingMenuScreenState extends State<BreathingMenuScreen>
   int _selectedCategory = 0;
   final List<CategoryData> _categories = [
     CategoryData(
-        name: 'All', icon: Icons.all_inclusive, color: Color(0xFF667eea)),
-    CategoryData(name: 'Quick', icon: Icons.flash_on, color: Color(0xFF00b4d8)),
+        name: 'All', icon: Icons.all_inclusive, color: Color(0xFF4CAF50)),
+    CategoryData(name: 'Quick', icon: Icons.flash_on, color: Color(0xFF66BB6A)),
     CategoryData(
-        name: 'Stress', icon: Icons.self_improvement, color: Color(0xFFf72585)),
+        name: 'Stress', icon: Icons.self_improvement, color: Color(0xFF81C784)),
+    CategoryData(name: 'Focus', icon: Icons.psychology, color: Color(0xFFA5D6A7)),
     CategoryData(
-        name: 'Focus', icon: Icons.psychology, color: Color(0xFF38b000)),
-    CategoryData(
-        name: 'Sleep', icon: Icons.nightlight, color: Color(0xFF9d4edd)),
+        name: 'Sleep', icon: Icons.nightlight, color: Color(0xFF43A047)),
   ];
 
   @override
@@ -163,6 +152,7 @@ class _BreathingMenuScreenState extends State<BreathingMenuScreen>
   }
 
   void _navigateToExercise(String route) {
+    print('BREATHING MENU: Navigating to route: $route');
     context.push(route);
   }
 
@@ -202,56 +192,65 @@ class _BreathingMenuScreenState extends State<BreathingMenuScreen>
     final isLargeScreen = size.width > 800;
 
     return Scaffold(
-      backgroundColor: const Color(0xFF0a0a1a),
-      body: SafeArea(
-        child: Padding(
-          padding: EdgeInsets.symmetric(
-            horizontal: isLargeScreen ? (size.width - 1200) / 2 : 20,
+      backgroundColor: const Color(0xFF0A1F15),
+      body: Container(
+        decoration: const BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+            colors: [Color(0xFF0D2B1E), Color(0xFF0A1F15), Color(0xFF071810)],
           ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // Header
-              _buildHeader(context, size),
-              const SizedBox(height: 20),
+        ),
+        child: SafeArea(
+          child: Padding(
+            padding: EdgeInsets.symmetric(
+              horizontal: isLargeScreen ? (size.width - 1200) / 2 : 20,
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Header
+                _buildHeader(context),
+                SizedBox(height: ResponsiveHelper.getResponsiveSpacing(context, mobileSpacing: 20)),
 
-              // Breathing guide
-              _buildBreathingGuide(size),
-              const SizedBox(height: 24),
+                // Breathing guide
+                _buildBreathingGuide(context),
+                SizedBox(height: ResponsiveHelper.getResponsiveSpacing(context, mobileSpacing: 24)),
 
-              // Category filter
-              SizedBox(
-                height: 56,
-                child: ListView.builder(
-                  scrollDirection: Axis.horizontal,
-                  physics: const BouncingScrollPhysics(),
-                  itemCount: _categories.length,
-                  itemBuilder: (context, index) {
-                    return _buildCategoryItem(index, size);
-                  },
-                ),
-              ),
-
-              const SizedBox(height: 24),
-
-              // Exercises grid - FIXED: Using Expanded to prevent overflow
-              Expanded(
-                child: GridView.builder(
-                  padding: const EdgeInsets.only(bottom: 20),
-                  gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                    crossAxisCount: isSmallScreen ? 1 : (isLargeScreen ? 3 : 2),
-                    crossAxisSpacing: 16,
-                    mainAxisSpacing: 16,
-                    childAspectRatio: _getChildAspectRatio(size),
+                // Category filter
+                SizedBox(
+                  height: ResponsiveHelper.getResponsiveContainerHeight(context, mobileHeight: 56),
+                  child: ListView.builder(
+                    scrollDirection: Axis.horizontal,
+                    physics: const BouncingScrollPhysics(),
+                    itemCount: _categories.length,
+                    itemBuilder: (context, index) {
+                      return _buildCategoryItem(context, index);
+                    },
                   ),
-                  itemCount: _filteredExercises.length,
-                  itemBuilder: (context, index) {
-                    final exercise = _filteredExercises[index];
-                    return _buildExerciseCard(exercise, index, size);
-                  },
                 ),
-              ),
-            ],
+
+                SizedBox(height: ResponsiveHelper.getResponsiveSpacing(context, mobileSpacing: 24)),
+
+                // Exercises grid - FIXED: Using Expanded to prevent overflow
+                Expanded(
+                  child: GridView.builder(
+                    padding: EdgeInsets.only(bottom: ResponsiveHelper.getResponsivePadding(context, mobilePadding: 20)),
+                    gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                      crossAxisCount: isSmallScreen ? 1 : (isLargeScreen ? 3 : 2),
+                      crossAxisSpacing: ResponsiveHelper.getResponsiveSpacing(context, mobileSpacing: 16),
+                      mainAxisSpacing: ResponsiveHelper.getResponsiveSpacing(context, mobileSpacing: 16),
+                      childAspectRatio: _getChildAspectRatio(size),
+                    ),
+                    itemCount: _filteredExercises.length,
+                    itemBuilder: (context, index) {
+                      final exercise = _filteredExercises[index];
+                      return _buildExerciseCard(context, exercise, index);
+                    },
+                  ),
+                ),
+              ],
+            ),
           ),
         ),
       ),
@@ -267,42 +266,23 @@ class _BreathingMenuScreenState extends State<BreathingMenuScreen>
     return 1.1;
   }
 
-  Widget _buildHeader(BuildContext context, Size size) {
+  Widget _buildHeader(BuildContext context) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const SizedBox(height: 8),
+        SizedBox(height: ResponsiveHelper.getResponsiveSpacing(context, mobileSpacing: 8)),
         Row(
           children: [
             // Back Button
-            GestureDetector(
+            GlassIcon(
+              icon: Icons.arrow_back_rounded,
               onTap: _goBackToMainMenu,
-              child: Container(
-                width: 52,
-                height: 52,
-                decoration: BoxDecoration(
-                  color: Colors.white.withOpacity(0.08),
-                  borderRadius: BorderRadius.circular(16),
-                  border: Border.all(
-                    color: Colors.white.withOpacity(0.15),
-                    width: 1.5,
-                  ),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withOpacity(0.2),
-                      blurRadius: 8,
-                      offset: const Offset(0, 4),
-                    ),
-                  ],
-                ),
-                child: const Icon(
-                  Icons.arrow_back_rounded,
-                  size: 24,
-                  color: Colors.white,
-                ),
-              ),
+              size: ResponsiveHelper.getResponsiveIconSize(context, mobileSize: 24, tabletSize: 26, desktopSize: 28),
+              iconColor: Colors.white,
+              blur: 10,
+              opacity: 0.1,
             ),
-            const SizedBox(width: 16),
+            SizedBox(width: ResponsiveHelper.getResponsiveSpacing(context, mobileSpacing: 16)),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -311,18 +291,18 @@ class _BreathingMenuScreenState extends State<BreathingMenuScreen>
                     'Breathing Exercises',
                     style: TextStyle(
                       color: Colors.white,
-                      fontSize: 28,
+                      fontSize: ResponsiveHelper.getResponsiveFontSize(context, mobileSize: 28, tabletSize: 30, desktopSize: 32),
                       fontWeight: FontWeight.w800,
                       height: 1.1,
                       letterSpacing: -0.5,
                     ),
                   ),
-                  const SizedBox(height: 6),
+                  SizedBox(height: ResponsiveHelper.getResponsiveSpacing(context, mobileSpacing: 6)),
                   Text(
                     'Master your breath to master your mind',
                     style: TextStyle(
                       color: Colors.white.withOpacity(0.75),
-                      fontSize: 14,
+                      fontSize: ResponsiveHelper.getResponsiveFontSize(context, mobileSize: 14, tabletSize: 15, desktopSize: 16),
                       fontWeight: FontWeight.w500,
                       height: 1.3,
                     ),
@@ -333,15 +313,15 @@ class _BreathingMenuScreenState extends State<BreathingMenuScreen>
             ),
           ],
         ),
-        const SizedBox(height: 12),
+        SizedBox(height: ResponsiveHelper.getResponsiveSpacing(context, mobileSpacing: 12)),
         Container(
           height: 4,
           width: 80,
           decoration: BoxDecoration(
             gradient: LinearGradient(
               colors: [
-                const Color(0xFF00b4d8),
-                const Color(0xFF9d4edd),
+                const Color(0xFF4CAF50),
+                const Color(0xFF81C784),
               ],
             ),
             borderRadius: BorderRadius.circular(2),
@@ -351,30 +331,18 @@ class _BreathingMenuScreenState extends State<BreathingMenuScreen>
     );
   }
 
-  Widget _buildBreathingGuide(Size size) {
-    return Container(
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [
-            const Color(0xFF00b4d8).withOpacity(0.15),
-            const Color(0xFF0077b6).withOpacity(0.1),
-          ],
-        ),
-        borderRadius: BorderRadius.circular(24),
-        border: Border.all(
-          color: const Color(0xFF00b4d8).withOpacity(0.25),
-          width: 1.5,
-        ),
-        boxShadow: [
-          BoxShadow(
-            color: const Color(0xFF00b4d8).withOpacity(0.1),
-            blurRadius: 20,
-            spreadRadius: 2,
-            offset: const Offset(0, 8),
-          ),
+  Widget _buildBreathingGuide(BuildContext context) {
+    return GlassContainer(
+      padding: EdgeInsets.all(ResponsiveHelper.getResponsivePadding(context, mobilePadding: 20)),
+      borderRadius: BorderRadius.circular(ResponsiveHelper.getResponsiveBorderRadius(context, mobileRadius: 24)),
+      blur: 15,
+      opacity: 0.15,
+      gradient: LinearGradient(
+        begin: Alignment.topLeft,
+        end: Alignment.bottomRight,
+        colors: [
+          const Color(0xFF4CAF50).withOpacity(0.15),
+          const Color(0xFF2E7D32).withOpacity(0.1),
         ],
       ),
       child: Row(
@@ -388,17 +356,17 @@ class _BreathingMenuScreenState extends State<BreathingMenuScreen>
                   'Breathing Guide',
                   style: TextStyle(
                     color: Colors.white,
-                    fontSize: 20,
+                    fontSize: ResponsiveHelper.getResponsiveFontSize(context, mobileSize: 20, tabletSize: 22, desktopSize: 24),
                     fontWeight: FontWeight.w700,
                     height: 1.2,
                   ),
                 ),
-                const SizedBox(height: 8),
+                SizedBox(height: ResponsiveHelper.getResponsiveSpacing(context, mobileSpacing: 8)),
                 Text(
                   'Follow the animated circle. Inhale as it expands, exhale as it contracts.',
                   style: TextStyle(
                     color: Colors.white.withOpacity(0.85),
-                    fontSize: 14,
+                    fontSize: ResponsiveHelper.getResponsiveFontSize(context, mobileSize: 14, tabletSize: 15, desktopSize: 16),
                     height: 1.5,
                   ),
                   maxLines: 3,
@@ -406,22 +374,22 @@ class _BreathingMenuScreenState extends State<BreathingMenuScreen>
               ],
             ),
           ),
-          const SizedBox(width: 16),
+          SizedBox(width: ResponsiveHelper.getResponsiveSpacing(context, mobileSpacing: 16)),
           AnimatedBuilder(
             animation: _breathAnimation,
             builder: (context, child) {
               return Container(
-                width: 90,
-                height: 90,
+                width: ResponsiveHelper.getResponsiveContainerWidth(context, mobileWidth: 90),
+                height: ResponsiveHelper.getResponsiveContainerHeight(context, mobileHeight: 90),
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
                   border: Border.all(
-                    color: const Color(0xFF00b4d8).withOpacity(0.4),
+                    color: const Color(0xFF4CAF50).withOpacity(0.4),
                     width: 2,
                   ),
                   boxShadow: [
                     BoxShadow(
-                      color: const Color(0xFF00b4d8).withOpacity(0.2),
+                      color: const Color(0xFF4CAF50).withOpacity(0.2),
                       blurRadius: 20,
                       spreadRadius: 5,
                     ),
@@ -438,8 +406,8 @@ class _BreathingMenuScreenState extends State<BreathingMenuScreen>
                         shape: BoxShape.circle,
                         gradient: RadialGradient(
                           colors: [
-                            const Color(0xFF00b4d8).withOpacity(0.2),
-                            const Color(0xFF0077b6).withOpacity(0.1),
+                            const Color(0xFF4CAF50).withOpacity(0.2),
+                            const Color(0xFF2E7D32).withOpacity(0.1),
                           ],
                         ),
                       ),
@@ -452,13 +420,13 @@ class _BreathingMenuScreenState extends State<BreathingMenuScreen>
                         shape: BoxShape.circle,
                         gradient: RadialGradient(
                           colors: [
-                            const Color(0xFF00b4d8).withOpacity(0.9),
-                            const Color(0xFF0077b6).withOpacity(0.6),
+                            const Color(0xFF4CAF50).withOpacity(0.9),
+                            const Color(0xFF2E7D32).withOpacity(0.6),
                           ],
                         ),
                         boxShadow: [
                           BoxShadow(
-                            color: const Color(0xFF00b4d8).withOpacity(0.4),
+                            color: const Color(0xFF4CAF50).withOpacity(0.4),
                             blurRadius: 15,
                             spreadRadius: 3,
                           ),
@@ -480,7 +448,7 @@ class _BreathingMenuScreenState extends State<BreathingMenuScreen>
     );
   }
 
-  Widget _buildCategoryItem(int index, Size size) {
+  Widget _buildCategoryItem(BuildContext context, int index) {
     final category = _categories[index];
     final isSelected = index == _selectedCategory;
 
@@ -490,63 +458,48 @@ class _BreathingMenuScreenState extends State<BreathingMenuScreen>
           _selectedCategory = index;
         });
       },
-      child: Container(
+      child: GlassContainer(
         margin: EdgeInsets.only(
-          right: index < _categories.length - 1 ? 12 : 0,
+          right: index < _categories.length - 1 ? ResponsiveHelper.getResponsiveSpacing(context, mobileSpacing: 12) : 0,
           left: index == 0 ? 0 : 0,
         ),
-        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-        decoration: BoxDecoration(
-          gradient: isSelected
-              ? LinearGradient(
-                  colors: [
-                    category.color.withOpacity(0.9),
-                    category.color.withOpacity(0.6),
-                  ],
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                )
-              : null,
-          color: isSelected ? null : Colors.white.withOpacity(0.05),
-          borderRadius: BorderRadius.circular(30),
-          border: Border.all(
-            color: isSelected
-                ? category.color.withOpacity(0.6)
-                : Colors.white.withOpacity(0.2),
-            width: isSelected ? 1.5 : 1,
-          ),
-          boxShadow: isSelected
-              ? [
-                  BoxShadow(
-                    color: category.color.withOpacity(0.3),
-                    blurRadius: 15,
-                    spreadRadius: 2,
-                    offset: const Offset(0, 4),
-                  ),
-                ]
-              : [
-                  BoxShadow(
-                    color: Colors.black.withOpacity(0.1),
-                    blurRadius: 8,
-                    offset: const Offset(0, 2),
-                  ),
-                ],
+        padding: EdgeInsets.symmetric(
+          horizontal: ResponsiveHelper.getResponsivePadding(context, mobilePadding: 20),
+          vertical: ResponsiveHelper.getResponsivePadding(context, mobilePadding: 12),
         ),
+        borderRadius: BorderRadius.circular(30),
+        blur: isSelected ? 12 : 8,
+        opacity: isSelected ? 0.2 : 0.1,
+        gradient: isSelected
+            ? LinearGradient(
+                colors: [
+                  category.color.withOpacity(0.9),
+                  category.color.withOpacity(0.6),
+                ],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+              )
+            : LinearGradient(
+                colors: [
+                  Colors.white.withOpacity(0.05),
+                  Colors.white.withOpacity(0.02),
+                ],
+              ),
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
             Icon(
               category.icon,
-              size: 18,
+              size: ResponsiveHelper.getResponsiveIconSize(context, mobileSize: 18, tabletSize: 19, desktopSize: 20),
               color: isSelected ? Colors.white : Colors.white.withOpacity(0.8),
             ),
-            const SizedBox(width: 8),
+            SizedBox(width: ResponsiveHelper.getResponsiveSpacing(context, mobileSpacing: 8)),
             Text(
               category.name,
               style: TextStyle(
                 color:
                     isSelected ? Colors.white : Colors.white.withOpacity(0.9),
-                fontSize: 14,
+                fontSize: ResponsiveHelper.getResponsiveFontSize(context, mobileSize: 14, tabletSize: 15, desktopSize: 16),
                 fontWeight: isSelected ? FontWeight.w700 : FontWeight.w600,
                 letterSpacing: 0.2,
               ),
@@ -557,7 +510,7 @@ class _BreathingMenuScreenState extends State<BreathingMenuScreen>
     );
   }
 
-  Widget _buildExerciseCard(ExerciseData exercise, int index, Size size) {
+  Widget _buildExerciseCard(BuildContext context, ExerciseData exercise, int index) {
     return AnimatedBuilder(
       animation: _pulseAnimation,
       builder: (context, child) {
@@ -570,29 +523,16 @@ class _BreathingMenuScreenState extends State<BreathingMenuScreen>
         cursor: SystemMouseCursors.click,
         child: GestureDetector(
           onTap: () => _navigateToExercise(exercise.route),
-          child: Container(
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-                colors: exercise.gradient,
-              ),
-              borderRadius: BorderRadius.circular(24),
-              boxShadow: [
-                BoxShadow(
-                  color: exercise.color.withOpacity(0.4),
-                  blurRadius: 25,
-                  spreadRadius: 2,
-                  offset: const Offset(0, 12),
-                ),
-                BoxShadow(
-                  color: Colors.black.withOpacity(0.2),
-                  blurRadius: 10,
-                  offset: const Offset(0, 4),
-                ),
-              ],
+          child: GlassContainer(
+            borderRadius: BorderRadius.circular(ResponsiveHelper.getResponsiveBorderRadius(context, mobileRadius: 24)),
+            blur: 15,
+            opacity: 0.2,
+            gradient: LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: exercise.gradient,
             ),
-            clipBehavior: Clip.antiAlias,
+            onTap: () => _navigateToExercise(exercise.route),
             child: Stack(
               children: [
                 // Decorative elements
@@ -623,7 +563,7 @@ class _BreathingMenuScreenState extends State<BreathingMenuScreen>
 
                 // Content - FIXED: Simple layout to prevent overflow
                 Padding(
-                  padding: const EdgeInsets.all(20),
+                  padding: EdgeInsets.all(ResponsiveHelper.getResponsivePadding(context, mobilePadding: 20)),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -633,8 +573,8 @@ class _BreathingMenuScreenState extends State<BreathingMenuScreen>
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
                           Container(
-                            width: 56,
-                            height: 56,
+                            width: ResponsiveHelper.getResponsiveContainerWidth(context, mobileWidth: 56),
+                            height: ResponsiveHelper.getResponsiveContainerHeight(context, mobileHeight: 56),
                             decoration: BoxDecoration(
                               color: Colors.white.withOpacity(0.15),
                               borderRadius: BorderRadius.circular(16),
@@ -653,9 +593,9 @@ class _BreathingMenuScreenState extends State<BreathingMenuScreen>
                             ),
                           ),
                           Container(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 14,
-                              vertical: 8,
+                            padding: EdgeInsets.symmetric(
+                              horizontal: ResponsiveHelper.getResponsivePadding(context, mobilePadding: 14),
+                              vertical: ResponsiveHelper.getResponsivePadding(context, mobilePadding: 8),
                             ),
                             decoration: BoxDecoration(
                               color: Colors.white.withOpacity(0.15),
@@ -673,12 +613,12 @@ class _BreathingMenuScreenState extends State<BreathingMenuScreen>
                                   size: 16,
                                   color: Colors.white,
                                 ),
-                                const SizedBox(width: 8),
+                                SizedBox(width: ResponsiveHelper.getResponsiveSpacing(context, mobileSpacing: 8)),
                                 Text(
                                   exercise.duration,
-                                  style: const TextStyle(
+                                  style: TextStyle(
                                     color: Colors.white,
-                                    fontSize: 14,
+                                    fontSize: ResponsiveHelper.getResponsiveFontSize(context, mobileSize: 14, tabletSize: 15, desktopSize: 16),
                                     fontWeight: FontWeight.w600,
                                   ),
                                 ),
@@ -689,7 +629,7 @@ class _BreathingMenuScreenState extends State<BreathingMenuScreen>
                       ),
 
                       // Spacer
-                      const SizedBox(height: 16),
+                      SizedBox(height: ResponsiveHelper.getResponsiveSpacing(context, mobileSpacing: 16)),
 
                       // Title and subtitle
                       Column(
@@ -697,9 +637,9 @@ class _BreathingMenuScreenState extends State<BreathingMenuScreen>
                         children: [
                           Text(
                             exercise.title,
-                            style: const TextStyle(
+                            style: TextStyle(
                               color: Colors.white,
-                              fontSize: 22,
+                              fontSize: ResponsiveHelper.getResponsiveFontSize(context, mobileSize: 22, tabletSize: 24, desktopSize: 26),
                               fontWeight: FontWeight.w800,
                               height: 1.2,
                               letterSpacing: -0.5,
@@ -707,12 +647,12 @@ class _BreathingMenuScreenState extends State<BreathingMenuScreen>
                             maxLines: 2,
                             overflow: TextOverflow.ellipsis,
                           ),
-                          const SizedBox(height: 8),
+                          SizedBox(height: ResponsiveHelper.getResponsiveSpacing(context, mobileSpacing: 8)),
                           Text(
                             exercise.subtitle,
                             style: TextStyle(
                               color: Colors.white.withOpacity(0.9),
-                              fontSize: 14,
+                              fontSize: ResponsiveHelper.getResponsiveFontSize(context, mobileSize: 14, tabletSize: 15, desktopSize: 16),
                               fontWeight: FontWeight.w500,
                               height: 1.3,
                             ),
@@ -723,14 +663,14 @@ class _BreathingMenuScreenState extends State<BreathingMenuScreen>
                       ),
 
                       // Bottom row with difficulty and arrow
-                      const SizedBox(height: 16),
+                      SizedBox(height: ResponsiveHelper.getResponsiveSpacing(context, mobileSpacing: 16)),
                       Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
                           Container(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 14,
-                              vertical: 10,
+                            padding: EdgeInsets.symmetric(
+                              horizontal: ResponsiveHelper.getResponsivePadding(context, mobilePadding: 14),
+                              vertical: ResponsiveHelper.getResponsivePadding(context, mobilePadding: 10),
                             ),
                             decoration: BoxDecoration(
                               color: Colors.white.withOpacity(0.2),
@@ -742,16 +682,16 @@ class _BreathingMenuScreenState extends State<BreathingMenuScreen>
                             ),
                             child: Text(
                               exercise.difficulty,
-                              style: const TextStyle(
+                              style: TextStyle(
                                 color: Colors.white,
-                                fontSize: 13,
+                                fontSize: ResponsiveHelper.getResponsiveFontSize(context, mobileSize: 13, tabletSize: 14, desktopSize: 15),
                                 fontWeight: FontWeight.w600,
                               ),
                             ),
                           ),
                           Container(
-                            width: 44,
-                            height: 44,
+                            width: ResponsiveHelper.getResponsiveContainerWidth(context, mobileWidth: 44),
+                            height: ResponsiveHelper.getResponsiveContainerHeight(context, mobileHeight: 44),
                             decoration: BoxDecoration(
                               color: Colors.white.withOpacity(0.2),
                               shape: BoxShape.circle,

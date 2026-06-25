@@ -1,8 +1,8 @@
 // lib/features/community/friends_screen.dart - COMPLETE VERSION
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:mindfulness_garden/presentation/providers/user_provider.dart';
-import 'package:mindfulness_garden/data/models/user_model.dart';
+import 'package:pranaverse/presentation/providers/user_provider.dart';
+import 'package:pranaverse/data/models/user_model.dart';
 import 'package:go_router/go_router.dart';
 
 class FriendsScreen extends StatefulWidget {

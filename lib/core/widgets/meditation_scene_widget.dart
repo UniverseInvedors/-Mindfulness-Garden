@@ -1,6 +1,8 @@
 // ignore_for_file: deprecated_member_use
 import 'dart:math';
 import 'package:flutter/material.dart';
+import 'package:pranaverse/core/widgets/character/teacher_personality.dart';
+import 'package:pranaverse/core/widgets/character/premium_character_renderer.dart';
 
 // ═══════════════════════════════════════════════════════════════════════════
 // PUBLIC API
@@ -61,6 +63,7 @@ class MeditationSceneWidget extends StatefulWidget {
   final String instruction;
   final bool isActive;
   final double height;
+  final TeacherPersonality teacher;
 
   const MeditationSceneWidget({
     super.key,
@@ -71,6 +74,7 @@ class MeditationSceneWidget extends StatefulWidget {
     this.instruction = '',
     this.isActive = false,
     this.height = 340,
+    this.teacher = TeacherPersonality.buddha,
   });
 
   @override
@@ -100,6 +104,20 @@ class _MeditationSceneWidgetState extends State<MeditationSceneWidget>
   late Animation<double> _poseAnim;
   ZenoPose _currentPose = ZenoPose.sitting;
   ZenoPose _targetPose = ZenoPose.sitting;
+
+  // Life animations
+  late AnimationController _blinkCtrl;
+  late Animation<double> _blinkAnim;
+  late AnimationController _swayCtrl;
+  late Animation<double> _swayAnim;
+  late AnimationController _idleBreathCtrl;
+  late Animation<double> _idleBreathAnim;
+  
+  // Coach presence animations
+  late AnimationController _gestureCtrl;
+  late Animation<double> _gestureAnim;
+  late AnimationController _successCtrl;
+  late Animation<double> _successAnim;
 
   // Face and lip-sync loop for spoken guidance.
   late AnimationController _faceCtrl;
@@ -134,7 +152,7 @@ class _MeditationSceneWidgetState extends State<MeditationSceneWidget>
     _creatureAnim = Tween<double>(begin: 0, end: 1).animate(_creatureCtrl);
 
     _poseCtrl = AnimationController(
-        vsync: this, duration: const Duration(milliseconds: 1200));
+        vsync: this, duration: const Duration(milliseconds: 1000));
     _poseAnim = Tween<double>(begin: 0, end: 1)
         .animate(CurvedAnimation(parent: _poseCtrl, curve: Curves.easeInOut));
     _currentPose = widget.pose;
@@ -148,6 +166,36 @@ class _MeditationSceneWidgetState extends State<MeditationSceneWidget>
         });
       }
     });
+
+    // Life animation controllers
+    _blinkCtrl = AnimationController(
+        vsync: this, duration: const Duration(milliseconds: 400))
+      ..repeat(reverse: true);
+    _blinkAnim = Tween<double>(begin: 0, end: 1).animate(
+        CurvedAnimation(parent: _blinkCtrl, curve: Curves.easeInOut));
+
+    _swayCtrl = AnimationController(
+        vsync: this, duration: const Duration(seconds: 6))
+      ..repeat(reverse: true);
+    _swayAnim = Tween<double>(begin: -1, end: 1).animate(
+        CurvedAnimation(parent: _swayCtrl, curve: Curves.easeInOut));
+
+    _idleBreathCtrl = AnimationController(
+        vsync: this, duration: const Duration(seconds: 4))
+      ..repeat(reverse: true);
+    _idleBreathAnim = Tween<double>(begin: 0.98, end: 1.02).animate(
+        CurvedAnimation(parent: _idleBreathCtrl, curve: Curves.easeInOut));
+
+    // Coach presence animations
+    _gestureCtrl = AnimationController(
+        vsync: this, duration: const Duration(milliseconds: 800));
+    _gestureAnim = Tween<double>(begin: 0, end: 1).animate(
+        CurvedAnimation(parent: _gestureCtrl, curve: Curves.easeInOut));
+    
+    _successCtrl = AnimationController(
+        vsync: this, duration: const Duration(milliseconds: 1500));
+    _successAnim = Tween<double>(begin: 0, end: 1).animate(
+        CurvedAnimation(parent: _successCtrl, curve: Curves.easeOutBack));
 
     _faceCtrl = AnimationController(
         vsync: this, duration: const Duration(milliseconds: 520));
@@ -178,6 +226,16 @@ class _MeditationSceneWidgetState extends State<MeditationSceneWidget>
         widget.isActive != old.isActive ||
         widget.breathPhase != old.breathPhase) {
       _syncFaceLoop();
+      // Trigger gesture animation when instruction changes
+      if (widget.instruction.isNotEmpty && widget.isActive) {
+        _triggerGestureAnimation();
+      }
+    }
+    
+    // Trigger success animation when breath phase becomes complete
+    if (widget.breathPhase == BreathPhase.complete && 
+        old.breathPhase != BreathPhase.complete) {
+      _triggerSuccessAnimation();
     }
 
     if (widget.breathPhase != old.breathPhase) {
@@ -218,6 +276,16 @@ class _MeditationSceneWidgetState extends State<MeditationSceneWidget>
     } else {
       _faceCtrl.animateTo(0, duration: const Duration(milliseconds: 180));
     }
+  }
+  
+  void _triggerGestureAnimation() {
+    _gestureCtrl.forward(from: 0).then((_) {
+      _gestureCtrl.reverse();
+    });
+  }
+  
+  void _triggerSuccessAnimation() {
+    _successCtrl.forward(from: 0);
   }
 
   void _applyBreathPhase(BreathPhase phase) {
@@ -388,47 +456,64 @@ class _MeditationSceneWidgetState extends State<MeditationSceneWidget>
     _creatureCtrl.dispose();
     _poseCtrl.dispose();
     _faceCtrl.dispose();
+    _blinkCtrl.dispose();
+    _swayCtrl.dispose();
+    _idleBreathCtrl.dispose();
+    _gestureCtrl.dispose();
+    _successCtrl.dispose();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
-    return SizedBox(
-      height: widget.height,
-      child: AnimatedBuilder(
-        animation: Listenable.merge([
-          _envAnim,
-          _bodyScale,
-          _auraAnim,
-          _creatureAnim,
-          _poseAnim,
-          _faceAnim,
-        ]),
-        builder: (context, _) {
-          return CustomPaint(
-            painter: _ScenePainter(
-              envT: _envAnim.value,
-              bodyScale: _bodyScale.value,
-              auraT: _auraAnim.value,
-              creatureT: _creatureAnim.value,
-              poseT: _poseAnim.value,
-              lipT: _faceAnim.value,
-              currentPose: _currentPose,
-              targetPose: _targetPose,
-              particles: _particles,
-              creatures: _creatures,
-              phaseColor: _phaseColor,
-              envAccent: _envAccent,
-              instruction: widget.instruction,
-              breathPhase: widget.breathPhase,
-              environment: widget.environment,
-              timeOfDay: widget.timeOfDay,
-              isActive: widget.isActive,
-              isSpeaking: _isSpeaking,
-            ),
-            size: Size.infinite,
-          );
-        },
+    return RepaintBoundary(
+      child: SizedBox(
+        height: widget.height,
+        child: AnimatedBuilder(
+          animation: Listenable.merge([
+            _envAnim,
+            _bodyScale,
+            _auraAnim,
+            _creatureAnim,
+            _poseAnim,
+            _faceAnim,
+            _blinkAnim,
+            _swayAnim,
+            _idleBreathAnim,
+            _gestureAnim,
+            _successAnim,
+          ]),
+          builder: (context, _) {
+            return CustomPaint(
+              painter: _ScenePainter(
+                envT: _envAnim.value,
+                bodyScale: _bodyScale.value * _idleBreathAnim.value,
+                auraT: _auraAnim.value,
+                creatureT: _creatureAnim.value,
+                poseT: _poseAnim.value,
+                lipT: _faceAnim.value,
+                blinkT: _blinkAnim.value,
+                swayT: _swayAnim.value,
+                gestureT: _gestureAnim.value,
+                successT: _successAnim.value,
+                currentPose: _currentPose,
+                targetPose: _targetPose,
+                particles: _particles,
+                creatures: _creatures,
+                phaseColor: _phaseColor,
+                envAccent: _envAccent,
+                instruction: widget.instruction,
+                breathPhase: widget.breathPhase,
+                environment: widget.environment,
+                timeOfDay: widget.timeOfDay,
+                isActive: widget.isActive,
+                isSpeaking: _isSpeaking,
+                teacher: widget.teacher,
+              ),
+              size: Size.infinite,
+            );
+          },
+        ),
       ),
     );
   }
@@ -439,7 +524,7 @@ class _MeditationSceneWidgetState extends State<MeditationSceneWidget>
 // ═══════════════════════════════════════════════════════════════════════════
 
 class _ScenePainter extends CustomPainter {
-  final double envT, bodyScale, auraT, creatureT, poseT, lipT;
+  final double envT, bodyScale, auraT, creatureT, poseT, lipT, blinkT, swayT, gestureT, successT;
   final ZenoPose currentPose, targetPose;
   final List<_Particle> particles;
   final List<_Creature> creatures;
@@ -449,6 +534,7 @@ class _ScenePainter extends CustomPainter {
   final SceneEnvironment environment;
   final SceneTimeOfDay timeOfDay;
   final bool isActive, isSpeaking;
+  final TeacherPersonality teacher;
 
   _ScenePainter({
     required this.envT,
@@ -457,6 +543,10 @@ class _ScenePainter extends CustomPainter {
     required this.creatureT,
     required this.poseT,
     required this.lipT,
+    required this.blinkT,
+    required this.swayT,
+    required this.gestureT,
+    required this.successT,
     required this.currentPose,
     required this.targetPose,
     required this.particles,
@@ -469,6 +559,7 @@ class _ScenePainter extends CustomPainter {
     required this.timeOfDay,
     required this.isActive,
     required this.isSpeaking,
+    required this.teacher,
   });
 
   @override
@@ -481,7 +572,7 @@ class _ScenePainter extends CustomPainter {
     _drawGroundGlow(canvas, size);
     _drawParticles(canvas, size);
     _drawCreatures(canvas, size);
-    _drawZeno(canvas, size);
+    _drawPremiumCharacter(canvas, size);
     if (instruction.isNotEmpty) _drawSpeechBubble(canvas, size);
   }
 
@@ -1248,35 +1339,729 @@ class _ScenePainter extends CustomPainter {
     canvas.drawCircle(Offset.zero, 3, headPaint);
   }
 
-  // ── Zeno — AI instructor with yoga poses ─────────────────────────────────
-  void _drawZeno(Canvas canvas, Size size) {
+  // ── Premium Character with smooth pose transitions ─────────────────────────
+  void _drawPremiumCharacter(Canvas canvas, Size size) {
     final cx = size.width / 2;
     final groundY = size.height * 0.63;
-
+    
+    // Get appearance configuration
+    final appearance = TeacherAppearance.personalities[teacher]!;
+    
     canvas.save();
     canvas.translate(cx, groundY);
-    canvas.scale(bodyScale);
-
-    // Aura rings
+    
+    // Apply subtle sway animation
+    canvas.rotate(swayT * 0.02);
+    // Ensure minimum scale to prevent invisible teacher
+    final safeScale = bodyScale.clamp(0.5, 2.0);
+    canvas.scale(safeScale);
+    
+    // Apply gesture animation (hand wave when speaking)
+    if (gestureT > 0) {
+      canvas.save();
+      canvas.translate(25, -50);
+      canvas.rotate(sin(gestureT * pi) * 0.3);
+      canvas.translate(-25, 50);
+    }
+    
+    // Use premium renderer for sitting/lotus poses
+    if (currentPose == ZenoPose.sitting || currentPose == ZenoPose.lotus) {
+      final renderer = PremiumCharacterRenderer(
+        appearance: appearance,
+        bodyScale: 1.0,
+        auraIntensity: auraT,
+        breathPhase: breathPhase,
+        envT: envT,
+        isSpeaking: isSpeaking,
+        lipT: lipT,
+      );
+      renderer.drawCharacter(canvas, size);
+    } else {
+      // For active poses, use the existing pose system with enhanced rendering
+      _drawEnhancedPose(canvas, currentPose, appearance);
+    }
+    
+    if (gestureT > 0) {
+      canvas.restore();
+    }
+    
+    // Draw success animation (hands together bow)
+    if (successT > 0) {
+      _drawSuccessGesture(canvas, appearance);
+    }
+    
+    canvas.restore();
+  }
+  
+  void _drawSuccessGesture(Canvas canvas, TeacherAppearance appearance) {
+    final alpha = (successT * 255).toInt();
+    final gesturePaint = Paint()
+      ..color = appearance.skinPrimary.withAlpha(alpha);
+    
+    // Hands together in prayer position
+    canvas.save();
+    canvas.translate(0, -40);
+    canvas.scale(successT);
+    
+    // Left hand
+    canvas.drawRRect(
+      RRect.fromRectAndRadius(
+        Rect.fromLTWH(-12, -20, 10, 25),
+        const Radius.circular(5),
+      ),
+      gesturePaint,
+    );
+    
+    // Right hand
+    canvas.drawRRect(
+      RRect.fromRectAndRadius(
+        Rect.fromLTWH(2, -20, 10, 25),
+        const Radius.circular(5),
+      ),
+      gesturePaint,
+    );
+    
+    // Glow effect
+    final glowPaint = Paint()
+      ..color = appearance.auraPrimary.withAlpha((alpha * 0.5).toInt())
+      ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 15);
+    canvas.drawCircle(Offset.zero, 35, glowPaint);
+    
+    canvas.restore();
+  }
+  
+  void _drawEnhancedPose(Canvas canvas, ZenoPose pose, TeacherAppearance appearance) {
+    // Environment-reactive aura colors
+    final envAuraColor = _getEnvironmentAuraColor();
+    final auraColor = _blendColors(appearance.auraPrimary, envAuraColor, 0.4);
+    
+    // Enhanced aura with environment-blended colors
     for (int i = 3; i >= 1; i--) {
       final auraPaint = Paint()
-        ..color = phaseColor.withAlpha((18 * auraT * i).toInt())
-        ..style = PaintingStyle.fill;
-      canvas.drawCircle(Offset.zero, 60.0 + i * 20 * auraT, auraPaint);
+        ..color = auraColor.withAlpha((20 * auraT * i).toInt())
+        ..maskFilter = MaskFilter.blur(BlurStyle.normal, 8 + i * 2);
+      canvas.drawCircle(Offset.zero, 55.0 + i * 18 * auraT, auraPaint);
     }
-
-    // Shadow
+    
+    // Environment-reactive rim light
+    _drawRimLight(canvas, appearance);
+    
+    // Shadow with environment tint
+    final shadowColor = _getEnvironmentShadowColor();
     final shadowPaint = Paint()
-      ..color = Colors.black.withAlpha(70)
-      ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 14);
+      ..color = shadowColor.withAlpha(60)
+      ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 12);
     canvas.drawOval(
-        Rect.fromCenter(center: const Offset(0, 4), width: 80, height: 20),
+        Rect.fromCenter(center: const Offset(0, 4), width: 75, height: 18),
         shadowPaint);
-
-    // Draw interpolated pose
-    _drawPose(canvas, poseT, currentPose, targetPose);
-
+    
+    // Draw pose with personality colors
+    _drawPoseWithPersonality(canvas, pose, appearance);
+  }
+  
+  Color _getEnvironmentAuraColor() {
+    switch (environment) {
+      case SceneEnvironment.forest:
+        return const Color(0xFF38b000);
+      case SceneEnvironment.ocean:
+        return const Color(0xFF0077b6);
+      case SceneEnvironment.mountain:
+        return const Color(0xFF4cc9f0);
+      case SceneEnvironment.cosmic:
+        return const Color(0xFF9d4edd);
+      case SceneEnvironment.desert:
+        return const Color(0xFFf77f00);
+      case SceneEnvironment.zenTemple:
+        return const Color(0xFFe9c46a);
+      case SceneEnvironment.garden:
+        return const Color(0xFFf72585);
+    }
+  }
+  
+  Color _getEnvironmentShadowColor() {
+    switch (environment) {
+      case SceneEnvironment.forest:
+        return const Color(0xFF1b4332);
+      case SceneEnvironment.ocean:
+        return const Color(0xFF023e8a);
+      case SceneEnvironment.mountain:
+        return const Color(0xFF1a3a5c);
+      case SceneEnvironment.cosmic:
+        return const Color(0xFF240046);
+      case SceneEnvironment.desert:
+        return const Color(0xFF6a4400);
+      case SceneEnvironment.zenTemple:
+        return const Color(0xFF3d2b1f);
+      case SceneEnvironment.garden:
+        return const Color(0xFF2d6a4f);
+    }
+  }
+  
+  Color _blendColors(Color c1, Color c2, double ratio) {
+    return Color.fromARGB(
+      ((c1.alpha * (1 - ratio)) + (c2.alpha * ratio)).toInt(),
+      ((c1.red * (1 - ratio)) + (c2.red * ratio)).toInt(),
+      ((c1.green * (1 - ratio)) + (c2.green * ratio)).toInt(),
+      ((c1.blue * (1 - ratio)) + (c2.blue * ratio)).toInt(),
+    );
+  }
+  
+  void _drawRimLight(Canvas canvas, TeacherAppearance appearance) {
+    final rimColor = _getEnvironmentAuraColor();
+    final rimPaint = Paint()
+      ..color = rimColor.withAlpha((30 * auraT).toInt())
+      ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 15);
+    
+    // Add subtle rim light around character
+    canvas.drawCircle(const Offset(-15, -30), 40, rimPaint);
+    canvas.drawCircle(const Offset(15, -30), 40, rimPaint);
+    
+    // Add environment-specific particle effects around character
+    _drawCharacterParticles(canvas, rimColor);
+  }
+  
+  void _drawCharacterParticles(Canvas canvas, Color particleColor) {
+    final particlePaint = Paint()..color = particleColor.withAlpha(80);
+    
+    switch (environment) {
+      case SceneEnvironment.forest:
+        // Floating leaves around character
+        for (int i = 0; i < 5; i++) {
+          final angle = envT * pi * 2 + i * pi * 0.4;
+          final radius = 50 + sin(envT * pi * 2 + i) * 10;
+          final x = cos(angle) * radius;
+          final y = sin(angle) * radius - 20;
+          canvas.save();
+          canvas.translate(x, y);
+          canvas.rotate(envT * pi * 2 + i);
+          canvas.drawOval(Rect.fromCenter(center: Offset.zero, width: 6, height: 3), particlePaint);
+          canvas.restore();
+        }
+        break;
+      case SceneEnvironment.ocean:
+        // Water droplets/bubbles
+        for (int i = 0; i < 4; i++) {
+          final x = -30 + i * 20 + sin(envT * pi * 2 + i) * 5;
+          final y = -40 + (envT * 20 + i * 15) % 60;
+          canvas.drawCircle(Offset(x, -y), 2 + i * 0.5, particlePaint);
+        }
+        break;
+      case SceneEnvironment.cosmic:
+        // Sparkles/stars around character
+        for (int i = 0; i < 6; i++) {
+          final angle = envT * pi * 2 + i * pi * 0.33;
+          final radius = 45 + sin(envT * pi * 4 + i) * 15;
+          final x = cos(angle) * radius;
+          final y = sin(angle) * radius - 25;
+          final sparkle = 0.5 + 0.5 * sin(envT * pi * 6 + i);
+          canvas.drawCircle(Offset(x, y), 1.5 * sparkle, particlePaint);
+        }
+        break;
+      case SceneEnvironment.mountain:
+        // Snowflakes
+        for (int i = 0; i < 4; i++) {
+          final x = -25 + i * 16 + sin(envT * pi * 2 + i) * 8;
+          final y = -30 + (envT * 15 + i * 12) % 50;
+          canvas.drawCircle(Offset(x, -y), 2, particlePaint);
+        }
+        break;
+      case SceneEnvironment.desert:
+        // Sand particles
+        for (int i = 0; i < 5; i++) {
+          final x = -30 + i * 15 + sin(envT * pi * 2 + i) * 6;
+          final y = -35 + (envT * 18 + i * 10) % 55;
+          canvas.drawCircle(Offset(x, -y), 1.5, particlePaint);
+        }
+        break;
+      case SceneEnvironment.zenTemple:
+        // Incense smoke wisps
+        for (int i = 0; i < 3; i++) {
+          final x = (-15 + i * 15).toDouble();
+          final y = (-50 - (envT * 20 + i * 15) % 40).toDouble();
+          final smokePaint = Paint()
+            ..color = particleColor.withAlpha(40)
+            ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 4);
+          canvas.drawCircle(Offset(x, y), 4.0 + sin(envT * pi * 2 + i.toDouble()) * 2.0, smokePaint);
+        }
+        break;
+      case SceneEnvironment.garden:
+        // Petals
+        for (int i = 0; i < 4; i++) {
+          final angle = envT * pi * 2 + i * pi * 0.5;
+          final radius = 40 + sin(envT * pi * 2 + i) * 12;
+          final x = cos(angle) * radius;
+          final y = sin(angle) * radius - 20;
+          canvas.save();
+          canvas.translate(x, y);
+          canvas.rotate(envT * pi * 3 + i);
+          canvas.drawOval(Rect.fromCenter(center: Offset.zero, width: 5, height: 2.5), particlePaint);
+          canvas.restore();
+        }
+        break;
+    }
+  }
+  
+  void _drawPoseWithPersonality(Canvas canvas, ZenoPose pose, TeacherAppearance appearance) {
+    final bodyPaint = Paint()..color = appearance.clothPrimary.withAlpha(220);
+    final skinPaint = Paint()..color = appearance.skinPrimary;
+    
+    switch (pose) {
+      case ZenoPose.warrior:
+        _drawWarriorPoseEnhanced(canvas, appearance, bodyPaint, skinPaint);
+        break;
+      case ZenoPose.tree:
+        _drawTreePoseEnhanced(canvas, appearance, bodyPaint, skinPaint);
+        break;
+      case ZenoPose.childPose:
+        _drawChildPoseEnhanced(canvas, appearance, bodyPaint, skinPaint);
+        break;
+      case ZenoPose.downwardDog:
+        _drawDownwardDogPoseEnhanced(canvas, appearance, bodyPaint, skinPaint);
+        break;
+      case ZenoPose.mountain:
+        _drawMountainPoseEnhanced(canvas, appearance, bodyPaint, skinPaint);
+        break;
+      default:
+        _drawSittingPoseEnhanced(canvas, appearance, bodyPaint, skinPaint);
+    }
+  }
+  
+  void _drawWarriorPoseEnhanced(Canvas canvas, TeacherAppearance appearance, Paint bodyPaint, Paint skinPaint) {
+    final chestLift = breathPhase == BreathPhase.inhale ? -2.0 : breathPhase == BreathPhase.exhale ? 1.0 : 0.0;
+    
+    // Back leg
+    canvas.save();
+    canvas.translate(20, 0);
+    canvas.rotate(-0.3);
+    canvas.drawRRect(
+        RRect.fromRectAndRadius(
+            const Rect.fromLTWH(-9, 0, 18, 56), const Radius.circular(9)),
+        bodyPaint);
     canvas.restore();
+    
+    // Front leg
+    canvas.save();
+    canvas.translate(-15, 0);
+    canvas.rotate(0.2);
+    canvas.drawRRect(
+        RRect.fromRectAndRadius(
+            const Rect.fromLTWH(-9, 0, 18, 48), const Radius.circular(9)),
+        bodyPaint);
+    canvas.restore();
+    
+    // Torso
+    canvas.drawRRect(
+        RRect.fromRectAndRadius(
+            const Rect.fromLTWH(-18, -70, 36, 70), const Radius.circular(12)),
+        bodyPaint);
+    
+    // Arms raised
+    canvas.save();
+    canvas.translate(-18, -65 + chestLift);
+    canvas.rotate(-0.2);
+    canvas.drawRRect(
+        RRect.fromRectAndRadius(
+            const Rect.fromLTWH(-6, -40, 12, 40), const Radius.circular(6)),
+        bodyPaint);
+    canvas.restore();
+    canvas.save();
+    canvas.translate(18, -65 + chestLift);
+    canvas.rotate(0.2);
+    canvas.drawRRect(
+        RRect.fromRectAndRadius(
+            const Rect.fromLTWH(-6, -40, 12, 40), const Radius.circular(6)),
+        bodyPaint);
+    canvas.restore();
+    
+    _drawHeadEnhanced(canvas, -85, appearance, skinPaint);
+  }
+  
+  void _drawTreePoseEnhanced(Canvas canvas, TeacherAppearance appearance, Paint bodyPaint, Paint skinPaint) {
+    final chestLift = breathPhase == BreathPhase.inhale ? -2.0 : breathPhase == BreathPhase.exhale ? 1.0 : 0.0;
+    
+    canvas.drawRRect(
+        RRect.fromRectAndRadius(
+            const Rect.fromLTWH(-10, 0, 20, 58), const Radius.circular(10)),
+        bodyPaint);
+    
+    canvas.save();
+    canvas.translate(8, 20);
+    canvas.rotate(0.7);
+    canvas.drawRRect(
+        RRect.fromRectAndRadius(
+            const Rect.fromLTWH(-7, 0, 14, 35), const Radius.circular(7)),
+        bodyPaint);
+    canvas.restore();
+    
+    canvas.drawRRect(
+        RRect.fromRectAndRadius(
+            const Rect.fromLTWH(-18, -70, 36, 70), const Radius.circular(12)),
+        bodyPaint);
+    
+    canvas.save();
+    canvas.translate(-10, -80 + chestLift);
+    canvas.rotate(-0.15);
+    canvas.drawRRect(
+        RRect.fromRectAndRadius(
+            const Rect.fromLTWH(-5, -35, 10, 35), const Radius.circular(5)),
+        bodyPaint);
+    canvas.restore();
+    canvas.save();
+    canvas.translate(10, -80 + chestLift);
+    canvas.rotate(0.15);
+    canvas.drawRRect(
+        RRect.fromRectAndRadius(
+            const Rect.fromLTWH(-5, -35, 10, 35), const Radius.circular(5)),
+        bodyPaint);
+    canvas.restore();
+    
+    _drawHeadEnhanced(canvas, -88, appearance, skinPaint);
+  }
+  
+  void _drawChildPoseEnhanced(Canvas canvas, TeacherAppearance appearance, Paint bodyPaint, Paint skinPaint) {
+    canvas.drawRRect(
+        RRect.fromRectAndRadius(
+            const Rect.fromLTWH(-40, -18, 80, 18), const Radius.circular(9)),
+        bodyPaint);
+    canvas.drawRRect(
+        RRect.fromRectAndRadius(
+            const Rect.fromLTWH(-24, 0, 48, 20), const Radius.circular(8)),
+        bodyPaint);
+    canvas.save();
+    canvas.translate(-40, -14);
+    canvas.rotate(-0.1);
+    canvas.drawRRect(
+        RRect.fromRectAndRadius(
+            const Rect.fromLTWH(-30, -5, 30, 10), const Radius.circular(5)),
+        bodyPaint);
+    canvas.restore();
+    canvas.save();
+    canvas.translate(-40, -6);
+    canvas.rotate(0.1);
+    canvas.drawRRect(
+        RRect.fromRectAndRadius(
+            const Rect.fromLTWH(-30, -5, 30, 10), const Radius.circular(5)),
+        bodyPaint);
+    canvas.restore();
+    canvas.drawCircle(const Offset(-50, -14), 14, bodyPaint);
+  }
+  
+  void _drawDownwardDogPoseEnhanced(Canvas canvas, TeacherAppearance appearance, Paint bodyPaint, Paint skinPaint) {
+    canvas.save();
+    canvas.rotate(-0.6);
+    canvas.drawRRect(
+        RRect.fromRectAndRadius(
+            const Rect.fromLTWH(-10, -60, 20, 60), const Radius.circular(10)),
+        bodyPaint);
+    canvas.restore();
+    canvas.save();
+    canvas.translate(-30, -10);
+    canvas.rotate(0.5);
+    canvas.drawRRect(
+        RRect.fromRectAndRadius(
+            const Rect.fromLTWH(-7, 0, 14, 40), const Radius.circular(7)),
+        bodyPaint);
+    canvas.restore();
+    canvas.save();
+    canvas.translate(20, -5);
+    canvas.rotate(-0.3);
+    canvas.drawRRect(
+        RRect.fromRectAndRadius(
+            const Rect.fromLTWH(-9, 0, 18, 52), const Radius.circular(9)),
+        bodyPaint);
+    canvas.restore();
+    canvas.drawCircle(const Offset(-38, -8), 14, bodyPaint);
+  }
+  
+  void _drawMountainPoseEnhanced(Canvas canvas, TeacherAppearance appearance, Paint bodyPaint, Paint skinPaint) {
+    final chestLift = breathPhase == BreathPhase.inhale ? -2.0 : breathPhase == BreathPhase.exhale ? 1.0 : 0.0;
+    
+    canvas.drawRRect(
+        RRect.fromRectAndRadius(
+            const Rect.fromLTWH(-20, 0, 16, 55), const Radius.circular(8)),
+        bodyPaint);
+    canvas.drawRRect(
+        RRect.fromRectAndRadius(
+            const Rect.fromLTWH(4, 0, 16, 55), const Radius.circular(8)),
+        bodyPaint);
+    canvas.drawRRect(
+        RRect.fromRectAndRadius(
+            const Rect.fromLTWH(-18, -70, 36, 70), const Radius.circular(12)),
+        bodyPaint);
+    canvas.drawRRect(
+        RRect.fromRectAndRadius(
+            Rect.fromLTWH(-30, -65 + chestLift, 12, 50), const Radius.circular(6)),
+        bodyPaint);
+    canvas.drawRRect(
+        RRect.fromRectAndRadius(
+            const Rect.fromLTWH(18, -65, 12, 50), const Radius.circular(6)),
+        bodyPaint);
+    
+    _drawHeadEnhanced(canvas, -88, appearance, skinPaint);
+  }
+  
+  void _drawSittingPoseEnhanced(Canvas canvas, TeacherAppearance appearance, Paint bodyPaint, Paint skinPaint) {
+    final chestLift = breathPhase == BreathPhase.inhale ? -2.0 : breathPhase == BreathPhase.exhale ? 1.0 : 0.0;
+    
+    _drawLimb(
+      canvas,
+      const [Offset(-4, -4), Offset(-30, 0), Offset(-8, 18), Offset(10, 22)],
+      appearance.clothPrimary,
+      width: 15,
+    );
+    _drawLimb(
+      canvas,
+      const [Offset(4, -4), Offset(26, 0), Offset(8, 18), Offset(-10, 22)],
+      appearance.clothSecondary,
+      width: 14,
+    );
+    
+    final torsoPath = Path()
+      ..moveTo(-22, -66 + chestLift)
+      ..cubicTo(-34, -49, -31, -18, -20, -2)
+      ..quadraticBezierTo(0, 8, 20, -2)
+      ..cubicTo(31, -18, 34, -49, 22, -66 + chestLift)
+      ..quadraticBezierTo(0, -78 + chestLift, -22, -66 + chestLift)
+      ..close();
+    
+    final torsoPaint = Paint()
+      ..shader = LinearGradient(
+        begin: Alignment.topLeft,
+        end: Alignment.bottomRight,
+        colors: [appearance.clothPrimary, appearance.clothSecondary, appearance.clothAccent],
+      ).createShader(const Rect.fromLTWH(-35, -82, 70, 95));
+    canvas.drawPath(torsoPath, torsoPaint);
+    
+    _drawLimb(
+      canvas,
+      [
+        Offset(-22, -55 + chestLift),
+        const Offset(-39, -35),
+        const Offset(-27, -15),
+        const Offset(-8, -20),
+      ],
+      appearance.clothPrimary,
+      width: 10,
+      highlight: Colors.white,
+    );
+    _drawLimb(
+      canvas,
+      [
+        Offset(22, -55 + chestLift),
+        const Offset(39, -35),
+        const Offset(27, -15),
+        const Offset(8, -20),
+      ],
+      appearance.clothPrimary,
+      width: 10,
+      highlight: Colors.white,
+    );
+    
+    canvas.drawOval(
+      Rect.fromCenter(center: const Offset(-9, -20), width: 13, height: 8),
+      skinPaint,
+    );
+    canvas.drawOval(
+      Rect.fromCenter(center: const Offset(9, -20), width: 13, height: 8),
+      skinPaint,
+    );
+    
+    _drawHeadEnhanced(canvas, -94 + chestLift, appearance, skinPaint);
+  }
+  
+  void _drawHeadEnhanced(Canvas canvas, double yOffset, TeacherAppearance appearance, Paint skinPaint) {
+    final headBob = isSpeaking ? sin(envT * pi * 12) * 0.65 : 0.0;
+    final headCenter = Offset(0, yOffset + headBob);
+    final headSize = 21.0 * appearance.headScale;
+    
+    final auraPaint = Paint()
+      ..color = appearance.auraPrimary.withAlpha((18 * auraT).toInt())
+      ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 10);
+    canvas.drawCircle(headCenter, 31, auraPaint);
+    
+    final neckPaint = Paint()
+      ..shader = LinearGradient(
+        begin: Alignment.topCenter,
+        end: Alignment.bottomCenter,
+        colors: [appearance.skinPrimary, appearance.skinSecondary],
+      ).createShader(Rect.fromLTWH(-9, yOffset + 14, 18, 20));
+    canvas.drawRRect(
+      RRect.fromRectAndRadius(
+          Rect.fromLTWH(-8, yOffset + 15, 16, 16), const Radius.circular(5)),
+      neckPaint,
+    );
+    
+    final headPaint = Paint()
+      ..shader = RadialGradient(
+        colors: [
+          appearance.skinPrimary,
+          appearance.skinSecondary,
+          appearance.skinShadow,
+        ],
+        center: const Alignment(-0.2, -0.2),
+        stops: const [0.0, 0.55, 1.0],
+      ).createShader(Rect.fromCircle(center: headCenter, radius: headSize));
+    canvas.drawOval(
+      Rect.fromCenter(center: headCenter, width: 39, height: 44),
+      headPaint,
+    );
+    
+    _drawHairForPersonality(canvas, headCenter, headSize, appearance);
+    _drawFaceFeatures(canvas, headCenter, headSize, appearance);
+  }
+  
+  void _drawHairForPersonality(Canvas canvas, Offset headCenter, double headSize, TeacherAppearance appearance) {
+    final hairPaint = Paint()..color = appearance.hairPrimary;
+    
+    switch (teacher) {
+      case TeacherPersonality.buddha:
+        final hairPath = Path()
+          ..moveTo(-22, headCenter.dy - 2)
+          ..cubicTo(-20, headCenter.dy - 25, -8, headCenter.dy - 35, 6, headCenter.dy - 33)
+          ..cubicTo(18, headCenter.dy - 31, 25, headCenter.dy - 15, 22, headCenter.dy + 4)
+          ..quadraticBezierTo(15, headCenter.dy - 2, 10, headCenter.dy - 15)
+          ..quadraticBezierTo(0, headCenter.dy - 22, -10, headCenter.dy - 12)
+          ..quadraticBezierTo(-16, headCenter.dy - 2, -22, headCenter.dy - 2)
+          ..close();
+        canvas.drawPath(hairPath, hairPaint);
+        final bunPaint = Paint()..color = appearance.hairSecondary;
+        final bunPath = Path()
+          ..moveTo(-10, headCenter.dy - 30)
+          ..cubicTo(-14, headCenter.dy - 42, -2, headCenter.dy - 46, 8, headCenter.dy - 44)
+          ..cubicTo(16, headCenter.dy - 42, 18, headCenter.dy - 32, 14, headCenter.dy - 28)
+          ..cubicTo(10, headCenter.dy - 26, 0, headCenter.dy - 28, -10, headCenter.dy - 30)
+          ..close();
+        canvas.drawPath(bunPath, bunPaint);
+        break;
+      case TeacherPersonality.zeno:
+        final hairPath = Path()
+          ..moveTo(-headSize * 0.9, headCenter.dy - headSize * 0.3)
+          ..lineTo(-headSize * 0.85, headCenter.dy - headSize * 0.7)
+          ..quadraticBezierTo(0, headCenter.dy - headSize * 0.95, headSize * 0.85, headCenter.dy - headSize * 0.7)
+          ..lineTo(headSize * 0.9, headCenter.dy - headSize * 0.3)
+          ..close();
+        canvas.drawPath(hairPath, hairPaint);
+        break;
+      case TeacherPersonality.monk:
+        final stubblePaint = Paint()..color = appearance.hairPrimary.withAlpha(60);
+        canvas.drawCircle(headCenter, headSize * 0.95, stubblePaint);
+        break;
+    }
+  }
+  
+  void _drawFaceFeatures(Canvas canvas, Offset headCenter, double headSize, TeacherAppearance appearance) {
+    final blink = blinkT > 0.9;
+    final eyeSize = 3.5 * appearance.eyeSize;
+    final eyeY = headCenter.dy - headSize * 0.15;
+    
+    if (blink) {
+      final eyePaint = Paint()
+        ..color = appearance.skinShadow
+        ..strokeWidth = 1.5
+        ..strokeCap = StrokeCap.round
+        ..style = PaintingStyle.stroke;
+      canvas.drawLine(
+        Offset(-headSize * 0.35, eyeY),
+        Offset(-headSize * 0.15, eyeY),
+        eyePaint,
+      );
+      canvas.drawLine(
+        Offset(headSize * 0.15, eyeY),
+        Offset(headSize * 0.35, eyeY),
+        eyePaint,
+      );
+    } else {
+      final eyeWhite = Paint()..color = Colors.white;
+      final eyeIris = Paint()..color = const Color(0xFF4a3728);
+      final eyePupil = Paint()..color = Colors.black;
+      
+      canvas.drawOval(
+        Rect.fromCenter(center: Offset(-headSize * 0.25, eyeY), width: eyeSize * 2, height: eyeSize * 1.5),
+        eyeWhite,
+      );
+      canvas.drawCircle(Offset(-headSize * 0.25, eyeY), eyeSize * 0.6, eyeIris);
+      canvas.drawCircle(Offset(-headSize * 0.25, eyeY), eyeSize * 0.3, eyePupil);
+      
+      canvas.drawOval(
+        Rect.fromCenter(center: Offset(headSize * 0.25, eyeY), width: eyeSize * 2, height: eyeSize * 1.5),
+        eyeWhite,
+      );
+      canvas.drawCircle(Offset(headSize * 0.25, eyeY), eyeSize * 0.6, eyeIris);
+      canvas.drawCircle(Offset(headSize * 0.25, eyeY), eyeSize * 0.3, eyePupil);
+      
+      final highlightPaint = Paint()..color = Colors.white.withAlpha(200);
+      canvas.drawCircle(Offset(-headSize * 0.25 - 1, eyeY - 1), 1.0, highlightPaint);
+      canvas.drawCircle(Offset(headSize * 0.25 - 1, eyeY - 1), 1.0, highlightPaint);
+    }
+    
+    final browPaint = Paint()
+      ..color = appearance.hairPrimary
+      ..strokeWidth = 1.5
+      ..strokeCap = StrokeCap.round
+      ..style = PaintingStyle.stroke;
+    final browY = eyeY - headSize * 0.2;
+    final browLift = breathPhase == BreathPhase.inhale ? -2.0 : 0.0;
+    canvas.drawArc(Rect.fromLTWH(-headSize * 0.4, browY + browLift, headSize * 0.25, 4), pi, pi, false, browPaint);
+    canvas.drawArc(Rect.fromLTWH(headSize * 0.15, browY + browLift, headSize * 0.25, 4), pi, pi, false, browPaint);
+    
+    final nosePaint = Paint()
+      ..color = appearance.skinShadow.withAlpha(150)
+      ..strokeWidth = 1.2
+      ..style = PaintingStyle.stroke;
+    final nosePath = Path()
+      ..moveTo(headCenter.dx, headCenter.dy + headSize * 0.1)
+      ..lineTo(headCenter.dx, headCenter.dy + headSize * 0.25)
+      ..lineTo(headCenter.dx - 2, headCenter.dy + headSize * 0.25);
+    canvas.drawPath(nosePath, nosePaint);
+    
+    final mouthY = headCenter.dy + headSize * 0.35;
+    final mouthWidth = 6.0 * appearance.mouthWidth;
+    
+    if (isSpeaking) {
+      final mouthPaint = Paint()..color = appearance.skinShadow;
+      canvas.drawOval(
+        Rect.fromCenter(
+          center: Offset(headCenter.dx, mouthY),
+          width: mouthWidth + lipT * 3,
+          height: 3 + lipT * 5,
+        ),
+        mouthPaint,
+      );
+    } else {
+      final mouthPaint = Paint()
+        ..color = appearance.skinShadow
+        ..strokeWidth = 1.5
+        ..strokeCap = StrokeCap.round
+        ..style = PaintingStyle.stroke;
+      final smileAmount = breathPhase == BreathPhase.complete ? 3.0 : 1.5;
+      canvas.drawArc(
+        Rect.fromLTWH(headCenter.dx - mouthWidth, mouthY, mouthWidth * 2, 4 + smileAmount),
+        0.1, pi - 0.2, false, mouthPaint,
+      );
+    }
+    
+    final cheekPaint = Paint()..color = const Color(0xFFf28a91).withAlpha(40);
+    canvas.drawOval(
+      Rect.fromCenter(center: Offset(-headSize * 0.5, headCenter.dy + headSize * 0.2), width: 6, height: 4),
+      cheekPaint,
+    );
+    canvas.drawOval(
+      Rect.fromCenter(center: Offset(headSize * 0.5, headCenter.dy + headSize * 0.2), width: 6, height: 4),
+      cheekPaint,
+    );
+    
+    if (breathPhase == BreathPhase.complete) {
+      final checkPaint = Paint()
+        ..color = const Color(0xFF38b000)
+        ..strokeWidth = 3.0
+        ..strokeCap = StrokeCap.round
+        ..style = PaintingStyle.stroke;
+      final path = Path()
+        ..moveTo(-9, headCenter.dy)
+        ..lineTo(-3, headCenter.dy + 7)
+        ..lineTo(11, headCenter.dy - 10);
+      canvas.drawPath(path, checkPaint);
+    }
   }
 
   void _drawPose(Canvas canvas, double t, ZenoPose from, ZenoPose to) {
@@ -1368,9 +2153,10 @@ class _ScenePainter extends CustomPainter {
   }
 
   void _drawSittingPose(Canvas canvas) {
-    final robeTop = Color.lerp(phaseColor, Colors.white, 0.2)!;
-    final robeMid = Color.lerp(phaseColor, const Color(0xFF2a145c), 0.28)!;
-    final robeDark = Color.lerp(phaseColor, Colors.black, 0.24)!;
+    // Tiger skin colors (Lord Shiva's traditional attire)
+    final tigerOrange = const Color(0xFFff8c00);
+    final tigerDark = const Color(0xFF8b4513);
+    final tigerBlack = const Color(0xFF1a1a1a);
     final skin = const Color(0xFFf2bd8f);
     final breathe = sin(envT * pi * 2) * 2.0;
     final chestLift = breathPhase == BreathPhase.inhale
@@ -1387,29 +2173,19 @@ class _ScenePainter extends CustomPainter {
       legShadow,
     );
 
-    // Cross-legged sitting: left leg rests over right with gentle arcs
+    // Cross-legged sitting with tiger skin - improved position
     _drawLimb(
       canvas,
-      const [Offset(-6, -6), Offset(-34, 2), Offset(-12, 22), Offset(14, 26)],
-      robeDark,
+      const [Offset(-4, -4), Offset(-30, 0), Offset(-8, 18), Offset(10, 22)],
+      tigerOrange,
+      width: 15,
+    );
+    _drawLimb(
+      canvas,
+      const [Offset(4, -4), Offset(26, 0), Offset(8, 18), Offset(-10, 22)],
+      tigerDark,
       width: 14,
     );
-    // Right leg tucked under and slightly behind (drawn second so overlap reads)
-    _drawLimb(
-      canvas,
-      const [Offset(6, -6), Offset(28, 2), Offset(12, 22), Offset(-18, 26)],
-      robeDark.withAlpha(230),
-      width: 13,
-    );
-    // subtle overlap highlight on the upper left thigh
-    _drawLimb(
-      canvas,
-      const [Offset(-12, 0), Offset(-22, 8), Offset(-6, 18)],
-      Colors.white.withOpacity(0.06),
-      width: 8,
-    );
-    // Simplified sitting limbs so Zeno reads as a clear cross-legged instructor
-    // instead of showing extra overlapping leg strokes.
 
     final torsoPath = Path()
       ..moveTo(-22, -66 + chestLift)
@@ -1418,23 +2194,30 @@ class _ScenePainter extends CustomPainter {
       ..cubicTo(31, -18, 34, -49, 22, -66 + chestLift)
       ..quadraticBezierTo(0, -78 + chestLift, -22, -66 + chestLift)
       ..close();
+    
+    // Tiger skin base
     final torsoPaint = Paint()
       ..shader = LinearGradient(
         begin: Alignment.topLeft,
         end: Alignment.bottomRight,
-        colors: [robeTop, robeMid, robeDark],
-        stops: const [0, 0.58, 1],
+        colors: [tigerOrange, tigerDark, tigerBlack],
+        stops: const [0, 0.5, 1],
       ).createShader(const Rect.fromLTWH(-35, -82, 70, 95));
     canvas.drawPath(torsoPath.shift(const Offset(2, 3)),
         Paint()..color = Colors.black.withAlpha(35));
     canvas.drawPath(torsoPath, torsoPaint);
 
-    final sashPaint = Paint()
-      ..color = Colors.white.withAlpha(48)
-      ..strokeWidth = 3
+    // Tiger stripes on torso
+    final stripePaint = Paint()
+      ..color = tigerBlack
+      ..strokeWidth = 2.5
       ..strokeCap = StrokeCap.round;
-    canvas.drawLine(
-        Offset(-16, -53 + chestLift), const Offset(18, -13), sashPaint);
+    canvas.drawLine(Offset(-18, -60 + chestLift), Offset(-8, -55 + chestLift), stripePaint);
+    canvas.drawLine(Offset(-12, -50 + chestLift), Offset(-2, -45 + chestLift), stripePaint);
+    canvas.drawLine(Offset(8, -58 + chestLift), Offset(18, -52 + chestLift), stripePaint);
+    canvas.drawLine(Offset(5, -40 + chestLift), Offset(15, -35 + chestLift), stripePaint);
+    canvas.drawLine(Offset(-15, -35 + chestLift), Offset(-5, -30 + chestLift), stripePaint);
+    canvas.drawLine(Offset(10, -25 + chestLift), Offset(20, -20 + chestLift), stripePaint);
 
     _drawLimb(
       canvas,
@@ -1444,7 +2227,7 @@ class _ScenePainter extends CustomPainter {
         const Offset(-27, -15),
         const Offset(-8, -20),
       ],
-      robeTop,
+      tigerOrange,
       width: 10,
       highlight: Colors.white,
     );
@@ -1456,10 +2239,16 @@ class _ScenePainter extends CustomPainter {
         const Offset(27, -15),
         const Offset(8, -20),
       ],
-      robeTop,
+      tigerOrange,
       width: 10,
       highlight: Colors.white,
     );
+
+    // Tiger stripes on arms
+    canvas.drawLine(const Offset(-30, -40), const Offset(-25, -35), stripePaint);
+    canvas.drawLine(const Offset(-35, -25), const Offset(-30, -20), stripePaint);
+    canvas.drawLine(const Offset(30, -40), const Offset(35, -35), stripePaint);
+    canvas.drawLine(const Offset(32, -25), const Offset(37, -20), stripePaint);
 
     canvas.drawOval(
       Rect.fromCenter(center: const Offset(-9, -20), width: 13, height: 8),
@@ -1479,7 +2268,7 @@ class _ScenePainter extends CustomPainter {
       Offset(-43, 7),
       Offset(43, 7),
     ]) {
-      _drawJointDot(canvas, joint, robeTop, 3.2);
+      _drawJointDot(canvas, joint, tigerOrange, 3.2);
     }
 
     _drawHead(canvas, yOffset: -94 + chestLift);
@@ -1731,17 +2520,29 @@ class _ScenePainter extends CustomPainter {
       headPaint,
     );
 
-    // Hair cap
-    final hairPaint = Paint()..color = const Color(0xFF2f2118);
+    // Lord Shiva-inspired matted hair (jata)
+    final hairPaint = Paint()..color = const Color(0xFF1a120b);
+    
+    // Matted hair piled up in bun style (jata)
     final hairPath = Path()
-      ..moveTo(-20, yOffset - 3)
-      ..cubicTo(-18, yOffset - 19, -6, yOffset - 26, 8, yOffset - 23)
-      ..cubicTo(19, yOffset - 21, 24, yOffset - 9, 19, yOffset + 5)
-      ..quadraticBezierTo(13, yOffset - 1, 9, yOffset - 9)
-      ..quadraticBezierTo(-1, yOffset - 13, -12, yOffset - 8)
-      ..quadraticBezierTo(-15, yOffset - 1, -20, yOffset - 3)
+      ..moveTo(-22, yOffset - 2)
+      ..cubicTo(-20, yOffset - 25, -8, yOffset - 35, 6, yOffset - 33)
+      ..cubicTo(18, yOffset - 31, 25, yOffset - 15, 22, yOffset + 4)
+      ..quadraticBezierTo(15, yOffset - 2, 10, yOffset - 15)
+      ..quadraticBezierTo(0, yOffset - 22, -10, yOffset - 12)
+      ..quadraticBezierTo(-16, yOffset - 2, -22, yOffset - 2)
       ..close();
     canvas.drawPath(hairPath, hairPaint);
+    
+    // Hair bun on top (jata)
+    final bunPaint = Paint()..color = const Color(0xFF2a1a10);
+    final bunPath = Path()
+      ..moveTo(-10, yOffset - 30)
+      ..cubicTo(-14, yOffset - 42, -2, yOffset - 46, 8, yOffset - 44)
+      ..cubicTo(16, yOffset - 42, 18, yOffset - 32, 14, yOffset - 28)
+      ..cubicTo(10, yOffset - 26, 0, yOffset - 28, -10, yOffset - 30)
+      ..close();
+    canvas.drawPath(bunPath, bunPaint);
 
     final browPaint = Paint()
       ..color = const Color(0xFF4b2d1d)
@@ -1852,28 +2653,28 @@ class _ScenePainter extends CustomPainter {
         text: instruction,
         style: const TextStyle(
           color: Color(0xFF0a0a1a),
-          fontSize: 13,
+          fontSize: 14,
           fontWeight: FontWeight.w600,
-          letterSpacing: 0,
-          height: 1.18,
+          letterSpacing: 0.2,
+          height: 1.3,
         ),
       ),
       textAlign: TextAlign.center,
       textDirection: TextDirection.ltr,
-      maxLines: 4,
+      maxLines: 3,
       ellipsis: '...',
     )..layout(maxWidth: bubbleW - 24);
 
-    final bubbleH = max(46.0, tp.height + 22);
+    final bubbleH = max(50.0, tp.height + 24);
 
     final bubbleRect = RRect.fromRectAndRadius(
       Rect.fromCenter(
           center: Offset(cx, bubbleY - bubbleH / 2),
           width: bubbleW,
           height: bubbleH),
-      const Radius.circular(14),
+      const Radius.circular(16),
     );
-    final bgPaint = Paint()..color = Colors.white.withAlpha(235);
+    final bgPaint = Paint()..color = Colors.white.withAlpha(240);
     canvas.drawRRect(bubbleRect, bgPaint);
 
     final tailPath = Path()
@@ -1884,8 +2685,8 @@ class _ScenePainter extends CustomPainter {
     canvas.drawPath(tailPath, bgPaint);
 
     final borderPaint = Paint()
-      ..color = phaseColor.withAlpha(170)
-      ..strokeWidth = 1.5
+      ..color = phaseColor.withAlpha(180)
+      ..strokeWidth = 2
       ..style = PaintingStyle.stroke;
     canvas.drawRRect(bubbleRect, borderPaint);
 
@@ -1901,13 +2702,18 @@ class _ScenePainter extends CustomPainter {
       old.creatureT != creatureT ||
       old.poseT != poseT ||
       old.lipT != lipT ||
+      old.blinkT != blinkT ||
+      old.swayT != swayT ||
+      old.gestureT != gestureT ||
+      old.successT != successT ||
       old.phaseColor != phaseColor ||
       old.instruction != instruction ||
       old.breathPhase != breathPhase ||
       old.environment != environment ||
       old.timeOfDay != timeOfDay ||
       old.isActive != isActive ||
-      old.isSpeaking != isSpeaking;
+      old.isSpeaking != isSpeaking ||
+      old.teacher != teacher;
 }
 
 // ═══════════════════════════════════════════════════════════════════════════

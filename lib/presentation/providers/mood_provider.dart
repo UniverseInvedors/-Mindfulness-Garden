@@ -1,6 +1,6 @@
 import 'package:flutter/foundation.dart';
-import 'package:mindfulness_garden/data/models/mood_model.dart';
-import 'package:mindfulness_garden/data/repositories/mood_repository.dart';
+import 'package:pranaverse/data/models/mood_model.dart';
+import 'package:pranaverse/data/repositories/mood_repository.dart';
 
 class MoodProvider with ChangeNotifier {
   final MoodRepository _moodRepository = MoodRepository();

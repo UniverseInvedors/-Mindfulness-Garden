@@ -1,5 +1,5 @@
 import 'package:flutter_tts/flutter_tts.dart';
-import 'package:mindfulness_garden/data/local_storage/local_storage_service.dart';
+import 'package:pranaverse/data/local_storage/local_storage_service.dart';
 
 class AiService {
   static final AiService _instance = AiService._internal();
