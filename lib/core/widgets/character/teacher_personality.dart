@@ -2,12 +2,15 @@ import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:pranaverse/core/widgets/meditation_scene_widget.dart';
+import 'package:pranaverse/core/services/voice_service.dart';
 
 // Teacher personality types for the yoga instructor
 enum TeacherPersonality {
   buddha,
   zeno,
   monk,
+  shiva, // Destroyer & transformer — cosmic dancer
+  tiger, // Tiger-cloth warrior — power & courage
 }
 
 // Teacher preference provider for single source of truth
@@ -21,7 +24,9 @@ class TeacherPreference extends StateNotifier<TeacherPersonality> {
   Future<void> _loadPreference() async {
     final prefs = await SharedPreferences.getInstance();
     final savedIndex = prefs.getInt(_key);
-    if (savedIndex != null && savedIndex >= 0 && savedIndex < TeacherPersonality.values.length) {
+    if (savedIndex != null &&
+        savedIndex >= 0 &&
+        savedIndex < TeacherPersonality.values.length) {
       state = TeacherPersonality.values[savedIndex];
     }
   }
@@ -30,11 +35,43 @@ class TeacherPreference extends StateNotifier<TeacherPersonality> {
     state = personality;
     final prefs = await SharedPreferences.getInstance();
     await prefs.setInt(_key, personality.index);
+    await VoiceService().setPersonality(personality.voicePersonality);
+  }
+}
+
+extension TeacherPersonalityX on TeacherPersonality {
+  VoicePersonality get voicePersonality {
+    switch (this) {
+      case TeacherPersonality.buddha:
+        return VoicePersonality.buddha;
+      case TeacherPersonality.zeno:
+        return VoicePersonality.zeno;
+      case TeacherPersonality.monk:
+      case TeacherPersonality.shiva:
+      case TeacherPersonality.tiger:
+        return VoicePersonality.monk;
+    }
+  }
+
+  String get role {
+    switch (this) {
+      case TeacherPersonality.buddha:
+        return 'Meditation and emotional calm';
+      case TeacherPersonality.zeno:
+        return 'Yoga, energy and daily coaching';
+      case TeacherPersonality.monk:
+        return 'Breathwork, focus and discipline';
+      case TeacherPersonality.shiva:
+        return 'Cosmic transformation & inner fire';
+      case TeacherPersonality.tiger:
+        return 'Power, courage & warrior spirit';
+    }
   }
 }
 
 // Provider instance
-final teacherPreferenceProvider = StateNotifierProvider<TeacherPreference, TeacherPersonality>(
+final teacherPreferenceProvider =
+    StateNotifierProvider<TeacherPreference, TeacherPersonality>(
   (ref) => TeacherPreference(),
 );
 
@@ -51,17 +88,21 @@ class ThemePreference extends StateNotifier<ThemeSettings> {
     final prefs = await SharedPreferences.getInstance();
     final savedEnvIndex = prefs.getInt(_envKey);
     final savedTimeIndex = prefs.getInt(_timeKey);
-    
+
     SceneEnvironment env = SceneEnvironment.forest;
     SceneTimeOfDay time = SceneTimeOfDay.morning;
-    
-    if (savedEnvIndex != null && savedEnvIndex >= 0 && savedEnvIndex < SceneEnvironment.values.length) {
+
+    if (savedEnvIndex != null &&
+        savedEnvIndex >= 0 &&
+        savedEnvIndex < SceneEnvironment.values.length) {
       env = SceneEnvironment.values[savedEnvIndex];
     }
-    if (savedTimeIndex != null && savedTimeIndex >= 0 && savedTimeIndex < SceneTimeOfDay.values.length) {
+    if (savedTimeIndex != null &&
+        savedTimeIndex >= 0 &&
+        savedTimeIndex < SceneTimeOfDay.values.length) {
       time = SceneTimeOfDay.values[savedTimeIndex];
     }
-    
+
     state = ThemeSettings(environment: env, timeOfDay: time);
   }
 
@@ -77,7 +118,8 @@ class ThemePreference extends StateNotifier<ThemeSettings> {
     await prefs.setInt(_timeKey, timeOfDay.index);
   }
 
-  Future<void> setTheme(SceneEnvironment environment, SceneTimeOfDay timeOfDay) async {
+  Future<void> setTheme(
+      SceneEnvironment environment, SceneTimeOfDay timeOfDay) async {
     state = ThemeSettings(environment: environment, timeOfDay: timeOfDay);
     final prefs = await SharedPreferences.getInstance();
     await prefs.setInt(_envKey, environment.index);
@@ -107,7 +149,8 @@ class ThemeSettings {
 }
 
 // Provider instance
-final themePreferenceProvider = StateNotifierProvider<ThemePreference, ThemeSettings>(
+final themePreferenceProvider =
+    StateNotifierProvider<ThemePreference, ThemeSettings>(
   (ref) => ThemePreference(),
 );
 
@@ -115,36 +158,36 @@ final themePreferenceProvider = StateNotifierProvider<ThemePreference, ThemeSett
 class TeacherAppearance {
   final TeacherPersonality personality;
   final String name;
-  
+
   // Skin tones
   final Color skinPrimary;
   final Color skinSecondary;
   final Color skinShadow;
-  
+
   // Hair colors
   final Color hairPrimary;
   final Color hairSecondary;
-  
+
   // Clothing colors
   final Color clothPrimary;
   final Color clothSecondary;
   final Color clothAccent;
-  
+
   // Aura colors
   final Color auraPrimary;
   final Color auraSecondary;
-  
+
   // Body proportions (multipliers)
   final double headScale;
   final double torsoScale;
   final double limbScale;
   final double overallScale;
-  
+
   // Feature adjustments
   final double eyeSize;
   final double mouthWidth;
   final double noseSize;
-  
+
   const TeacherAppearance({
     required this.personality,
     required this.name,
@@ -166,7 +209,7 @@ class TeacherAppearance {
     required this.mouthWidth,
     required this.noseSize,
   });
-  
+
   static const Map<TeacherPersonality, TeacherAppearance> personalities = {
     TeacherPersonality.buddha: TeacherAppearance(
       personality: TeacherPersonality.buddha,
@@ -230,6 +273,48 @@ class TeacherAppearance {
       eyeSize: 0.95,
       mouthWidth: 0.9,
       noseSize: 0.95,
+    ),
+    TeacherPersonality.shiva: TeacherAppearance(
+      personality: TeacherPersonality.shiva,
+      name: 'Shiva',
+      skinPrimary: Color(0xFF7ec8e3), // Blue skin (cosmic Shiva)
+      skinSecondary: Color(0xFF5aaecc),
+      skinShadow: Color(0xFF2e88a8),
+      hairPrimary: Color(0xFF1a0a2e), // Dark indigo matted locks
+      hairSecondary: Color(0xFF2d1a4a),
+      clothPrimary: Color(0xFFd4af37), // Tiger-skin gold wrap
+      clothSecondary: Color(0xFF8b6914),
+      clothAccent: Color(0xFFffd700),
+      auraPrimary: Color(0xFF00e5ff), // Electric blue cosmic aura
+      auraSecondary: Color(0xFFb39ddb),
+      headScale: 1.08,
+      torsoScale: 1.12,
+      limbScale: 1.05,
+      overallScale: 1.08,
+      eyeSize: 1.15, // Third eye prominence
+      mouthWidth: 0.95,
+      noseSize: 1.0,
+    ),
+    TeacherPersonality.tiger: TeacherAppearance(
+      personality: TeacherPersonality.tiger,
+      name: 'Tiger Warrior',
+      skinPrimary: Color(0xFFd4956a), // Warm tan warrior skin
+      skinSecondary: Color(0xFFb87548),
+      skinShadow: Color(0xFF8b5530),
+      hairPrimary: Color(0xFF1a1a1a), // Black hair pulled back
+      hairSecondary: Color(0xFF2d2d2d),
+      clothPrimary: Color(0xFFff6d00), // Tiger orange
+      clothSecondary: Color(0xFF1a1a1a), // Black tiger stripes
+      clothAccent: Color(0xFFffd54f), // Amber highlights
+      auraPrimary: Color(0xFFff6d00), // Blazing orange aura
+      auraSecondary: Color(0xFFffe082),
+      headScale: 1.0,
+      torsoScale: 1.15, // Broad, powerful build
+      limbScale: 1.1,
+      overallScale: 1.05,
+      eyeSize: 1.1,
+      mouthWidth: 1.05,
+      noseSize: 1.05,
     ),
   };
 }

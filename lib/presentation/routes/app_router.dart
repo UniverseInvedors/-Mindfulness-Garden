@@ -32,7 +32,9 @@ import 'package:pranaverse/features/settings/settings_screen.dart';
 import 'package:pranaverse/features/yoga/yoga_scene_screen.dart';
 import 'package:pranaverse/features/profile/profile_screen.dart';
 import 'package:pranaverse/features/auth/auth_screen.dart';
+import 'package:pranaverse/features/welcome/welcome_screen.dart';
 import 'package:pranaverse/features/scenes/scene_manager.dart';
+import 'package:pranaverse/features/teacher/teacher_selection_screen.dart';
 
 class AppRouter {
   static final GlobalKey<NavigatorState> rootNavigatorKey =
@@ -637,6 +639,12 @@ class AppRouter {
         },
       ),
 
+      GoRoute(
+        path: '/teachers',
+        name: 'teachers',
+        builder: (context, state) => const TeacherSelectionScreen(),
+      ),
+
       // ===== YOGA =====
       GoRoute(
         path: '/yoga',
@@ -696,6 +704,27 @@ class AppRouter {
                     Tween<Offset>(begin: const Offset(0, 1), end: Offset.zero)
                         .animate(animation),
                 child: FadeTransition(opacity: animation, child: child),
+              );
+            },
+          );
+        },
+      ),
+
+      // ===== WELCOME (post-login/signup) =====
+      GoRoute(
+        path: '/welcome',
+        name: 'welcome',
+        pageBuilder: (context, state) {
+          final name = state.uri.queryParameters['name'];
+          return CustomTransitionPage<void>(
+            key: state.pageKey,
+            child: WelcomeScreen(userName: name),
+            transitionsBuilder:
+                (context, animation, secondaryAnimation, child) {
+              return FadeTransition(
+                opacity:
+                    CurvedAnimation(parent: animation, curve: Curves.easeIn),
+                child: child,
               );
             },
           );

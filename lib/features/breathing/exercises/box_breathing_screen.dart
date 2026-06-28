@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:pranaverse/core/localization/app_copy.dart';
 import 'package:pranaverse/core/services/audio_service.dart';
 import 'package:pranaverse/core/services/tts_service.dart';
 import 'package:pranaverse/core/services/ad_service.dart';
@@ -132,15 +133,15 @@ class _BoxBreathingScreenState extends State<BoxBreathingScreen>
   String _getPhaseText() {
     switch (_phase) {
       case BoxPhase.inhale:
-        return 'INHALE';
+        return AppCopy.of(context, 'Inhale').toUpperCase();
       case BoxPhase.holdInhale:
-        return 'HOLD';
+        return AppCopy.of(context, 'Hold').toUpperCase();
       case BoxPhase.exhale:
-        return 'EXHALE';
+        return AppCopy.of(context, 'Exhale').toUpperCase();
       case BoxPhase.holdExhale:
-        return 'HOLD EMPTY';
+        return AppCopy.of(context, 'Hold Empty').toUpperCase();
       case BoxPhase.complete:
-        return 'COMPLETE';
+        return AppCopy.of(context, 'Complete').toUpperCase();
     }
   }
 
@@ -226,15 +227,15 @@ class _BoxBreathingScreenState extends State<BoxBreathingScreen>
   String get _sceneInstruction {
     switch (_phase) {
       case BoxPhase.inhale:
-        return 'Breathe in...';
+        return AppCopy.of(context, 'Breathe in...');
       case BoxPhase.holdInhale:
-        return 'Hold...';
+        return AppCopy.of(context, 'Hold gently...');
       case BoxPhase.exhale:
-        return 'Release...';
+        return AppCopy.of(context, 'Release...');
       case BoxPhase.holdExhale:
-        return 'Hold empty...';
+        return AppCopy.of(context, 'Hold empty...');
       case BoxPhase.complete:
-        return 'Well done 🙏';
+        return AppCopy.of(context, 'Well done');
     }
   }
 
@@ -253,7 +254,7 @@ class _BoxBreathingScreenState extends State<BoxBreathingScreen>
     final phaseColor = _getPhaseColor();
 
     return ExerciseSceneShell(
-      title: 'Box Breathing',
+      title: AppCopy.of(context, 'Box Breathing'),
       breathPhase: _scenePhase,
       instruction: _sceneInstruction,
       isActive: _isRunning,
@@ -324,10 +325,11 @@ class _BoxBreathingScreenState extends State<BoxBreathingScreen>
                 color: Colors.white.withAlpha(15),
                 borderRadius: BorderRadius.circular(12),
               ),
-              child: const Text(
-                'Inhale 4s → Hold 4s → Exhale 4s → Hold 4s  ·  Repeat 4×',
+              child: Text(
+                AppCopy.of(context,
+                    'Inhale 4s -> Hold 4s -> Exhale 4s -> Hold 4s  ·  Repeat 4x'),
                 textAlign: TextAlign.center,
-                style: TextStyle(fontSize: 12, color: Colors.white70),
+                style: const TextStyle(fontSize: 12, color: Colors.white70),
               ),
             ),
 
@@ -343,6 +345,12 @@ class _BoxBreathingScreenState extends State<BoxBreathingScreen>
                     progress: _borderAnimation.value,
                     color: _colorAnimation.value ?? Colors.blue,
                     phase: _phase,
+                    labels: [
+                      AppCopy.of(context, 'Inhale'),
+                      AppCopy.of(context, 'Hold'),
+                      AppCopy.of(context, 'Exhale'),
+                      AppCopy.of(context, 'Hold'),
+                    ],
                   ),
                 ),
               );
@@ -386,10 +394,14 @@ class _BoxBreathingScreenState extends State<BoxBreathingScreen>
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceAround,
               children: [
-                _buildBoxPhase('Inhale', 4, BoxPhase.inhale),
-                _buildBoxPhase('Hold', 4, BoxPhase.holdInhale),
-                _buildBoxPhase('Exhale', 4, BoxPhase.exhale),
-                _buildBoxPhase('Hold', 4, BoxPhase.holdExhale),
+                _buildBoxPhase(
+                    AppCopy.of(context, 'Inhale'), 4, BoxPhase.inhale),
+                _buildBoxPhase(
+                    AppCopy.of(context, 'Hold'), 4, BoxPhase.holdInhale),
+                _buildBoxPhase(
+                    AppCopy.of(context, 'Exhale'), 4, BoxPhase.exhale),
+                _buildBoxPhase(
+                    AppCopy.of(context, 'Hold'), 4, BoxPhase.holdExhale),
               ],
             ),
           ),
@@ -410,8 +422,8 @@ class _BoxBreathingScreenState extends State<BoxBreathingScreen>
                       shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(14)),
                     ),
-                    child: const Text('BOX BREATHE AGAIN',
-                        style: TextStyle(
+                    child: Text(AppCopy.of(context, 'BOX BREATHE AGAIN'),
+                        style: const TextStyle(
                             fontSize: 15,
                             fontWeight: FontWeight.w700,
                             color: Colors.white)),
@@ -420,8 +432,9 @@ class _BoxBreathingScreenState extends State<BoxBreathingScreen>
                 TextButton(
                   onPressed: () =>
                       context.canPop() ? context.pop() : context.go('/main'),
-                  child: const Text('TRY ANOTHER EXERCISE',
-                      style: TextStyle(color: Colors.white70, fontSize: 13)),
+                  child: Text(AppCopy.of(context, 'TRY ANOTHER EXERCISE'),
+                      style:
+                          const TextStyle(color: Colors.white70, fontSize: 13)),
                 ),
               ],
             )
@@ -436,8 +449,8 @@ class _BoxBreathingScreenState extends State<BoxBreathingScreen>
                   shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(14)),
                 ),
-                child: const Text('RESTART',
-                    style: TextStyle(
+                child: Text(AppCopy.of(context, 'RESTART'),
+                    style: const TextStyle(
                         fontSize: 15,
                         fontWeight: FontWeight.w700,
                         color: Colors.white)),
@@ -511,9 +524,13 @@ class BoxPainter extends CustomPainter {
   final double progress;
   final Color color;
   final BoxPhase phase;
+  final List<String> labels;
 
   BoxPainter(
-      {required this.progress, required this.color, required this.phase});
+      {required this.progress,
+      required this.color,
+      required this.phase,
+      required this.labels});
 
   @override
   void paint(Canvas canvas, Size size) {
@@ -533,7 +550,6 @@ class BoxPainter extends CustomPainter {
     // Corner labels
     final textStyle =
         TextStyle(color: Colors.white.withValues(alpha: 0.4), fontSize: 11);
-    final labels = ['Inhale', 'Hold', 'Exhale', 'Hold'];
     final labelPositions = [
       Offset(center.dx, center.dy - boxSize / 2 - 16),
       Offset(center.dx + boxSize / 2 + 4, center.dy),
@@ -605,5 +621,8 @@ class BoxPainter extends CustomPainter {
 
   @override
   bool shouldRepaint(covariant BoxPainter old) =>
-      progress != old.progress || color != old.color || phase != old.phase;
+      progress != old.progress ||
+      color != old.color ||
+      phase != old.phase ||
+      labels != old.labels;
 }

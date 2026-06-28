@@ -53,9 +53,18 @@ dependencies:
   universe_backend_sdk:
     path: ../../../shared_packages/universe_backend_sdk
 
-  # OPEN SOURCE ANALYTICS & CRASH REPORTING (Temporarily disabled due to Kotlin compatibility)
-  # sentry_flutter: ^8.0.0
-  # posthog_flutter: ^4.0.0
+  # FIREBASE SUITE
+  firebase_core: ^3.14.0
+  firebase_auth: ^5.5.4
+  cloud_firestore: ^5.6.9
+  firebase_analytics: ^11.4.6
+  firebase_crashlytics: ^4.3.5
+  firebase_messaging: ^15.2.6
+  firebase_remote_config: ^5.4.6
+  firebase_storage: ^12.4.6
+
+  # GOOGLE SIGN-IN
+  google_sign_in: ^6.2.2
 
   # ADS
   google_mobile_ads: ^5.3.1

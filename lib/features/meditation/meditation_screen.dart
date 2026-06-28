@@ -6,6 +6,7 @@ import 'package:pranaverse/core/widgets/glassmorphism/glass_container.dart';
 import 'package:pranaverse/core/widgets/glassmorphism/glass_icon.dart';
 import 'package:pranaverse/core/services/localization_service.dart';
 import 'package:pranaverse/core/services/voice_service.dart';
+import 'package:pranaverse/l10n/app_localizations.dart';
 import 'package:pranaverse/core/widgets/exercise_scene_shell.dart';
 import 'package:pranaverse/core/widgets/meditation_scene_widget.dart';
 
@@ -21,12 +22,8 @@ class _MeditationScreenState extends State<MeditationScreen>
   final AudioPlayer _audioPlayer = AudioPlayer();
   late AnimationController _animationController;
   late Animation<double> _breathAnimation;
-  // color animation previously unused; keep for future visual refinements
-  late Animation<Color?> _colorAnimation;
 
   bool _isPlaying = false;
-  // total duration placeholder (not used in compact UI)
-  final Duration _duration = const Duration(minutes: 10);
   final Duration _position = Duration.zero;
   int _breathCycle = 0;
   String _breathPhase = 'Inhale';
@@ -75,11 +72,6 @@ class _MeditationScreenState extends State<MeditationScreen>
         curve: const Interval(0, 0.5, curve: Curves.easeInOut),
       ),
     );
-
-    _colorAnimation = ColorTween(
-      begin: const Color(0xFF4CAF50).withValues(alpha: 0.3),
-      end: const Color(0xFF81C784).withValues(alpha: 0.3),
-    ).animate(_animationController);
 
     _setupBreathingCycle();
   }
@@ -148,8 +140,8 @@ class _MeditationScreenState extends State<MeditationScreen>
         child: Padding(
           padding: const EdgeInsets.all(18),
           child: Column(mainAxisSize: MainAxisSize.min, children: [
-            const Text('Benefits',
-                style: TextStyle(
+            Text(AppLocalizations.of(context)!.benefits,
+                style: const TextStyle(
                     color: Colors.white,
                     fontSize: 18,
                     fontWeight: FontWeight.w800)),
@@ -159,8 +151,8 @@ class _MeditationScreenState extends State<MeditationScreen>
             const SizedBox(height: 12),
             TextButton(
                 onPressed: () => Navigator.pop(context),
-                child: const Text('Close',
-                    style: TextStyle(color: Colors.white70)))
+                child: Text(AppLocalizations.of(context)!.close,
+                    style: const TextStyle(color: Colors.white70)))
           ]),
         ),
       ),
@@ -180,9 +172,13 @@ class _MeditationScreenState extends State<MeditationScreen>
   @override
   Widget build(BuildContext context) {
     return ExerciseSceneShell(
-      title: 'Meditation',
+      title: AppLocalizations.of(context)!.meditation,
       breathPhase: _scenePhase,
-      instruction: _isPlaying ? _breathPhase : 'Tap play to begin',
+      instruction: _isPlaying
+          ? (_breathPhase == 'Inhale'
+              ? AppLocalizations.of(context)!.inhale
+              : AppLocalizations.of(context)!.exhale)
+          : AppLocalizations.of(context)!.tapPlayToBegin,
       isActive: _isPlaying,
       initialEnvironment: SceneEnvironment.forest,
       initialTimeOfDay: SceneTimeOfDay.morning,
@@ -191,17 +187,21 @@ class _MeditationScreenState extends State<MeditationScreen>
         GlassIcon(
           icon: Icons.help_outline,
           onTap: _showBenefits,
-          size: ResponsiveHelper.getResponsiveIconSize(context, mobileSize: 18, tabletSize: 20, desktopSize: 22),
+          size: ResponsiveHelper.getResponsiveIconSize(context,
+              mobileSize: 18, tabletSize: 20, desktopSize: 22),
           iconColor: Colors.white,
           blur: 10,
           opacity: 0.1,
           isCircular: true,
         ),
-        SizedBox(width: ResponsiveHelper.getResponsiveSpacing(context, mobileSpacing: 4)),
+        SizedBox(
+            width: ResponsiveHelper.getResponsiveSpacing(context,
+                mobileSpacing: 4)),
         GlassIcon(
           icon: _isPlaying ? Icons.pause : Icons.play_arrow,
           onTap: _togglePlayback,
-          size: ResponsiveHelper.getResponsiveIconSize(context, mobileSize: 20, tabletSize: 22, desktopSize: 24),
+          size: ResponsiveHelper.getResponsiveIconSize(context,
+              mobileSize: 20, tabletSize: 22, desktopSize: 24),
           iconColor: Colors.white,
           blur: 10,
           opacity: 0.1,
@@ -213,6 +213,7 @@ class _MeditationScreenState extends State<MeditationScreen>
   }
 
   Widget _buildBottomPanel() {
+    final l10n = AppLocalizations.of(context)!;
     return Padding(
       padding: EdgeInsets.fromLTRB(
         ResponsiveHelper.getResponsivePadding(context, mobilePadding: 16),
@@ -224,12 +225,17 @@ class _MeditationScreenState extends State<MeditationScreen>
         mainAxisSize: MainAxisSize.min,
         children: [
           GlassContainer(
-            width: ResponsiveHelper.getResponsiveContainerWidth(context, mobileWidth: 36),
-            height: ResponsiveHelper.getResponsiveContainerHeight(context, mobileHeight: 4),
-            margin: EdgeInsets.only(bottom: ResponsiveHelper.getResponsiveSpacing(context, mobileSpacing: 12)),
+            width: ResponsiveHelper.getResponsiveContainerWidth(context,
+                mobileWidth: 36),
+            height: ResponsiveHelper.getResponsiveContainerHeight(context,
+                mobileHeight: 4),
+            margin: EdgeInsets.only(
+                bottom: ResponsiveHelper.getResponsiveSpacing(context,
+                    mobileSpacing: 12)),
             borderRadius: BorderRadius.circular(2),
             blur: 6,
             opacity: 0.15,
+            child: const SizedBox.shrink(),
           ),
 
           // Timer + phase
@@ -239,30 +245,44 @@ class _MeditationScreenState extends State<MeditationScreen>
               Text(
                 _formatDuration(_position),
                 style: TextStyle(
-                  fontSize: ResponsiveHelper.getResponsiveFontSize(context, mobileSize: 36, tabletSize: 38, desktopSize: 40),
+                  fontSize: ResponsiveHelper.getResponsiveFontSize(context,
+                      mobileSize: 36, tabletSize: 38, desktopSize: 40),
                   fontWeight: FontWeight.w300,
                   color: Colors.white,
                   fontFamily: 'RobotoMono',
                 ),
               ),
-              SizedBox(width: ResponsiveHelper.getResponsiveSpacing(context, mobileSpacing: 16)),
+              SizedBox(
+                  width: ResponsiveHelper.getResponsiveSpacing(context,
+                      mobileSpacing: 16)),
               Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(_breathPhase,
+                  Text(_breathPhase == 'Inhale' ? l10n.inhale : l10n.exhale,
                       style: TextStyle(
-                          fontSize: ResponsiveHelper.getResponsiveFontSize(context, mobileSize: 18, tabletSize: 19, desktopSize: 20),
+                          fontSize: ResponsiveHelper.getResponsiveFontSize(
+                              context,
+                              mobileSize: 18,
+                              tabletSize: 19,
+                              desktopSize: 20),
                           fontWeight: FontWeight.w600,
                           color: Colors.white)),
-                  Text('Cycle $_breathCycle',
-                      style:
-                          TextStyle(fontSize: ResponsiveHelper.getResponsiveFontSize(context, mobileSize: 12, tabletSize: 13, desktopSize: 14), color: Colors.white54)),
+                  Text('${l10n.cycle} $_breathCycle',
+                      style: TextStyle(
+                          fontSize: ResponsiveHelper.getResponsiveFontSize(
+                              context,
+                              mobileSize: 12,
+                              tabletSize: 13,
+                              desktopSize: 14),
+                          color: Colors.white54)),
                 ],
               ),
             ],
           ),
 
-          SizedBox(height: ResponsiveHelper.getResponsiveSpacing(context, mobileSpacing: 16)),
+          SizedBox(
+              height: ResponsiveHelper.getResponsiveSpacing(context,
+                  mobileSpacing: 10)),
           GlassButton(
             onPressed: _showBenefits,
             blur: 10,
@@ -271,53 +291,76 @@ class _MeditationScreenState extends State<MeditationScreen>
             child: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                Icon(Icons.help_outline, size: ResponsiveHelper.getResponsiveIconSize(context, mobileSize: 18, tabletSize: 19, desktopSize: 20)),
-                SizedBox(width: ResponsiveHelper.getResponsiveSpacing(context, mobileSpacing: 8)),
-                const Text('Benefits'),
+                Icon(Icons.help_outline,
+                    size: ResponsiveHelper.getResponsiveIconSize(context,
+                        mobileSize: 18, tabletSize: 19, desktopSize: 20)),
+                SizedBox(
+                    width: ResponsiveHelper.getResponsiveSpacing(context,
+                        mobileSpacing: 8)),
+                Text(l10n.benefits),
               ],
             ),
           ),
-          SizedBox(height: ResponsiveHelper.getResponsiveSpacing(context, mobileSpacing: 12)),
-          SizedBox(height: ResponsiveHelper.getResponsiveSpacing(context, mobileSpacing: 14)),
+          SizedBox(
+              height: ResponsiveHelper.getResponsiveSpacing(context,
+                  mobileSpacing: 10)),
 
-          // Breathing visualizer (compact)
+          // Breathing visualizer (fixed size — avoids overflow)
           AnimatedBuilder(
             animation: _breathAnimation,
-            builder: (_, __) => GlassContainer(
-              width: ResponsiveHelper.getResponsiveContainerWidth(context, mobileWidth: 80) + _breathProgress * 40,
-              height: ResponsiveHelper.getResponsiveContainerHeight(context, mobileHeight: 80) + _breathProgress * 40,
-              borderRadius: BorderRadius.circular(50),
-              blur: 15,
-              opacity: 0.3,
-              gradient: LinearGradient(
-                colors: [
-                  (_breathPhase == 'Inhale' ? const Color(0xFF4CAF50) : const Color(0xFF81C784)).withAlpha(80),
-                  (_breathPhase == 'Inhale' ? const Color(0xFF4CAF50) : const Color(0xFF81C784)).withAlpha(40),
-                ],
-              ),
-              child: Center(
-                child: Icon(
-                  _breathPhase == 'Inhale' ? Icons.air : Icons.water_drop,
-                  color: Colors.white,
-                  size: ResponsiveHelper.getResponsiveIconSize(context, mobileSize: 28, tabletSize: 30, desktopSize: 32),
+            builder: (_, __) {
+              final orbSize = ResponsiveHelper.getResponsiveContainerWidth(
+                  context,
+                  mobileWidth: 72);
+              return GlassContainer(
+                width: orbSize,
+                height: orbSize,
+                borderRadius: BorderRadius.circular(orbSize / 2),
+                blur: 15,
+                opacity: 0.3 + _breathProgress * 0.15,
+                gradient: LinearGradient(
+                  colors: [
+                    (_breathPhase == 'Inhale'
+                            ? const Color(0xFF4CAF50)
+                            : const Color(0xFF81C784))
+                        .withAlpha(80 + (_breathProgress * 40).toInt()),
+                    (_breathPhase == 'Inhale'
+                            ? const Color(0xFF4CAF50)
+                            : const Color(0xFF81C784))
+                        .withAlpha(40),
+                  ],
                 ),
-              ),
-            ),
+                child: Center(
+                  child: Icon(
+                    _breathPhase == 'Inhale' ? Icons.air : Icons.water_drop,
+                    color: Colors.white,
+                    size: ResponsiveHelper.getResponsiveIconSize(context,
+                        mobileSize: 26, tabletSize: 28, desktopSize: 30),
+                  ),
+                ),
+              );
+            },
           ),
 
-          SizedBox(height: ResponsiveHelper.getResponsiveSpacing(context, mobileSpacing: 14)),
+          SizedBox(
+              height: ResponsiveHelper.getResponsiveSpacing(context,
+                  mobileSpacing: 14)),
 
           // Controls
           Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               _controlBtn(context, Icons.replay_30, () {}),
-              SizedBox(width: ResponsiveHelper.getResponsiveSpacing(context, mobileSpacing: 20)),
+              SizedBox(
+                  width: ResponsiveHelper.getResponsiveSpacing(context,
+                      mobileSpacing: 20)),
               GestureDetector(
                 onTap: _togglePlayback,
                 child: GlassContainer(
-                  width: ResponsiveHelper.getResponsiveContainerWidth(context, mobileWidth: 64),
-                  height: ResponsiveHelper.getResponsiveContainerHeight(context, mobileHeight: 64),
+                  width: ResponsiveHelper.getResponsiveContainerWidth(context,
+                      mobileWidth: 64),
+                  height: ResponsiveHelper.getResponsiveContainerHeight(context,
+                      mobileHeight: 64),
                   borderRadius: BorderRadius.circular(32),
                   blur: 15,
                   opacity: 0.3,
@@ -328,49 +371,75 @@ class _MeditationScreenState extends State<MeditationScreen>
                     ],
                   ),
                   child: Icon(_isPlaying ? Icons.pause : Icons.play_arrow,
-                      size: ResponsiveHelper.getResponsiveIconSize(context, mobileSize: 32, tabletSize: 34, desktopSize: 36), color: Colors.white),
+                      size: ResponsiveHelper.getResponsiveIconSize(context,
+                          mobileSize: 32, tabletSize: 34, desktopSize: 36),
+                      color: Colors.white),
                 ),
               ),
-              SizedBox(width: ResponsiveHelper.getResponsiveSpacing(context, mobileSpacing: 20)),
+              SizedBox(
+                  width: ResponsiveHelper.getResponsiveSpacing(context,
+                      mobileSpacing: 20)),
               _controlBtn(context, Icons.forward_30, () {}),
             ],
           ),
 
-          SizedBox(height: ResponsiveHelper.getResponsiveSpacing(context, mobileSpacing: 14)),
+          SizedBox(
+              height: ResponsiveHelper.getResponsiveSpacing(context,
+                  mobileSpacing: 14)),
 
           // Sound selector
           SizedBox(
-            height: ResponsiveHelper.getResponsiveContainerHeight(context, mobileHeight: 72),
+            height: ResponsiveHelper.getResponsiveContainerHeight(context,
+                mobileHeight: 72),
             child: ListView.separated(
               scrollDirection: Axis.horizontal,
               itemCount: _sounds.length,
-              separatorBuilder: (_, __) => SizedBox(width: ResponsiveHelper.getResponsiveSpacing(context, mobileSpacing: 10)),
+              separatorBuilder: (_, __) => SizedBox(
+                  width: ResponsiveHelper.getResponsiveSpacing(context,
+                      mobileSpacing: 10)),
               itemBuilder: (_, i) {
                 final s = _sounds[i];
                 final sel = _selectedSound == i;
                 return GestureDetector(
                   onTap: () => _selectSound(i),
                   child: GlassContainer(
-                    duration: const Duration(milliseconds: 250),
-                    width: ResponsiveHelper.getResponsiveContainerWidth(context, mobileWidth: 64),
+                    width: ResponsiveHelper.getResponsiveContainerWidth(context,
+                        mobileWidth: 64),
                     borderRadius: BorderRadius.circular(14),
                     blur: sel ? 12 : 8,
                     opacity: sel ? 0.3 : 0.15,
                     gradient: LinearGradient(
                       colors: sel
-                          ? [(s['color'] as Color).withAlpha(60), (s['color'] as Color).withAlpha(30)]
-                          : [Colors.white.withAlpha(15), Colors.white.withAlpha(8)],
+                          ? [
+                              (s['color'] as Color).withAlpha(60),
+                              (s['color'] as Color).withAlpha(30)
+                            ]
+                          : [
+                              Colors.white.withAlpha(15),
+                              Colors.white.withAlpha(8)
+                            ],
                     ),
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
                         Icon(s['icon'] as IconData,
-                            size: ResponsiveHelper.getResponsiveIconSize(context, mobileSize: 22, tabletSize: 23, desktopSize: 24),
+                            size: ResponsiveHelper.getResponsiveIconSize(
+                                context,
+                                mobileSize: 22,
+                                tabletSize: 23,
+                                desktopSize: 24),
                             color: sel ? s['color'] as Color : Colors.white54),
-                        SizedBox(height: ResponsiveHelper.getResponsiveSpacing(context, mobileSpacing: 4)),
+                        SizedBox(
+                            height: ResponsiveHelper.getResponsiveSpacing(
+                                context,
+                                mobileSpacing: 4)),
                         Text(s['name'] as String,
                             style: TextStyle(
-                              fontSize: ResponsiveHelper.getResponsiveFontSize(context, mobileSize: 10, tabletSize: 11, desktopSize: 12),
+                              fontSize: ResponsiveHelper.getResponsiveFontSize(
+                                  context,
+                                  mobileSize: 10,
+                                  tabletSize: 11,
+                                  desktopSize: 12),
                               color: sel ? Colors.white : Colors.white54,
                               fontWeight:
                                   sel ? FontWeight.w700 : FontWeight.normal,
@@ -387,10 +456,12 @@ class _MeditationScreenState extends State<MeditationScreen>
     );
   }
 
-  Widget _controlBtn(BuildContext context, IconData icon, VoidCallback onTap) => GlassIcon(
+  Widget _controlBtn(BuildContext context, IconData icon, VoidCallback onTap) =>
+      GlassIcon(
         icon: icon,
         onTap: onTap,
-        size: ResponsiveHelper.getResponsiveIconSize(context, mobileSize: 22, tabletSize: 23, desktopSize: 24),
+        size: ResponsiveHelper.getResponsiveIconSize(context,
+            mobileSize: 22, tabletSize: 23, desktopSize: 24),
         iconColor: Colors.white,
         blur: 8,
         opacity: 0.15,

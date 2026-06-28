@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:audioplayers/audioplayers.dart';
 import 'package:go_router/go_router.dart';
 import 'dart:math';
+import 'package:pranaverse/l10n/app_localizations.dart';
 
 class AudioMeditationScreen extends StatefulWidget {
   const AudioMeditationScreen({super.key});
@@ -15,7 +16,6 @@ class _AudioMeditationScreenState extends State<AudioMeditationScreen>
   final AudioPlayer _audioPlayer = AudioPlayer();
   late AnimationController _animationController;
   late Animation<double> _pulseAnimation;
-  late Animation<double> _waveAnimation;
 
   bool _isPlaying = false;
   Duration _duration = const Duration(minutes: 10);
@@ -88,10 +88,6 @@ class _AudioMeditationScreenState extends State<AudioMeditationScreen>
 
     _pulseAnimation = Tween<double>(begin: 0.95, end: 1.05).animate(
       CurvedAnimation(parent: _animationController, curve: Curves.easeInOut),
-    );
-
-    _waveAnimation = Tween<double>(begin: 0, end: 2 * pi).animate(
-      CurvedAnimation(parent: _animationController, curve: Curves.linear),
     );
 
     _setupAudio();
@@ -194,8 +190,8 @@ class _AudioMeditationScreenState extends State<AudioMeditationScreen>
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final colors = theme.colorScheme;
     final size = MediaQuery.of(context).size;
+    final l10n = AppLocalizations.of(context)!;
 
     return Scaffold(
       backgroundColor: const Color(0xFF0a0a1a),
@@ -210,7 +206,8 @@ class _AudioMeditationScreenState extends State<AudioMeditationScreen>
               expandedHeight: 100,
               leading: IconButton(
                 icon: const Icon(Icons.arrow_back, color: Colors.white),
-                onPressed: () => context.canPop() ? context.pop() : context.go('/main'),
+                onPressed: () =>
+                    context.canPop() ? context.pop() : context.go('/main'),
               ),
               flexibleSpace: FlexibleSpaceBar(
                 background: Container(
@@ -235,7 +232,7 @@ class _AudioMeditationScreenState extends State<AudioMeditationScreen>
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
                           Text(
-                            'Audio Meditation',
+                            l10n.audioMeditation,
                             style: TextStyle(
                               fontSize: 24,
                               fontWeight: FontWeight.w800,
@@ -243,7 +240,7 @@ class _AudioMeditationScreenState extends State<AudioMeditationScreen>
                             ),
                           ),
                           Text(
-                            'Immerse in sound',
+                            l10n.immerseInSound,
                             style: TextStyle(
                               fontSize: 14,
                               color: Colors.white.withOpacity(0.7),
@@ -331,7 +328,8 @@ class _AudioMeditationScreenState extends State<AudioMeditationScreen>
                       CustomPaint(
                         painter: _CircularProgressPainter(
                           progress: _duration.inMilliseconds > 0
-                              ? _position.inMilliseconds / _duration.inMilliseconds
+                              ? _position.inMilliseconds /
+                                  _duration.inMilliseconds
                               : 0.0,
                           color: Colors.blue,
                           strokeWidth: 4,
@@ -368,7 +366,7 @@ class _AudioMeditationScreenState extends State<AudioMeditationScreen>
           ),
           const SizedBox(height: 20),
           Text(
-            'Breath Awareness',
+            AppLocalizations.of(context)!.breathAwareness,
             style: TextStyle(
               fontSize: 18,
               fontWeight: FontWeight.w600,
@@ -377,7 +375,7 @@ class _AudioMeditationScreenState extends State<AudioMeditationScreen>
           ),
           const SizedBox(height: 8),
           Text(
-            'Follow the rhythm of your breath',
+            AppLocalizations.of(context)!.followBreathRhythm,
             style: TextStyle(
               fontSize: 14,
               color: Colors.white.withOpacity(0.6),
@@ -401,7 +399,7 @@ class _AudioMeditationScreenState extends State<AudioMeditationScreen>
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            'BREATHING PATTERN',
+            AppLocalizations.of(context)!.breathingPattern,
             style: TextStyle(
               fontSize: 12,
               color: Colors.white.withOpacity(0.6),
@@ -414,10 +412,10 @@ class _AudioMeditationScreenState extends State<AudioMeditationScreen>
             children: [
               Expanded(
                 child: _buildBreathSetting(
-                  'Breathe In',
+                  AppLocalizations.of(context)!.breatheIn,
                   '${_breathInDuration.toInt()}s',
                   Colors.blue,
-                      (value) {
+                  (value) {
                     setState(() {
                       _breathInDuration = value;
                     });
@@ -430,10 +428,10 @@ class _AudioMeditationScreenState extends State<AudioMeditationScreen>
               const SizedBox(width: 20),
               Expanded(
                 child: _buildBreathSetting(
-                  'Breathe Out',
+                  AppLocalizations.of(context)!.breatheOut,
                   '${_breathOutDuration.toInt()}s',
                   Colors.green,
-                      (value) {
+                  (value) {
                     setState(() {
                       _breathOutDuration = value;
                     });
@@ -475,14 +473,14 @@ class _AudioMeditationScreenState extends State<AudioMeditationScreen>
   }
 
   Widget _buildBreathSetting(
-      String label,
-      String value,
-      Color color,
-      Function(double) onChanged,
-      double currentValue,
-      double min,
-      double max,
-      ) {
+    String label,
+    String value,
+    Color color,
+    Function(double) onChanged,
+    double currentValue,
+    double min,
+    double max,
+  ) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -606,6 +604,7 @@ class _AudioMeditationScreenState extends State<AudioMeditationScreen>
   }
 
   Widget _buildControls(ThemeData theme, Size size) {
+    final l10n = AppLocalizations.of(context)!;
     return Column(
       children: [
         // Skip buttons
@@ -616,15 +615,15 @@ class _AudioMeditationScreenState extends State<AudioMeditationScreen>
             children: [
               _buildControlButton(
                 Icons.skip_previous,
-                'Prev',
-                    () {
+                l10n.back,
+                () {
                   _onSeekChanged(0);
                 },
               ),
               _buildControlButton(
                 Icons.skip_next,
-                'Next',
-                    () {
+                l10n.resume,
+                () {
                   _onSeekChanged(1.0);
                 },
               ),
@@ -649,12 +648,19 @@ class _AudioMeditationScreenState extends State<AudioMeditationScreen>
                       begin: Alignment.topLeft,
                       end: Alignment.bottomRight,
                       colors: _isPlaying
-                          ? [Colors.red.withOpacity(0.8), Colors.red.withOpacity(0.6)]
-                          : [Colors.blue.withOpacity(0.8), Colors.purple.withOpacity(0.6)],
+                          ? [
+                              Colors.red.withOpacity(0.8),
+                              Colors.red.withOpacity(0.6)
+                            ]
+                          : [
+                              Colors.blue.withOpacity(0.8),
+                              Colors.purple.withOpacity(0.6)
+                            ],
                     ),
                     boxShadow: [
                       BoxShadow(
-                        color: (_isPlaying ? Colors.red : Colors.blue).withOpacity(0.4),
+                        color: (_isPlaying ? Colors.red : Colors.blue)
+                            .withOpacity(0.4),
                         blurRadius: 20,
                         spreadRadius: 5,
                       ),
@@ -674,7 +680,7 @@ class _AudioMeditationScreenState extends State<AudioMeditationScreen>
         // Stop button
         _buildControlButton(
           Icons.stop,
-          'Stop',
+          l10n.pause,
           _stopPlayback,
         ),
       ],
@@ -727,7 +733,8 @@ class _AudioMeditationScreenState extends State<AudioMeditationScreen>
                 child: SliderTheme(
                   data: SliderThemeData(
                     trackHeight: 6,
-                    thumbShape: const RoundSliderThumbShape(enabledThumbRadius: 10),
+                    thumbShape:
+                        const RoundSliderThumbShape(enabledThumbRadius: 10),
                     activeTrackColor: Colors.blue,
                     inactiveTrackColor: Colors.blue.withOpacity(0.3),
                     thumbColor: Colors.white,
@@ -747,7 +754,7 @@ class _AudioMeditationScreenState extends State<AudioMeditationScreen>
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Text(
-                'Volume',
+                AppLocalizations.of(context)!.volume,
                 style: TextStyle(
                   fontSize: 14,
                   color: Colors.white.withOpacity(0.8),
@@ -773,7 +780,7 @@ class _AudioMeditationScreenState extends State<AudioMeditationScreen>
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          'AMBIENT SOUNDS',
+          AppLocalizations.of(context)!.ambientSounds,
           style: TextStyle(
             fontSize: 12,
             color: Colors.white.withOpacity(0.6),
@@ -800,13 +807,13 @@ class _AudioMeditationScreenState extends State<AudioMeditationScreen>
                   decoration: BoxDecoration(
                     gradient: isSelected
                         ? LinearGradient(
-                      begin: Alignment.topLeft,
-                      end: Alignment.bottomRight,
-                      colors: [
-                        sound['color'].withOpacity(0.3),
-                        sound['color'].withOpacity(0.1),
-                      ],
-                    )
+                            begin: Alignment.topLeft,
+                            end: Alignment.bottomRight,
+                            colors: [
+                              sound['color'].withOpacity(0.3),
+                              sound['color'].withOpacity(0.1),
+                            ],
+                          )
                         : null,
                     color: isSelected ? null : Colors.white.withOpacity(0.05),
                     borderRadius: BorderRadius.circular(20),
@@ -823,15 +830,20 @@ class _AudioMeditationScreenState extends State<AudioMeditationScreen>
                       Icon(
                         sound['icon'],
                         size: isSelected ? 32 : 28,
-                        color: isSelected ? sound['color'] : Colors.white.withOpacity(0.7),
+                        color: isSelected
+                            ? sound['color']
+                            : Colors.white.withOpacity(0.7),
                       ),
                       const SizedBox(height: 12),
                       Text(
                         sound['name'],
                         style: TextStyle(
                           fontSize: isSelected ? 14 : 12,
-                          fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
-                          color: isSelected ? Colors.white : Colors.white.withOpacity(0.7),
+                          fontWeight:
+                              isSelected ? FontWeight.w600 : FontWeight.normal,
+                          color: isSelected
+                              ? Colors.white
+                              : Colors.white.withOpacity(0.7),
                         ),
                       ),
                     ],

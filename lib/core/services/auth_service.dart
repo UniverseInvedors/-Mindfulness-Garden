@@ -1,158 +1,311 @@
+// lib/core/services/auth_service.dart
+//
+// Firebase Authentication service for PranaVerse.
+// Supports:
+//   â€¢ Email + password (sign-up / sign-in)
+//   â€¢ Email verification
+//   â€¢ Password reset
+//   â€¢ Phone OTP (send + verify)
+//   â€¢ Google Sign-In  â† auto sign-up for new users, sign-in for existing
+//   â€¢ Auth-state stream
+
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:google_sign_in/google_sign_in.dart';
 import 'package:flutter/foundation.dart';
+import 'package:flutter/services.dart';
 import 'package:pranaverse/data/models/user_model.dart';
 import 'package:pranaverse/data/local_storage/local_storage_service.dart';
-import 'package:pranaverse/services/backend_integration_service.dart';
+import 'package:pranaverse/core/config.dart';
 
-/// Backend authentication service using universe_backend_sdk
+/// Result of a Google Sign-In attempt, so callers know whether a new account
+/// was just created (useful for showing a welcome / onboarding flow).
+class GoogleSignInResult {
+  final UserCredential credential;
+  final bool isNewUser;
+
+  const GoogleSignInResult({
+    required this.credential,
+    required this.isNewUser,
+  });
+}
+
 class AuthService {
-  static BackendIntegrationService? _backendService;
-  static String? _currentUserId;
+  final FirebaseAuth _auth = FirebaseAuth.instance;
+  static const String _webClientId =
+      '885156577376-mupbn9ubt8alj2es7sd56u30r6hk072m.apps.googleusercontent.com';
 
-  /// Initialize auth service with backend
-  static Future<void> initialize(BackendIntegrationService backendService) async {
-    _backendService = backendService;
-    _currentUserId = await _backendService!.isAuthenticated() 
-        ? await _getUserIdFromStorage() 
-        : null;
-  }
+  // serverClientId must match the Web OAuth 2.0 client ID from Firebase Console
+  // (type 3 in google-services.json).  Replace the placeholder once you have
+  // added the SHA-1 fingerprint and downloaded the updated google-services.json.
+  final GoogleSignIn _googleSignIn = GoogleSignIn(
+    serverClientId: _webClientId,
+    scopes: ['email', 'profile'],
+  );
 
-  /// Stream of auth state changes (simulated for compatibility)
-  Stream<String?> get authStateChanges async* {
-    while (true) {
-      await Future.delayed(const Duration(seconds: 1));
-      yield _currentUserId;
-    }
-  }
+  // â”€â”€â”€ Auth-state stream â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
-  /// Get current user ID
-  String? get currentUserId => _currentUserId;
+  Stream<String?> get authStateChanges =>
+      _auth.authStateChanges().map((user) => user?.uid);
 
-  /// Check if user is authenticated
-  bool get isAuthenticated => _currentUserId != null;
+  // â”€â”€â”€ Current user helpers â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
-  /// Sign up with email and password
-  Future<bool> signUp({
+  User? get _firebaseUser => _auth.currentUser;
+  String? get currentUserId => _firebaseUser?.uid;
+  bool get isAuthenticated => _firebaseUser != null;
+  bool get isEmailVerified => _firebaseUser?.emailVerified ?? false;
+  String? get currentEmail => _firebaseUser?.email;
+  String? get currentDisplayName => _firebaseUser?.displayName;
+
+  // â”€â”€â”€ Email / Password â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+
+  Future<UserCredential> signUp({
     required String email,
     required String password,
     required String displayName,
   }) async {
     try {
-      if (_backendService == null) {
-        throw Exception('Backend service not initialized');
-      }
-
-      final success = await _backendService!.register(
-        email,
-        password,
-        displayName.split(' ').first,
-        displayName.split(' ').length > 1 ? displayName.split(' ').last : '',
+      await _auth.setLanguageCode('en');
+      final cred = await _auth.createUserWithEmailAndPassword(
+        email: email,
+        password: password,
       );
+      await cred.user?.updateDisplayName(displayName);
+      // In development mode we skip sending an email verification so
+      // sign-up is quicker and does not require inbox interaction.
+      // Production behavior is preserved by guarding this call.
+      try {
+        // Importing config here would create a circular import in some
+        // contexts; callers should control behavior via the global flag
+        // in `lib/core/config.dart`. We attempt a runtime check by
+        // reading the top-level const via import.
+        // Note: the `config.dart` import is added at top of file.
+      } catch (_) {}
 
-      if (success) {
-        // Auto-login after registration
-        await signIn(email: email, password: password);
+      // Actual send guarded by config (import at top)
+      // (See file-level import added)
+      if (!kDevelopmentAuthMode) {
+        await cred.user?.sendEmailVerification();
       }
-
-      if (kDebugMode) {
-        print('✅ User signed up: $email');
-      }
-
-      return success;
-    } catch (e) {
-      if (kDebugMode) {
-        print('❌ Sign up failed: $e');
-      }
-      rethrow;
+      if (kDebugMode) debugPrint('âœ… Signed up: $email');
+      return cred;
+    } on FirebaseAuthException catch (e) {
+      throw _mapFirebaseError(e);
     }
   }
 
-  /// Sign in with email and password
-  Future<bool> signIn({
+  Future<UserCredential> signIn({
     required String email,
     required String password,
   }) async {
     try {
-      if (_backendService == null) {
-        throw Exception('Backend service not initialized');
-      }
-
-      final success = await _backendService!.login(email, password);
-
-      if (success) {
-        _currentUserId = email; // Use email as user ID for now
-        await _saveUserIdToStorage(email);
-      }
-
-      if (kDebugMode) {
-        print('✅ User signed in: $email');
-      }
-
-      return success;
-    } catch (e) {
-      if (kDebugMode) {
-        print('❌ Sign in failed: $e');
-      }
-      rethrow;
+      final cred = await _auth.signInWithEmailAndPassword(
+        email: email,
+        password: password,
+      );
+      if (kDebugMode) debugPrint('âœ… Signed in: $email');
+      return cred;
+    } on FirebaseAuthException catch (e) {
+      throw _mapFirebaseError(e);
     }
   }
 
-  /// Sign out
-  Future<void> signOut() async {
+  // â”€â”€â”€ Google Sign-In (auto sign-up for new users) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  //
+  // Firebase's signInWithCredential does BOTH sign-in and sign-up automatically:
+  //   â€¢ Existing account â†’ signs them in
+  //   â€¢ New account      â†’ creates it silently, then signs them in
+  //
+  // We expose isNewUser so the UI can show a welcome screen for first-timers.
+
+  Future<GoogleSignInResult?> signInWithGoogle() async {
     try {
-      await _backendService?.logout();
-      _currentUserId = null;
-      await _clearUserIdFromStorage();
+      // Trigger the Google account picker
+      final googleAccount = await _googleSignIn.signIn();
+      if (googleAccount == null) {
+        // User dismissed the picker â€” not an error
+        if (kDebugMode) debugPrint('â„¹ï¸ Google sign-in cancelled by user');
+        return null;
+      }
 
-      // Clear local user data
-      await LocalStorageService.deleteUser();
+      final googleAuth = await googleAccount.authentication;
+      final credential = GoogleAuthProvider.credential(
+        accessToken: googleAuth.accessToken,
+        idToken: googleAuth.idToken,
+      );
+
+      // signInWithCredential creates the user if they don't exist yet
+      final result = await _auth.signInWithCredential(credential);
+      final isNewUser = result.additionalUserInfo?.isNewUser ?? false;
 
       if (kDebugMode) {
-        print('✅ User signed out');
+        debugPrint(isNewUser
+            ? 'âœ… Google sign-up (new user): ${result.user?.email}'
+            : 'âœ… Google sign-in (existing user): ${result.user?.email}');
       }
+
+      // For new Google users, update their display name if Firebase doesn't
+      // have one set yet (Google already provides it, but let's be explicit)
+      if (isNewUser && result.user?.displayName == null) {
+        await result.user?.updateDisplayName(googleAccount.displayName);
+      }
+
+      return GoogleSignInResult(credential: result, isNewUser: isNewUser);
+    } on FirebaseAuthException catch (e) {
+      throw _mapFirebaseError(e);
+    } on PlatformException catch (e) {
+      throw _mapGooglePlatformError(e);
     } catch (e) {
-      if (kDebugMode) {
-        print('❌ Sign out failed: $e');
-      }
-      rethrow;
+      if (kDebugMode) debugPrint('âŒ Google sign-in error: $e');
+      throw Exception('Google sign-in failed. Please try again.');
     }
   }
 
-  /// Send password reset email (placeholder - needs backend implementation)
+  // â”€â”€â”€ Phone OTP â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+
+  Future<void> sendPhoneOtp({
+    required String phoneNumber,
+    required void Function(String verificationId, int? resendToken) onCodeSent,
+    required void Function(String errorMessage) onFailed,
+    void Function(PhoneAuthCredential)? onAutoVerified,
+    bool linkToCurrentUser = false,
+  }) async {
+    await _auth.verifyPhoneNumber(
+      phoneNumber: phoneNumber,
+      verificationCompleted: (credential) async {
+        try {
+          if (linkToCurrentUser && _firebaseUser != null) {
+            await _firebaseUser!.linkWithCredential(credential);
+          } else {
+            await _auth.signInWithCredential(credential);
+          }
+          onAutoVerified?.call(credential);
+        } on FirebaseAuthException catch (e) {
+          onFailed(_mapFirebaseError(e).toString());
+        } catch (_) {
+          onFailed('Phone verification failed. Please try again.');
+        }
+      },
+      verificationFailed: (e) {
+        if (kDebugMode) debugPrint('âŒ Phone OTP failed: ${e.message}');
+        onFailed(_mapFirebaseError(e).toString());
+      },
+      codeSent: (verificationId, resendToken) {
+        if (kDebugMode) debugPrint('ðŸ“± OTP sent to $phoneNumber');
+        onCodeSent(verificationId, resendToken);
+      },
+      codeAutoRetrievalTimeout: (_) {},
+    );
+  }
+
+  Future<UserCredential> verifyOtp({
+    required String verificationId,
+    required String otp,
+    bool linkToCurrentUser = false,
+  }) async {
+    try {
+      final credential = PhoneAuthProvider.credential(
+        verificationId: verificationId,
+        smsCode: otp,
+      );
+      final result = linkToCurrentUser && _firebaseUser != null
+          ? await _firebaseUser!.linkWithCredential(credential)
+          : await _auth.signInWithCredential(credential);
+      if (kDebugMode) debugPrint('âœ… Phone OTP verified');
+      return result;
+    } on FirebaseAuthException catch (e) {
+      throw _mapFirebaseError(e);
+    }
+  }
+
+  Future<void> linkPhoneToCurrentUser({
+    required String verificationId,
+    required String otp,
+  }) async {
+    try {
+      final credential = PhoneAuthProvider.credential(
+        verificationId: verificationId,
+        smsCode: otp,
+      );
+      await _firebaseUser?.linkWithCredential(credential);
+    } on FirebaseAuthException catch (e) {
+      throw _mapFirebaseError(e);
+    }
+  }
+
+  // â”€â”€â”€ Email verification â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+
+  Future<void> sendEmailVerification() async {
+    try {
+      await _firebaseUser?.sendEmailVerification();
+    } on FirebaseAuthException catch (e) {
+      throw _mapFirebaseError(e);
+    }
+  }
+
+  Future<void> reloadUser() async => await _firebaseUser?.reload();
+
+  // â”€â”€â”€ Password reset â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+
   Future<void> sendPasswordResetEmail({required String email}) async {
     try {
-      // TODO: Implement password reset via backend
-      if (kDebugMode) {
-        print('⚠️ Password reset not yet implemented for backend');
-      }
-      throw UnimplementedError('Password reset requires backend implementation');
-    } catch (e) {
-      if (kDebugMode) {
-        print('❌ Password reset failed: $e');
-      }
-      rethrow;
+      await _auth.sendPasswordResetEmail(email: email);
+    } on FirebaseAuthException catch (e) {
+      throw _mapFirebaseError(e);
     }
   }
 
-  /// Get ID token for API calls (placeholder)
-  Future<String?> getIdToken() async {
+  // â”€â”€â”€ Profile update â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+
+  Future<void> updateProfile({String? displayName, String? photoUrl}) async {
     try {
-      // TODO: Implement token retrieval from backend
-      return _currentUserId;
+      if (displayName != null)
+        await _firebaseUser?.updateDisplayName(displayName);
+      if (photoUrl != null) await _firebaseUser?.updatePhotoURL(photoUrl);
+    } on FirebaseAuthException catch (e) {
+      throw _mapFirebaseError(e);
+    }
+  }
+
+  // â”€â”€â”€ Sign out / delete â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+
+  Future<void> signOut() async {
+    try {
+      await _googleSignIn.signOut();
+      await _auth.signOut();
+      await LocalStorageService.deleteUser();
     } catch (e) {
-      if (kDebugMode) {
-        print('❌ Failed to get ID token: $e');
-      }
+      throw Exception('Sign-out failed: $e');
+    }
+  }
+
+  Future<void> deleteAccount() async {
+    try {
+      await _firebaseUser?.delete();
+      await LocalStorageService.deleteUser();
+    } on FirebaseAuthException catch (e) {
+      throw _mapFirebaseError(e);
+    }
+  }
+
+  // â”€â”€â”€ Token â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+
+  Future<String?> getIdToken({bool forceRefresh = false}) async {
+    try {
+      return await _firebaseUser?.getIdToken(forceRefresh);
+    } catch (_) {
       return null;
     }
   }
 
-  /// Create local UserModel from backend user data
-  static UserModel userModelFromBackendUser(String email, String displayName) {
+  // â”€â”€â”€ Build UserModel â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+
+  UserModel buildUserModel() {
+    final user = _firebaseUser;
     return UserModel(
-      id: email,
-      name: displayName,
-      email: email,
-      joinedDate: DateTime.now(),
+      id: user?.uid ?? '',
+      name: user?.displayName ?? user?.email?.split('@').first ?? 'User',
+      email: user?.email ?? '',
+      joinedDate: user?.metadata.creationTime ?? DateTime.now(),
       totalSessions: 0,
       totalMinutes: 0,
       currentStreak: 0,
@@ -168,71 +321,47 @@ class AuthService {
     );
   }
 
-  /// Update user profile (placeholder)
-  Future<void> updateProfile({
-    String? displayName,
-    String? photoUrl,
-  }) async {
-    try {
-      // TODO: Implement profile update via backend
-      if (kDebugMode) {
-        print('⚠️ Profile update not yet implemented for backend');
-      }
-      throw UnimplementedError('Profile update requires backend implementation');
-    } catch (e) {
-      if (kDebugMode) {
-        print('❌ Failed to update profile: $e');
-      }
-      rethrow;
+  // â”€â”€â”€ Error mapping â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+
+  Exception _mapFirebaseError(FirebaseAuthException e) {
+    final firebaseMessage = e.message ?? '';
+    if (e.code == 'operation-not-allowed' &&
+        firebaseMessage.contains('SMS unable to be sent')) {
+      return Exception(
+        'Phone sign-in is not enabled for this region in Firebase. Use email or Google sign-in, or enable Phone auth and the SMS region in Firebase Console.',
+      );
     }
+
+    final msg = switch (e.code) {
+      'user-not-found' => 'No account found for this email.',
+      'wrong-password' => 'Incorrect password.',
+      'email-already-in-use' => 'An account already exists for this email.',
+      'invalid-email' => 'The email address is invalid.',
+      'weak-password' => 'Password must be at least 6 characters.',
+      'user-disabled' => 'This account has been disabled.',
+      'too-many-requests' => 'Too many attempts. Please try again later.',
+      'network-request-failed' => 'Network error. Check your connection.',
+      'operation-not-allowed' =>
+        'This sign-in method is disabled in Firebase Console.',
+      'invalid-verification-code' => 'Invalid OTP code. Please try again.',
+      'invalid-verification-id' => 'Verification session expired. Resend OTP.',
+      'credential-already-in-use' =>
+        'This credential is linked to another account.',
+      'requires-recent-login' => 'Please sign in again before this operation.',
+      'sign_in_failed' =>
+        'Google sign-in failed. Check SHA-1 in Firebase Console.',
+      _ => e.message ?? 'Authentication error (${e.code}).',
+    };
+    return Exception(msg);
   }
 
-  /// Delete user account (placeholder)
-  Future<void> deleteAccount() async {
-    try {
-      // TODO: Implement account deletion via backend
-      await signOut();
-      if (kDebugMode) {
-        print('⚠️ Account deletion not yet implemented for backend');
-      }
-      throw UnimplementedError('Account deletion requires backend implementation');
-    } catch (e) {
-      if (kDebugMode) {
-        print('❌ Failed to delete account: $e');
-      }
-      rethrow;
+  Exception _mapGooglePlatformError(PlatformException e) {
+    final text = '${e.code} ${e.message ?? ''} ${e.details ?? ''}';
+    if (text.contains('ApiException: 10') || text.contains('DEVELOPER_ERROR')) {
+      return Exception(
+        'Google sign-in is not configured for this app signing key. Add this build SHA-1/SHA-256 to Firebase, then download the updated google-services.json.',
+      );
     }
-  }
-
-  /// Verify email (placeholder)
-  Future<void> sendEmailVerification() async {
-    try {
-      // TODO: Implement email verification via backend
-      if (kDebugMode) {
-        print('⚠️ Email verification not yet implemented for backend');
-      }
-      throw UnimplementedError('Email verification requires backend implementation');
-    } catch (e) {
-      if (kDebugMode) {
-        print('❌ Failed to send verification email: $e');
-      }
-      rethrow;
-    }
-  }
-
-  /// Check if email is verified (placeholder)
-  bool get isEmailVerified => true; // Assume verified for backend
-
-  // Storage helpers
-  static Future<void> _saveUserIdToStorage(String userId) async {
-    await LocalStorageService.saveSetting('user_id', userId);
-  }
-
-  static Future<String?> _getUserIdFromStorage() async {
-    return await LocalStorageService.getSetting('user_id');
-  }
-
-  static Future<void> _clearUserIdFromStorage() async {
-    await LocalStorageService.deleteSetting('user_id');
+    return Exception('Google sign-in failed. Please try again.');
   }
 }

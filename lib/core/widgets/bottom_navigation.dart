@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:pranaverse/core/localization/app_copy.dart';
 
 class BottomNavigation extends StatefulWidget {
   final int currentIndex;
@@ -43,7 +44,7 @@ class _BottomNavigationState extends State<BottomNavigation> {
                 index: 0,
                 icon: Icons.home_outlined,
                 activeIcon: Icons.home,
-                label: 'Home',
+                label: AppCopy.of(context, 'Home'),
                 colors: colors,
                 textTheme: textTheme,
               ),
@@ -51,7 +52,7 @@ class _BottomNavigationState extends State<BottomNavigation> {
                 index: 1,
                 icon: Icons.insights_outlined,
                 activeIcon: Icons.insights,
-                label: 'Progress',
+                label: AppCopy.of(context, 'Progress'),
                 colors: colors,
                 textTheme: textTheme,
               ),
@@ -59,7 +60,7 @@ class _BottomNavigationState extends State<BottomNavigation> {
                 index: 2,
                 icon: Icons.emoji_emotions_outlined,
                 activeIcon: Icons.emoji_emotions,
-                label: 'Mood',
+                label: AppCopy.of(context, 'Mood'),
                 colors: colors,
                 textTheme: textTheme,
               ),
@@ -67,7 +68,7 @@ class _BottomNavigationState extends State<BottomNavigation> {
                 index: 3,
                 icon: Icons.settings_outlined,
                 activeIcon: Icons.settings,
-                label: 'Settings',
+                label: AppCopy.of(context, 'Settings'),
                 colors: colors,
                 textTheme: textTheme,
               ),

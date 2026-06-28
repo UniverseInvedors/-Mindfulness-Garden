@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:pranaverse/core/localization/app_copy.dart';
 import 'package:pranaverse/core/utils/responsive_helper.dart';
 import 'package:pranaverse/core/widgets/glassmorphism/glass_container.dart';
 import 'package:pranaverse/core/widgets/glassmorphism/glass_icon.dart';
@@ -288,7 +289,7 @@ class _BreathingMenuScreenState extends State<BreathingMenuScreen>
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    'Breathing Exercises',
+                    AppCopy.of(context, 'Breathing Exercises'),
                     style: TextStyle(
                       color: Colors.white,
                       fontSize: ResponsiveHelper.getResponsiveFontSize(context, mobileSize: 28, tabletSize: 30, desktopSize: 32),
@@ -299,7 +300,7 @@ class _BreathingMenuScreenState extends State<BreathingMenuScreen>
                   ),
                   SizedBox(height: ResponsiveHelper.getResponsiveSpacing(context, mobileSpacing: 6)),
                   Text(
-                    'Master your breath to master your mind',
+                    AppCopy.of(context, 'Master your breath to master your mind'),
                     style: TextStyle(
                       color: Colors.white.withOpacity(0.75),
                       fontSize: ResponsiveHelper.getResponsiveFontSize(context, mobileSize: 14, tabletSize: 15, desktopSize: 16),
@@ -353,7 +354,7 @@ class _BreathingMenuScreenState extends State<BreathingMenuScreen>
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  'Breathing Guide',
+                  AppCopy.of(context, 'Breathing Guide'),
                   style: TextStyle(
                     color: Colors.white,
                     fontSize: ResponsiveHelper.getResponsiveFontSize(context, mobileSize: 20, tabletSize: 22, desktopSize: 24),
@@ -363,7 +364,8 @@ class _BreathingMenuScreenState extends State<BreathingMenuScreen>
                 ),
                 SizedBox(height: ResponsiveHelper.getResponsiveSpacing(context, mobileSpacing: 8)),
                 Text(
-                  'Follow the animated circle. Inhale as it expands, exhale as it contracts.',
+                  AppCopy.of(context,
+                      'Follow the animated circle. Inhale as it expands, exhale as it contracts.'),
                   style: TextStyle(
                     color: Colors.white.withOpacity(0.85),
                     fontSize: ResponsiveHelper.getResponsiveFontSize(context, mobileSize: 14, tabletSize: 15, desktopSize: 16),
@@ -495,7 +497,7 @@ class _BreathingMenuScreenState extends State<BreathingMenuScreen>
             ),
             SizedBox(width: ResponsiveHelper.getResponsiveSpacing(context, mobileSpacing: 8)),
             Text(
-              category.name,
+              AppCopy.of(context, category.name),
               style: TextStyle(
                 color:
                     isSelected ? Colors.white : Colors.white.withOpacity(0.9),
@@ -615,7 +617,7 @@ class _BreathingMenuScreenState extends State<BreathingMenuScreen>
                                 ),
                                 SizedBox(width: ResponsiveHelper.getResponsiveSpacing(context, mobileSpacing: 8)),
                                 Text(
-                                  exercise.duration,
+                                  AppCopy.of(context, exercise.duration),
                                   style: TextStyle(
                                     color: Colors.white,
                                     fontSize: ResponsiveHelper.getResponsiveFontSize(context, mobileSize: 14, tabletSize: 15, desktopSize: 16),
@@ -636,7 +638,7 @@ class _BreathingMenuScreenState extends State<BreathingMenuScreen>
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
-                            exercise.title,
+                            AppCopy.of(context, exercise.title),
                             style: TextStyle(
                               color: Colors.white,
                               fontSize: ResponsiveHelper.getResponsiveFontSize(context, mobileSize: 22, tabletSize: 24, desktopSize: 26),
@@ -649,7 +651,7 @@ class _BreathingMenuScreenState extends State<BreathingMenuScreen>
                           ),
                           SizedBox(height: ResponsiveHelper.getResponsiveSpacing(context, mobileSpacing: 8)),
                           Text(
-                            exercise.subtitle,
+                            AppCopy.of(context, exercise.subtitle),
                             style: TextStyle(
                               color: Colors.white.withOpacity(0.9),
                               fontSize: ResponsiveHelper.getResponsiveFontSize(context, mobileSize: 14, tabletSize: 15, desktopSize: 16),
@@ -681,7 +683,7 @@ class _BreathingMenuScreenState extends State<BreathingMenuScreen>
                               ),
                             ),
                             child: Text(
-                              exercise.difficulty,
+                              AppCopy.of(context, exercise.difficulty),
                               style: TextStyle(
                                 color: Colors.white,
                                 fontSize: ResponsiveHelper.getResponsiveFontSize(context, mobileSize: 13, tabletSize: 14, desktopSize: 15),

@@ -1,6 +1,7 @@
 // lib/features/breathing/exercises/diaphragmatic_breathing_screen.dart
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:pranaverse/core/localization/app_copy.dart';
 import 'package:pranaverse/core/services/audio_service.dart';
 import 'package:pranaverse/core/services/tts_service.dart';
 import 'package:pranaverse/core/services/ad_service.dart';
@@ -136,11 +137,12 @@ class _DiaphragmaticBreathingScreenState
       builder: (ctx) => AlertDialog(
         backgroundColor: const Color(0xFF1a1a2e),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        title:
-            const Text('Great Job! 🎉', style: TextStyle(color: Colors.white)),
-        content: const Text(
-          'You\'ve completed 20 cycles of diaphragmatic breathing.',
-          style: TextStyle(color: Colors.white70),
+        title: Text(AppCopy.of(context, 'Great Job!'),
+            style: const TextStyle(color: Colors.white)),
+        content: Text(
+          AppCopy.of(context,
+              'You have completed 20 cycles of diaphragmatic breathing.'),
+          style: const TextStyle(color: Colors.white70),
         ),
         actions: [
           TextButton(
@@ -148,8 +150,8 @@ class _DiaphragmaticBreathingScreenState
               Navigator.pop(ctx);
               context.canPop() ? context.pop() : context.go('/main');
             },
-            child:
-                const Text('Done', style: TextStyle(color: Color(0xFF4361ee))),
+            child: Text(AppCopy.of(context, 'Done'),
+                style: const TextStyle(color: Color(0xFF4361ee))),
           ),
         ],
       ),
@@ -164,10 +166,12 @@ class _DiaphragmaticBreathingScreenState
   }
 
   String get _sceneInstruction {
-    if (!_isActive) return 'Begin when ready...';
-    if (_currentPhase == 'inhale') return 'Breathe deep into your belly...';
-    if (_currentPhase == 'hold') return 'Hold gently...';
-    return 'Release slowly...';
+    if (!_isActive) return AppCopy.of(context, 'Begin when ready...');
+    if (_currentPhase == 'inhale') {
+      return AppCopy.of(context, 'Breathe deep into your belly...');
+    }
+    if (_currentPhase == 'hold') return AppCopy.of(context, 'Hold gently...');
+    return AppCopy.of(context, 'Release slowly...');
   }
 
   @override
@@ -175,7 +179,7 @@ class _DiaphragmaticBreathingScreenState
     const phaseColor = Color(0xFF4361ee);
     final isInhale = _currentPhase == 'inhale';
     return ExerciseSceneShell(
-      title: 'Deep Diaphragmatic',
+      title: AppCopy.of(context, 'Deep Diaphragmatic'),
       breathPhase: _scenePhase,
       instruction: _sceneInstruction,
       isActive: _isActive,
@@ -240,8 +244,10 @@ class _DiaphragmaticBreathingScreenState
                           color: Colors.white, size: 26),
                       Text(
                         isInhale
-                            ? 'INHALE'
-                            : (_currentPhase == 'hold' ? 'HOLD' : 'EXHALE'),
+                            ? AppCopy.of(context, 'Inhale').toUpperCase()
+                            : (_currentPhase == 'hold'
+                                ? AppCopy.of(context, 'Hold').toUpperCase()
+                                : AppCopy.of(context, 'Exhale').toUpperCase()),
                         style: const TextStyle(
                             color: Colors.white,
                             fontSize: 13,
@@ -255,21 +261,26 @@ class _DiaphragmaticBreathingScreenState
             },
           ),
           const SizedBox(height: 10),
-          Text('Cycles: $_cycleCount',
+          Text(AppCopy.of(context, 'Cycles: {count}',
+                  vars: {'count': _cycleCount}),
               style: const TextStyle(color: Colors.white70, fontSize: 14)),
           const SizedBox(height: 12),
           Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               if (!_isActive && _cycleCount == 0)
-                _btn(Icons.play_arrow, 'Start', Colors.green, _startExercise)
+                _btn(Icons.play_arrow, AppCopy.of(context, 'Start'),
+                    Colors.green, _startExercise)
               else if (!_isActive)
-                _btn(Icons.play_arrow, 'Resume', Colors.orange, _resumeExercise)
+                _btn(Icons.play_arrow, AppCopy.of(context, 'Resume'),
+                    Colors.orange, _resumeExercise)
               else
-                _btn(Icons.pause, 'Pause', Colors.red, _pauseExercise),
+                _btn(Icons.pause, AppCopy.of(context, 'Pause'), Colors.red,
+                    _pauseExercise),
               if (_cycleCount > 0 || _isActive) ...[
                 const SizedBox(width: 12),
-                _btn(Icons.refresh, 'Reset', Colors.blue, _resetExercise),
+                _btn(Icons.refresh, AppCopy.of(context, 'Reset'), Colors.blue,
+                    _resetExercise),
               ],
             ],
           ),

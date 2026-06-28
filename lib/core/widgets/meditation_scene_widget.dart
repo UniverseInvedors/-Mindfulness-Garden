@@ -112,7 +112,7 @@ class _MeditationSceneWidgetState extends State<MeditationSceneWidget>
   late Animation<double> _swayAnim;
   late AnimationController _idleBreathCtrl;
   late Animation<double> _idleBreathAnim;
-  
+
   // Coach presence animations
   late AnimationController _gestureCtrl;
   late Animation<double> _gestureAnim;
@@ -171,18 +171,18 @@ class _MeditationSceneWidgetState extends State<MeditationSceneWidget>
     _blinkCtrl = AnimationController(
         vsync: this, duration: const Duration(milliseconds: 400))
       ..repeat(reverse: true);
-    _blinkAnim = Tween<double>(begin: 0, end: 1).animate(
-        CurvedAnimation(parent: _blinkCtrl, curve: Curves.easeInOut));
+    _blinkAnim = Tween<double>(begin: 0, end: 1)
+        .animate(CurvedAnimation(parent: _blinkCtrl, curve: Curves.easeInOut));
 
-    _swayCtrl = AnimationController(
-        vsync: this, duration: const Duration(seconds: 6))
-      ..repeat(reverse: true);
-    _swayAnim = Tween<double>(begin: -1, end: 1).animate(
-        CurvedAnimation(parent: _swayCtrl, curve: Curves.easeInOut));
+    _swayCtrl =
+        AnimationController(vsync: this, duration: const Duration(seconds: 6))
+          ..repeat(reverse: true);
+    _swayAnim = Tween<double>(begin: -1, end: 1)
+        .animate(CurvedAnimation(parent: _swayCtrl, curve: Curves.easeInOut));
 
-    _idleBreathCtrl = AnimationController(
-        vsync: this, duration: const Duration(seconds: 4))
-      ..repeat(reverse: true);
+    _idleBreathCtrl =
+        AnimationController(vsync: this, duration: const Duration(seconds: 4))
+          ..repeat(reverse: true);
     _idleBreathAnim = Tween<double>(begin: 0.98, end: 1.02).animate(
         CurvedAnimation(parent: _idleBreathCtrl, curve: Curves.easeInOut));
 
@@ -191,7 +191,7 @@ class _MeditationSceneWidgetState extends State<MeditationSceneWidget>
         vsync: this, duration: const Duration(milliseconds: 800));
     _gestureAnim = Tween<double>(begin: 0, end: 1).animate(
         CurvedAnimation(parent: _gestureCtrl, curve: Curves.easeInOut));
-    
+
     _successCtrl = AnimationController(
         vsync: this, duration: const Duration(milliseconds: 1500));
     _successAnim = Tween<double>(begin: 0, end: 1).animate(
@@ -231,9 +231,9 @@ class _MeditationSceneWidgetState extends State<MeditationSceneWidget>
         _triggerGestureAnimation();
       }
     }
-    
+
     // Trigger success animation when breath phase becomes complete
-    if (widget.breathPhase == BreathPhase.complete && 
+    if (widget.breathPhase == BreathPhase.complete &&
         old.breathPhase != BreathPhase.complete) {
       _triggerSuccessAnimation();
     }
@@ -277,13 +277,13 @@ class _MeditationSceneWidgetState extends State<MeditationSceneWidget>
       _faceCtrl.animateTo(0, duration: const Duration(milliseconds: 180));
     }
   }
-  
+
   void _triggerGestureAnimation() {
     _gestureCtrl.forward(from: 0).then((_) {
       _gestureCtrl.reverse();
     });
   }
-  
+
   void _triggerSuccessAnimation() {
     _successCtrl.forward(from: 0);
   }
@@ -524,7 +524,16 @@ class _MeditationSceneWidgetState extends State<MeditationSceneWidget>
 // ═══════════════════════════════════════════════════════════════════════════
 
 class _ScenePainter extends CustomPainter {
-  final double envT, bodyScale, auraT, creatureT, poseT, lipT, blinkT, swayT, gestureT, successT;
+  final double envT,
+      bodyScale,
+      auraT,
+      creatureT,
+      poseT,
+      lipT,
+      blinkT,
+      swayT,
+      gestureT,
+      successT;
   final ZenoPose currentPose, targetPose;
   final List<_Particle> particles;
   final List<_Creature> creatures;
@@ -1343,19 +1352,19 @@ class _ScenePainter extends CustomPainter {
   void _drawPremiumCharacter(Canvas canvas, Size size) {
     final cx = size.width / 2;
     final groundY = size.height * 0.63;
-    
+
     // Get appearance configuration
     final appearance = TeacherAppearance.personalities[teacher]!;
-    
+
     canvas.save();
     canvas.translate(cx, groundY);
-    
+
     // Apply subtle sway animation
     canvas.rotate(swayT * 0.02);
     // Ensure minimum scale to prevent invisible teacher
     final safeScale = bodyScale.clamp(0.5, 2.0);
     canvas.scale(safeScale);
-    
+
     // Apply gesture animation (hand wave when speaking)
     if (gestureT > 0) {
       canvas.save();
@@ -1363,7 +1372,7 @@ class _ScenePainter extends CustomPainter {
       canvas.rotate(sin(gestureT * pi) * 0.3);
       canvas.translate(-25, 50);
     }
-    
+
     // Use premium renderer for sitting/lotus poses
     if (currentPose == ZenoPose.sitting || currentPose == ZenoPose.lotus) {
       final renderer = PremiumCharacterRenderer(
@@ -1380,29 +1389,29 @@ class _ScenePainter extends CustomPainter {
       // For active poses, use the existing pose system with enhanced rendering
       _drawEnhancedPose(canvas, currentPose, appearance);
     }
-    
+
     if (gestureT > 0) {
       canvas.restore();
     }
-    
+
     // Draw success animation (hands together bow)
     if (successT > 0) {
       _drawSuccessGesture(canvas, appearance);
     }
-    
+
     canvas.restore();
   }
-  
+
   void _drawSuccessGesture(Canvas canvas, TeacherAppearance appearance) {
     final alpha = (successT * 255).toInt();
     final gesturePaint = Paint()
       ..color = appearance.skinPrimary.withAlpha(alpha);
-    
+
     // Hands together in prayer position
     canvas.save();
     canvas.translate(0, -40);
     canvas.scale(successT);
-    
+
     // Left hand
     canvas.drawRRect(
       RRect.fromRectAndRadius(
@@ -1411,7 +1420,7 @@ class _ScenePainter extends CustomPainter {
       ),
       gesturePaint,
     );
-    
+
     // Right hand
     canvas.drawRRect(
       RRect.fromRectAndRadius(
@@ -1420,21 +1429,22 @@ class _ScenePainter extends CustomPainter {
       ),
       gesturePaint,
     );
-    
+
     // Glow effect
     final glowPaint = Paint()
       ..color = appearance.auraPrimary.withAlpha((alpha * 0.5).toInt())
       ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 15);
     canvas.drawCircle(Offset.zero, 35, glowPaint);
-    
+
     canvas.restore();
   }
-  
-  void _drawEnhancedPose(Canvas canvas, ZenoPose pose, TeacherAppearance appearance) {
+
+  void _drawEnhancedPose(
+      Canvas canvas, ZenoPose pose, TeacherAppearance appearance) {
     // Environment-reactive aura colors
     final envAuraColor = _getEnvironmentAuraColor();
     final auraColor = _blendColors(appearance.auraPrimary, envAuraColor, 0.4);
-    
+
     // Enhanced aura with environment-blended colors
     for (int i = 3; i >= 1; i--) {
       final auraPaint = Paint()
@@ -1442,10 +1452,10 @@ class _ScenePainter extends CustomPainter {
         ..maskFilter = MaskFilter.blur(BlurStyle.normal, 8 + i * 2);
       canvas.drawCircle(Offset.zero, 55.0 + i * 18 * auraT, auraPaint);
     }
-    
+
     // Environment-reactive rim light
     _drawRimLight(canvas, appearance);
-    
+
     // Shadow with environment tint
     final shadowColor = _getEnvironmentShadowColor();
     final shadowPaint = Paint()
@@ -1454,11 +1464,11 @@ class _ScenePainter extends CustomPainter {
     canvas.drawOval(
         Rect.fromCenter(center: const Offset(0, 4), width: 75, height: 18),
         shadowPaint);
-    
+
     // Draw pose with personality colors
     _drawPoseWithPersonality(canvas, pose, appearance);
   }
-  
+
   Color _getEnvironmentAuraColor() {
     switch (environment) {
       case SceneEnvironment.forest:
@@ -1477,7 +1487,7 @@ class _ScenePainter extends CustomPainter {
         return const Color(0xFFf72585);
     }
   }
-  
+
   Color _getEnvironmentShadowColor() {
     switch (environment) {
       case SceneEnvironment.forest:
@@ -1496,7 +1506,7 @@ class _ScenePainter extends CustomPainter {
         return const Color(0xFF2d6a4f);
     }
   }
-  
+
   Color _blendColors(Color c1, Color c2, double ratio) {
     return Color.fromARGB(
       ((c1.alpha * (1 - ratio)) + (c2.alpha * ratio)).toInt(),
@@ -1505,24 +1515,24 @@ class _ScenePainter extends CustomPainter {
       ((c1.blue * (1 - ratio)) + (c2.blue * ratio)).toInt(),
     );
   }
-  
+
   void _drawRimLight(Canvas canvas, TeacherAppearance appearance) {
     final rimColor = _getEnvironmentAuraColor();
     final rimPaint = Paint()
       ..color = rimColor.withAlpha((30 * auraT).toInt())
       ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 15);
-    
+
     // Add subtle rim light around character
     canvas.drawCircle(const Offset(-15, -30), 40, rimPaint);
     canvas.drawCircle(const Offset(15, -30), 40, rimPaint);
-    
+
     // Add environment-specific particle effects around character
     _drawCharacterParticles(canvas, rimColor);
   }
-  
+
   void _drawCharacterParticles(Canvas canvas, Color particleColor) {
     final particlePaint = Paint()..color = particleColor.withAlpha(80);
-    
+
     switch (environment) {
       case SceneEnvironment.forest:
         // Floating leaves around character
@@ -1534,7 +1544,9 @@ class _ScenePainter extends CustomPainter {
           canvas.save();
           canvas.translate(x, y);
           canvas.rotate(envT * pi * 2 + i);
-          canvas.drawOval(Rect.fromCenter(center: Offset.zero, width: 6, height: 3), particlePaint);
+          canvas.drawOval(
+              Rect.fromCenter(center: Offset.zero, width: 6, height: 3),
+              particlePaint);
           canvas.restore();
         }
         break;
@@ -1581,7 +1593,8 @@ class _ScenePainter extends CustomPainter {
           final smokePaint = Paint()
             ..color = particleColor.withAlpha(40)
             ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 4);
-          canvas.drawCircle(Offset(x, y), 4.0 + sin(envT * pi * 2 + i.toDouble()) * 2.0, smokePaint);
+          canvas.drawCircle(Offset(x, y),
+              4.0 + sin(envT * pi * 2 + i.toDouble()) * 2.0, smokePaint);
         }
         break;
       case SceneEnvironment.garden:
@@ -1594,17 +1607,20 @@ class _ScenePainter extends CustomPainter {
           canvas.save();
           canvas.translate(x, y);
           canvas.rotate(envT * pi * 3 + i);
-          canvas.drawOval(Rect.fromCenter(center: Offset.zero, width: 5, height: 2.5), particlePaint);
+          canvas.drawOval(
+              Rect.fromCenter(center: Offset.zero, width: 5, height: 2.5),
+              particlePaint);
           canvas.restore();
         }
         break;
     }
   }
-  
-  void _drawPoseWithPersonality(Canvas canvas, ZenoPose pose, TeacherAppearance appearance) {
+
+  void _drawPoseWithPersonality(
+      Canvas canvas, ZenoPose pose, TeacherAppearance appearance) {
     final bodyPaint = Paint()..color = appearance.clothPrimary.withAlpha(220);
     final skinPaint = Paint()..color = appearance.skinPrimary;
-    
+
     switch (pose) {
       case ZenoPose.warrior:
         _drawWarriorPoseEnhanced(canvas, appearance, bodyPaint, skinPaint);
@@ -1625,10 +1641,15 @@ class _ScenePainter extends CustomPainter {
         _drawSittingPoseEnhanced(canvas, appearance, bodyPaint, skinPaint);
     }
   }
-  
-  void _drawWarriorPoseEnhanced(Canvas canvas, TeacherAppearance appearance, Paint bodyPaint, Paint skinPaint) {
-    final chestLift = breathPhase == BreathPhase.inhale ? -2.0 : breathPhase == BreathPhase.exhale ? 1.0 : 0.0;
-    
+
+  void _drawWarriorPoseEnhanced(Canvas canvas, TeacherAppearance appearance,
+      Paint bodyPaint, Paint skinPaint) {
+    final chestLift = breathPhase == BreathPhase.inhale
+        ? -2.0
+        : breathPhase == BreathPhase.exhale
+            ? 1.0
+            : 0.0;
+
     // Back leg
     canvas.save();
     canvas.translate(20, 0);
@@ -1638,7 +1659,7 @@ class _ScenePainter extends CustomPainter {
             const Rect.fromLTWH(-9, 0, 18, 56), const Radius.circular(9)),
         bodyPaint);
     canvas.restore();
-    
+
     // Front leg
     canvas.save();
     canvas.translate(-15, 0);
@@ -1648,13 +1669,13 @@ class _ScenePainter extends CustomPainter {
             const Rect.fromLTWH(-9, 0, 18, 48), const Radius.circular(9)),
         bodyPaint);
     canvas.restore();
-    
+
     // Torso
     canvas.drawRRect(
         RRect.fromRectAndRadius(
             const Rect.fromLTWH(-18, -70, 36, 70), const Radius.circular(12)),
         bodyPaint);
-    
+
     // Arms raised
     canvas.save();
     canvas.translate(-18, -65 + chestLift);
@@ -1672,18 +1693,23 @@ class _ScenePainter extends CustomPainter {
             const Rect.fromLTWH(-6, -40, 12, 40), const Radius.circular(6)),
         bodyPaint);
     canvas.restore();
-    
+
     _drawHeadEnhanced(canvas, -85, appearance, skinPaint);
   }
-  
-  void _drawTreePoseEnhanced(Canvas canvas, TeacherAppearance appearance, Paint bodyPaint, Paint skinPaint) {
-    final chestLift = breathPhase == BreathPhase.inhale ? -2.0 : breathPhase == BreathPhase.exhale ? 1.0 : 0.0;
-    
+
+  void _drawTreePoseEnhanced(Canvas canvas, TeacherAppearance appearance,
+      Paint bodyPaint, Paint skinPaint) {
+    final chestLift = breathPhase == BreathPhase.inhale
+        ? -2.0
+        : breathPhase == BreathPhase.exhale
+            ? 1.0
+            : 0.0;
+
     canvas.drawRRect(
         RRect.fromRectAndRadius(
             const Rect.fromLTWH(-10, 0, 20, 58), const Radius.circular(10)),
         bodyPaint);
-    
+
     canvas.save();
     canvas.translate(8, 20);
     canvas.rotate(0.7);
@@ -1692,12 +1718,12 @@ class _ScenePainter extends CustomPainter {
             const Rect.fromLTWH(-7, 0, 14, 35), const Radius.circular(7)),
         bodyPaint);
     canvas.restore();
-    
+
     canvas.drawRRect(
         RRect.fromRectAndRadius(
             const Rect.fromLTWH(-18, -70, 36, 70), const Radius.circular(12)),
         bodyPaint);
-    
+
     canvas.save();
     canvas.translate(-10, -80 + chestLift);
     canvas.rotate(-0.15);
@@ -1714,11 +1740,12 @@ class _ScenePainter extends CustomPainter {
             const Rect.fromLTWH(-5, -35, 10, 35), const Radius.circular(5)),
         bodyPaint);
     canvas.restore();
-    
+
     _drawHeadEnhanced(canvas, -88, appearance, skinPaint);
   }
-  
-  void _drawChildPoseEnhanced(Canvas canvas, TeacherAppearance appearance, Paint bodyPaint, Paint skinPaint) {
+
+  void _drawChildPoseEnhanced(Canvas canvas, TeacherAppearance appearance,
+      Paint bodyPaint, Paint skinPaint) {
     canvas.drawRRect(
         RRect.fromRectAndRadius(
             const Rect.fromLTWH(-40, -18, 80, 18), const Radius.circular(9)),
@@ -1745,8 +1772,9 @@ class _ScenePainter extends CustomPainter {
     canvas.restore();
     canvas.drawCircle(const Offset(-50, -14), 14, bodyPaint);
   }
-  
-  void _drawDownwardDogPoseEnhanced(Canvas canvas, TeacherAppearance appearance, Paint bodyPaint, Paint skinPaint) {
+
+  void _drawDownwardDogPoseEnhanced(Canvas canvas, TeacherAppearance appearance,
+      Paint bodyPaint, Paint skinPaint) {
     canvas.save();
     canvas.rotate(-0.6);
     canvas.drawRRect(
@@ -1772,10 +1800,15 @@ class _ScenePainter extends CustomPainter {
     canvas.restore();
     canvas.drawCircle(const Offset(-38, -8), 14, bodyPaint);
   }
-  
-  void _drawMountainPoseEnhanced(Canvas canvas, TeacherAppearance appearance, Paint bodyPaint, Paint skinPaint) {
-    final chestLift = breathPhase == BreathPhase.inhale ? -2.0 : breathPhase == BreathPhase.exhale ? 1.0 : 0.0;
-    
+
+  void _drawMountainPoseEnhanced(Canvas canvas, TeacherAppearance appearance,
+      Paint bodyPaint, Paint skinPaint) {
+    final chestLift = breathPhase == BreathPhase.inhale
+        ? -2.0
+        : breathPhase == BreathPhase.exhale
+            ? 1.0
+            : 0.0;
+
     canvas.drawRRect(
         RRect.fromRectAndRadius(
             const Rect.fromLTWH(-20, 0, 16, 55), const Radius.circular(8)),
@@ -1789,20 +1822,25 @@ class _ScenePainter extends CustomPainter {
             const Rect.fromLTWH(-18, -70, 36, 70), const Radius.circular(12)),
         bodyPaint);
     canvas.drawRRect(
-        RRect.fromRectAndRadius(
-            Rect.fromLTWH(-30, -65 + chestLift, 12, 50), const Radius.circular(6)),
+        RRect.fromRectAndRadius(Rect.fromLTWH(-30, -65 + chestLift, 12, 50),
+            const Radius.circular(6)),
         bodyPaint);
     canvas.drawRRect(
         RRect.fromRectAndRadius(
             const Rect.fromLTWH(18, -65, 12, 50), const Radius.circular(6)),
         bodyPaint);
-    
+
     _drawHeadEnhanced(canvas, -88, appearance, skinPaint);
   }
-  
-  void _drawSittingPoseEnhanced(Canvas canvas, TeacherAppearance appearance, Paint bodyPaint, Paint skinPaint) {
-    final chestLift = breathPhase == BreathPhase.inhale ? -2.0 : breathPhase == BreathPhase.exhale ? 1.0 : 0.0;
-    
+
+  void _drawSittingPoseEnhanced(Canvas canvas, TeacherAppearance appearance,
+      Paint bodyPaint, Paint skinPaint) {
+    final chestLift = breathPhase == BreathPhase.inhale
+        ? -2.0
+        : breathPhase == BreathPhase.exhale
+            ? 1.0
+            : 0.0;
+
     _drawLimb(
       canvas,
       const [Offset(-4, -4), Offset(-30, 0), Offset(-8, 18), Offset(10, 22)],
@@ -1815,7 +1853,7 @@ class _ScenePainter extends CustomPainter {
       appearance.clothSecondary,
       width: 14,
     );
-    
+
     final torsoPath = Path()
       ..moveTo(-22, -66 + chestLift)
       ..cubicTo(-34, -49, -31, -18, -20, -2)
@@ -1823,15 +1861,19 @@ class _ScenePainter extends CustomPainter {
       ..cubicTo(31, -18, 34, -49, 22, -66 + chestLift)
       ..quadraticBezierTo(0, -78 + chestLift, -22, -66 + chestLift)
       ..close();
-    
+
     final torsoPaint = Paint()
       ..shader = LinearGradient(
         begin: Alignment.topLeft,
         end: Alignment.bottomRight,
-        colors: [appearance.clothPrimary, appearance.clothSecondary, appearance.clothAccent],
+        colors: [
+          appearance.clothPrimary,
+          appearance.clothSecondary,
+          appearance.clothAccent
+        ],
       ).createShader(const Rect.fromLTWH(-35, -82, 70, 95));
     canvas.drawPath(torsoPath, torsoPaint);
-    
+
     _drawLimb(
       canvas,
       [
@@ -1856,7 +1898,7 @@ class _ScenePainter extends CustomPainter {
       width: 10,
       highlight: Colors.white,
     );
-    
+
     canvas.drawOval(
       Rect.fromCenter(center: const Offset(-9, -20), width: 13, height: 8),
       skinPaint,
@@ -1865,20 +1907,21 @@ class _ScenePainter extends CustomPainter {
       Rect.fromCenter(center: const Offset(9, -20), width: 13, height: 8),
       skinPaint,
     );
-    
+
     _drawHeadEnhanced(canvas, -94 + chestLift, appearance, skinPaint);
   }
-  
-  void _drawHeadEnhanced(Canvas canvas, double yOffset, TeacherAppearance appearance, Paint skinPaint) {
+
+  void _drawHeadEnhanced(Canvas canvas, double yOffset,
+      TeacherAppearance appearance, Paint skinPaint) {
     final headBob = isSpeaking ? sin(envT * pi * 12) * 0.65 : 0.0;
     final headCenter = Offset(0, yOffset + headBob);
     final headSize = 21.0 * appearance.headScale;
-    
+
     final auraPaint = Paint()
       ..color = appearance.auraPrimary.withAlpha((18 * auraT).toInt())
       ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 10);
     canvas.drawCircle(headCenter, 31, auraPaint);
-    
+
     final neckPaint = Paint()
       ..shader = LinearGradient(
         begin: Alignment.topCenter,
@@ -1890,7 +1933,7 @@ class _ScenePainter extends CustomPainter {
           Rect.fromLTWH(-8, yOffset + 15, 16, 16), const Radius.circular(5)),
       neckPaint,
     );
-    
+
     final headPaint = Paint()
       ..shader = RadialGradient(
         colors: [
@@ -1905,20 +1948,23 @@ class _ScenePainter extends CustomPainter {
       Rect.fromCenter(center: headCenter, width: 39, height: 44),
       headPaint,
     );
-    
+
     _drawHairForPersonality(canvas, headCenter, headSize, appearance);
     _drawFaceFeatures(canvas, headCenter, headSize, appearance);
   }
-  
-  void _drawHairForPersonality(Canvas canvas, Offset headCenter, double headSize, TeacherAppearance appearance) {
+
+  void _drawHairForPersonality(Canvas canvas, Offset headCenter,
+      double headSize, TeacherAppearance appearance) {
     final hairPaint = Paint()..color = appearance.hairPrimary;
-    
+
     switch (teacher) {
       case TeacherPersonality.buddha:
         final hairPath = Path()
           ..moveTo(-22, headCenter.dy - 2)
-          ..cubicTo(-20, headCenter.dy - 25, -8, headCenter.dy - 35, 6, headCenter.dy - 33)
-          ..cubicTo(18, headCenter.dy - 31, 25, headCenter.dy - 15, 22, headCenter.dy + 4)
+          ..cubicTo(-20, headCenter.dy - 25, -8, headCenter.dy - 35, 6,
+              headCenter.dy - 33)
+          ..cubicTo(18, headCenter.dy - 31, 25, headCenter.dy - 15, 22,
+              headCenter.dy + 4)
           ..quadraticBezierTo(15, headCenter.dy - 2, 10, headCenter.dy - 15)
           ..quadraticBezierTo(0, headCenter.dy - 22, -10, headCenter.dy - 12)
           ..quadraticBezierTo(-16, headCenter.dy - 2, -22, headCenter.dy - 2)
@@ -1927,9 +1973,12 @@ class _ScenePainter extends CustomPainter {
         final bunPaint = Paint()..color = appearance.hairSecondary;
         final bunPath = Path()
           ..moveTo(-10, headCenter.dy - 30)
-          ..cubicTo(-14, headCenter.dy - 42, -2, headCenter.dy - 46, 8, headCenter.dy - 44)
-          ..cubicTo(16, headCenter.dy - 42, 18, headCenter.dy - 32, 14, headCenter.dy - 28)
-          ..cubicTo(10, headCenter.dy - 26, 0, headCenter.dy - 28, -10, headCenter.dy - 30)
+          ..cubicTo(-14, headCenter.dy - 42, -2, headCenter.dy - 46, 8,
+              headCenter.dy - 44)
+          ..cubicTo(16, headCenter.dy - 42, 18, headCenter.dy - 32, 14,
+              headCenter.dy - 28)
+          ..cubicTo(10, headCenter.dy - 26, 0, headCenter.dy - 28, -10,
+              headCenter.dy - 30)
           ..close();
         canvas.drawPath(bunPath, bunPaint);
         break;
@@ -1937,23 +1986,72 @@ class _ScenePainter extends CustomPainter {
         final hairPath = Path()
           ..moveTo(-headSize * 0.9, headCenter.dy - headSize * 0.3)
           ..lineTo(-headSize * 0.85, headCenter.dy - headSize * 0.7)
-          ..quadraticBezierTo(0, headCenter.dy - headSize * 0.95, headSize * 0.85, headCenter.dy - headSize * 0.7)
+          ..quadraticBezierTo(0, headCenter.dy - headSize * 0.95,
+              headSize * 0.85, headCenter.dy - headSize * 0.7)
           ..lineTo(headSize * 0.9, headCenter.dy - headSize * 0.3)
           ..close();
         canvas.drawPath(hairPath, hairPaint);
         break;
       case TeacherPersonality.monk:
-        final stubblePaint = Paint()..color = appearance.hairPrimary.withAlpha(60);
+        final stubblePaint = Paint()
+          ..color = appearance.hairPrimary.withAlpha(60);
         canvas.drawCircle(headCenter, headSize * 0.95, stubblePaint);
+        break;
+      case TeacherPersonality.shiva:
+        // Matted jata (same as premium renderer)
+        final jataPath = Path()
+          ..moveTo(-headSize * 0.9, headCenter.dy - headSize * 0.4)
+          ..cubicTo(
+              -headSize * 1.1,
+              headCenter.dy - headSize * 1.0,
+              -headSize * 0.5,
+              headCenter.dy - headSize * 1.6,
+              0,
+              headCenter.dy - headSize * 1.5)
+          ..cubicTo(
+              headSize * 0.5,
+              headCenter.dy - headSize * 1.6,
+              headSize * 1.1,
+              headCenter.dy - headSize * 1.0,
+              headSize * 0.9,
+              headCenter.dy - headSize * 0.4)
+          ..close();
+        canvas.drawPath(jataPath, hairPaint);
+        break;
+      case TeacherPersonality.tiger:
+        // Warrior topknot
+        final topknotPath = Path()
+          ..moveTo(-headSize * 0.85, headCenter.dy - headSize * 0.5)
+          ..cubicTo(
+              -headSize * 0.7,
+              headCenter.dy - headSize * 0.9,
+              -headSize * 0.2,
+              headCenter.dy - headSize * 1.0,
+              0,
+              headCenter.dy - headSize * 0.98)
+          ..cubicTo(
+              headSize * 0.2,
+              headCenter.dy - headSize * 1.0,
+              headSize * 0.7,
+              headCenter.dy - headSize * 0.9,
+              headSize * 0.85,
+              headCenter.dy - headSize * 0.5)
+          ..close();
+        canvas.drawPath(topknotPath, hairPaint);
+        canvas.drawCircle(
+            Offset(headCenter.dx, headCenter.dy - headSize * 1.05),
+            headSize * 0.22,
+            Paint()..color = appearance.hairSecondary);
         break;
     }
   }
-  
-  void _drawFaceFeatures(Canvas canvas, Offset headCenter, double headSize, TeacherAppearance appearance) {
+
+  void _drawFaceFeatures(Canvas canvas, Offset headCenter, double headSize,
+      TeacherAppearance appearance) {
     final blink = blinkT > 0.9;
     final eyeSize = 3.5 * appearance.eyeSize;
     final eyeY = headCenter.dy - headSize * 0.15;
-    
+
     if (blink) {
       final eyePaint = Paint()
         ..color = appearance.skinShadow
@@ -1974,26 +2072,35 @@ class _ScenePainter extends CustomPainter {
       final eyeWhite = Paint()..color = Colors.white;
       final eyeIris = Paint()..color = const Color(0xFF4a3728);
       final eyePupil = Paint()..color = Colors.black;
-      
+
       canvas.drawOval(
-        Rect.fromCenter(center: Offset(-headSize * 0.25, eyeY), width: eyeSize * 2, height: eyeSize * 1.5),
+        Rect.fromCenter(
+            center: Offset(-headSize * 0.25, eyeY),
+            width: eyeSize * 2,
+            height: eyeSize * 1.5),
         eyeWhite,
       );
       canvas.drawCircle(Offset(-headSize * 0.25, eyeY), eyeSize * 0.6, eyeIris);
-      canvas.drawCircle(Offset(-headSize * 0.25, eyeY), eyeSize * 0.3, eyePupil);
-      
+      canvas.drawCircle(
+          Offset(-headSize * 0.25, eyeY), eyeSize * 0.3, eyePupil);
+
       canvas.drawOval(
-        Rect.fromCenter(center: Offset(headSize * 0.25, eyeY), width: eyeSize * 2, height: eyeSize * 1.5),
+        Rect.fromCenter(
+            center: Offset(headSize * 0.25, eyeY),
+            width: eyeSize * 2,
+            height: eyeSize * 1.5),
         eyeWhite,
       );
       canvas.drawCircle(Offset(headSize * 0.25, eyeY), eyeSize * 0.6, eyeIris);
       canvas.drawCircle(Offset(headSize * 0.25, eyeY), eyeSize * 0.3, eyePupil);
-      
+
       final highlightPaint = Paint()..color = Colors.white.withAlpha(200);
-      canvas.drawCircle(Offset(-headSize * 0.25 - 1, eyeY - 1), 1.0, highlightPaint);
-      canvas.drawCircle(Offset(headSize * 0.25 - 1, eyeY - 1), 1.0, highlightPaint);
+      canvas.drawCircle(
+          Offset(-headSize * 0.25 - 1, eyeY - 1), 1.0, highlightPaint);
+      canvas.drawCircle(
+          Offset(headSize * 0.25 - 1, eyeY - 1), 1.0, highlightPaint);
     }
-    
+
     final browPaint = Paint()
       ..color = appearance.hairPrimary
       ..strokeWidth = 1.5
@@ -2001,9 +2108,19 @@ class _ScenePainter extends CustomPainter {
       ..style = PaintingStyle.stroke;
     final browY = eyeY - headSize * 0.2;
     final browLift = breathPhase == BreathPhase.inhale ? -2.0 : 0.0;
-    canvas.drawArc(Rect.fromLTWH(-headSize * 0.4, browY + browLift, headSize * 0.25, 4), pi, pi, false, browPaint);
-    canvas.drawArc(Rect.fromLTWH(headSize * 0.15, browY + browLift, headSize * 0.25, 4), pi, pi, false, browPaint);
-    
+    canvas.drawArc(
+        Rect.fromLTWH(-headSize * 0.4, browY + browLift, headSize * 0.25, 4),
+        pi,
+        pi,
+        false,
+        browPaint);
+    canvas.drawArc(
+        Rect.fromLTWH(headSize * 0.15, browY + browLift, headSize * 0.25, 4),
+        pi,
+        pi,
+        false,
+        browPaint);
+
     final nosePaint = Paint()
       ..color = appearance.skinShadow.withAlpha(150)
       ..strokeWidth = 1.2
@@ -2013,10 +2130,10 @@ class _ScenePainter extends CustomPainter {
       ..lineTo(headCenter.dx, headCenter.dy + headSize * 0.25)
       ..lineTo(headCenter.dx - 2, headCenter.dy + headSize * 0.25);
     canvas.drawPath(nosePath, nosePaint);
-    
+
     final mouthY = headCenter.dy + headSize * 0.35;
     final mouthWidth = 6.0 * appearance.mouthWidth;
-    
+
     if (isSpeaking) {
       final mouthPaint = Paint()..color = appearance.skinShadow;
       canvas.drawOval(
@@ -2035,21 +2152,31 @@ class _ScenePainter extends CustomPainter {
         ..style = PaintingStyle.stroke;
       final smileAmount = breathPhase == BreathPhase.complete ? 3.0 : 1.5;
       canvas.drawArc(
-        Rect.fromLTWH(headCenter.dx - mouthWidth, mouthY, mouthWidth * 2, 4 + smileAmount),
-        0.1, pi - 0.2, false, mouthPaint,
+        Rect.fromLTWH(headCenter.dx - mouthWidth, mouthY, mouthWidth * 2,
+            4 + smileAmount),
+        0.1,
+        pi - 0.2,
+        false,
+        mouthPaint,
       );
     }
-    
+
     final cheekPaint = Paint()..color = const Color(0xFFf28a91).withAlpha(40);
     canvas.drawOval(
-      Rect.fromCenter(center: Offset(-headSize * 0.5, headCenter.dy + headSize * 0.2), width: 6, height: 4),
+      Rect.fromCenter(
+          center: Offset(-headSize * 0.5, headCenter.dy + headSize * 0.2),
+          width: 6,
+          height: 4),
       cheekPaint,
     );
     canvas.drawOval(
-      Rect.fromCenter(center: Offset(headSize * 0.5, headCenter.dy + headSize * 0.2), width: 6, height: 4),
+      Rect.fromCenter(
+          center: Offset(headSize * 0.5, headCenter.dy + headSize * 0.2),
+          width: 6,
+          height: 4),
       cheekPaint,
     );
-    
+
     if (breathPhase == BreathPhase.complete) {
       final checkPaint = Paint()
         ..color = const Color(0xFF38b000)
@@ -2194,7 +2321,7 @@ class _ScenePainter extends CustomPainter {
       ..cubicTo(31, -18, 34, -49, 22, -66 + chestLift)
       ..quadraticBezierTo(0, -78 + chestLift, -22, -66 + chestLift)
       ..close();
-    
+
     // Tiger skin base
     final torsoPaint = Paint()
       ..shader = LinearGradient(
@@ -2212,12 +2339,18 @@ class _ScenePainter extends CustomPainter {
       ..color = tigerBlack
       ..strokeWidth = 2.5
       ..strokeCap = StrokeCap.round;
-    canvas.drawLine(Offset(-18, -60 + chestLift), Offset(-8, -55 + chestLift), stripePaint);
-    canvas.drawLine(Offset(-12, -50 + chestLift), Offset(-2, -45 + chestLift), stripePaint);
-    canvas.drawLine(Offset(8, -58 + chestLift), Offset(18, -52 + chestLift), stripePaint);
-    canvas.drawLine(Offset(5, -40 + chestLift), Offset(15, -35 + chestLift), stripePaint);
-    canvas.drawLine(Offset(-15, -35 + chestLift), Offset(-5, -30 + chestLift), stripePaint);
-    canvas.drawLine(Offset(10, -25 + chestLift), Offset(20, -20 + chestLift), stripePaint);
+    canvas.drawLine(
+        Offset(-18, -60 + chestLift), Offset(-8, -55 + chestLift), stripePaint);
+    canvas.drawLine(
+        Offset(-12, -50 + chestLift), Offset(-2, -45 + chestLift), stripePaint);
+    canvas.drawLine(
+        Offset(8, -58 + chestLift), Offset(18, -52 + chestLift), stripePaint);
+    canvas.drawLine(
+        Offset(5, -40 + chestLift), Offset(15, -35 + chestLift), stripePaint);
+    canvas.drawLine(
+        Offset(-15, -35 + chestLift), Offset(-5, -30 + chestLift), stripePaint);
+    canvas.drawLine(
+        Offset(10, -25 + chestLift), Offset(20, -20 + chestLift), stripePaint);
 
     _drawLimb(
       canvas,
@@ -2245,8 +2378,10 @@ class _ScenePainter extends CustomPainter {
     );
 
     // Tiger stripes on arms
-    canvas.drawLine(const Offset(-30, -40), const Offset(-25, -35), stripePaint);
-    canvas.drawLine(const Offset(-35, -25), const Offset(-30, -20), stripePaint);
+    canvas.drawLine(
+        const Offset(-30, -40), const Offset(-25, -35), stripePaint);
+    canvas.drawLine(
+        const Offset(-35, -25), const Offset(-30, -20), stripePaint);
     canvas.drawLine(const Offset(30, -40), const Offset(35, -35), stripePaint);
     canvas.drawLine(const Offset(32, -25), const Offset(37, -20), stripePaint);
 
@@ -2522,7 +2657,7 @@ class _ScenePainter extends CustomPainter {
 
     // Lord Shiva-inspired matted hair (jata)
     final hairPaint = Paint()..color = const Color(0xFF1a120b);
-    
+
     // Matted hair piled up in bun style (jata)
     final hairPath = Path()
       ..moveTo(-22, yOffset - 2)
@@ -2533,7 +2668,7 @@ class _ScenePainter extends CustomPainter {
       ..quadraticBezierTo(-16, yOffset - 2, -22, yOffset - 2)
       ..close();
     canvas.drawPath(hairPath, hairPaint);
-    
+
     // Hair bun on top (jata)
     final bunPaint = Paint()..color = const Color(0xFF2a1a10);
     final bunPath = Path()

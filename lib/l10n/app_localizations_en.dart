@@ -482,4 +482,70 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get logoutError => 'Logout error:';
+
+  @override
+  String get guidedMeditation => 'Guided Meditation';
+
+  @override
+  String get expertLedSessions => 'Expert-led sessions';
+
+  @override
+  String get tapPlayToBegin => 'Tap play to begin';
+
+  @override
+  String get audioMeditation => 'Audio Meditation';
+
+  @override
+  String get immerseInSound => 'Immerse in sound';
+
+  @override
+  String get breathingPattern => 'BREATHING PATTERN';
+
+  @override
+  String get breatheIn => 'Breathe In';
+
+  @override
+  String get breatheOut => 'Breathe Out';
+
+  @override
+  String get meditationLibrary => 'Meditation Library';
+
+  @override
+  String get ambientSounds => 'AMBIENT SOUNDS';
+
+  @override
+  String get volume => 'Volume';
+
+  @override
+  String get selectSession => 'Select a session to begin';
+
+  @override
+  String get voiceGuide => 'Voice guide speaking';
+
+  @override
+  String get preparingGuide => 'Preparing guide';
+
+  @override
+  String get loadingVideo => 'Loading local video...';
+
+  @override
+  String get voiceGuidanceBegin =>
+      'Your voice guidance will begin automatically.';
+
+  @override
+  String get videoNotStart =>
+      'Video could not start. Voice guidance is playing instead.';
+
+  @override
+  String get sessionStartedAudio =>
+      'The session has already started with audio.';
+
+  @override
+  String get retryVideo => 'Retry Video';
+
+  @override
+  String get breathAwareness => 'Breath Awareness';
+
+  @override
+  String get followBreathRhythm => 'Follow the rhythm of your breath';
 }

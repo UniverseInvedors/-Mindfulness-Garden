@@ -1041,6 +1041,132 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Logout error:'**
   String get logoutError;
+
+  /// No description provided for @guidedMeditation.
+  ///
+  /// In en, this message translates to:
+  /// **'Guided Meditation'**
+  String get guidedMeditation;
+
+  /// No description provided for @expertLedSessions.
+  ///
+  /// In en, this message translates to:
+  /// **'Expert-led sessions'**
+  String get expertLedSessions;
+
+  /// No description provided for @tapPlayToBegin.
+  ///
+  /// In en, this message translates to:
+  /// **'Tap play to begin'**
+  String get tapPlayToBegin;
+
+  /// No description provided for @audioMeditation.
+  ///
+  /// In en, this message translates to:
+  /// **'Audio Meditation'**
+  String get audioMeditation;
+
+  /// No description provided for @immerseInSound.
+  ///
+  /// In en, this message translates to:
+  /// **'Immerse in sound'**
+  String get immerseInSound;
+
+  /// No description provided for @breathingPattern.
+  ///
+  /// In en, this message translates to:
+  /// **'BREATHING PATTERN'**
+  String get breathingPattern;
+
+  /// No description provided for @breatheIn.
+  ///
+  /// In en, this message translates to:
+  /// **'Breathe In'**
+  String get breatheIn;
+
+  /// No description provided for @breatheOut.
+  ///
+  /// In en, this message translates to:
+  /// **'Breathe Out'**
+  String get breatheOut;
+
+  /// No description provided for @meditationLibrary.
+  ///
+  /// In en, this message translates to:
+  /// **'Meditation Library'**
+  String get meditationLibrary;
+
+  /// No description provided for @ambientSounds.
+  ///
+  /// In en, this message translates to:
+  /// **'AMBIENT SOUNDS'**
+  String get ambientSounds;
+
+  /// No description provided for @volume.
+  ///
+  /// In en, this message translates to:
+  /// **'Volume'**
+  String get volume;
+
+  /// No description provided for @selectSession.
+  ///
+  /// In en, this message translates to:
+  /// **'Select a session to begin'**
+  String get selectSession;
+
+  /// No description provided for @voiceGuide.
+  ///
+  /// In en, this message translates to:
+  /// **'Voice guide speaking'**
+  String get voiceGuide;
+
+  /// No description provided for @preparingGuide.
+  ///
+  /// In en, this message translates to:
+  /// **'Preparing guide'**
+  String get preparingGuide;
+
+  /// No description provided for @loadingVideo.
+  ///
+  /// In en, this message translates to:
+  /// **'Loading local video...'**
+  String get loadingVideo;
+
+  /// No description provided for @voiceGuidanceBegin.
+  ///
+  /// In en, this message translates to:
+  /// **'Your voice guidance will begin automatically.'**
+  String get voiceGuidanceBegin;
+
+  /// No description provided for @videoNotStart.
+  ///
+  /// In en, this message translates to:
+  /// **'Video could not start. Voice guidance is playing instead.'**
+  String get videoNotStart;
+
+  /// No description provided for @sessionStartedAudio.
+  ///
+  /// In en, this message translates to:
+  /// **'The session has already started with audio.'**
+  String get sessionStartedAudio;
+
+  /// No description provided for @retryVideo.
+  ///
+  /// In en, this message translates to:
+  /// **'Retry Video'**
+  String get retryVideo;
+
+  /// No description provided for @breathAwareness.
+  ///
+  /// In en, this message translates to:
+  /// **'Breath Awareness'**
+  String get breathAwareness;
+
+  /// No description provided for @followBreathRhythm.
+  ///
+  /// In en, this message translates to:
+  /// **'Follow the rhythm of your breath'**
+  String get followBreathRhythm;
 }
 
 class _AppLocalizationsDelegate

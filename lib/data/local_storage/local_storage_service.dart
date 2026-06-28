@@ -89,18 +89,23 @@ class LocalStorageService {
         Hive.registerAdapter(UserModelAdapter());
       }
 
-      // Session Model (typeId: 2)
+      // User preferences embedded in UserModel (typeId: 2)
       if (!Hive.isAdapterRegistered(2)) {
+        Hive.registerAdapter(UserPreferencesAdapter());
+      }
+
+      // Session Model (typeId: 3)
+      if (!Hive.isAdapterRegistered(3)) {
         Hive.registerAdapter(SessionModelAdapter());
       }
 
-      // Mood Model (typeId: 3)
-      if (!Hive.isAdapterRegistered(3)) {
+      // Mood Model (typeId: 4)
+      if (!Hive.isAdapterRegistered(4)) {
         Hive.registerAdapter(MoodModelAdapter());
       }
 
-      // Achievement Model (typeId: 4)
-      if (!Hive.isAdapterRegistered(4)) {
+      // Achievement Model (typeId: 5)
+      if (!Hive.isAdapterRegistered(5)) {
         Hive.registerAdapter(AchievementModelAdapter());
       }
 

@@ -1,6 +1,7 @@
 // lib/features/breathing/exercises/alternate_nostril_screen.dart
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:pranaverse/core/localization/app_copy.dart';
 import 'package:pranaverse/core/services/audio_service.dart';
 import 'package:pranaverse/core/services/tts_service.dart';
 import 'package:pranaverse/core/services/ad_service.dart';
@@ -160,19 +161,26 @@ class _AlternateNostrilScreenState extends State<AlternateNostrilScreen>
   void _completeExercise() {
     _breathController.reset();
     _audioService.stopSound();
-    _ttsService.speak(
-        "Excellent! You have completed 10 rounds of alternate nostril breathing.");
+    _ttsService.speak(AppCopy.read(
+      context,
+      'Excellent! You have completed 10 rounds of alternate nostril breathing.',
+    ));
     setState(() => _isActive = false);
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
         backgroundColor: const Color(0xFF1a1a2e),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        title: const Text('Exercise Complete!',
-            style: TextStyle(color: Colors.white)),
-        content: const Text(
-          'Great job! You\'ve completed 10 rounds of Alternate Nostril Breathing.',
-          style: TextStyle(color: Colors.white70),
+        title: Text(
+          AppCopy.of(ctx, 'Exercise Complete!'),
+          style: const TextStyle(color: Colors.white),
+        ),
+        content: Text(
+          AppCopy.of(
+            ctx,
+            'Great job! You\'ve completed 10 rounds of Alternate Nostril Breathing.',
+          ),
+          style: const TextStyle(color: Colors.white70),
         ),
         actions: [
           TextButton(
@@ -180,8 +188,10 @@ class _AlternateNostrilScreenState extends State<AlternateNostrilScreen>
               Navigator.pop(ctx);
               context.canPop() ? context.pop() : context.go('/main');
             },
-            child:
-                const Text('Done', style: TextStyle(color: Color(0xFF9d4edd))),
+            child: Text(
+              AppCopy.of(ctx, 'Done'),
+              style: const TextStyle(color: Color(0xFF9d4edd)),
+            ),
           ),
         ],
       ),
@@ -197,14 +207,15 @@ class _AlternateNostrilScreenState extends State<AlternateNostrilScreen>
   }
 
   String get _sceneInstruction =>
-      _phaseInstructions[_currentPhase].replaceAll('\n', ' ');
+      AppCopy.of(context, _phaseInstructions[_currentPhase])
+          .replaceAll('\n', ' ');
 
   Color get _currentColor => _phaseColors[_currentPhase];
 
   @override
   Widget build(BuildContext context) {
     return ExerciseSceneShell(
-      title: 'Alternate Nostril',
+      title: AppCopy.of(context, 'Alternate Nostril'),
       breathPhase: _scenePhase,
       instruction: _sceneInstruction,
       isActive: _isActive,
@@ -240,7 +251,7 @@ class _AlternateNostrilScreenState extends State<AlternateNostrilScreen>
             ),
             child: Column(
               children: [
-                Text(_phaseInstructions[_currentPhase],
+                Text(AppCopy.of(context, _phaseInstructions[_currentPhase]),
                     textAlign: TextAlign.center,
                     style: const TextStyle(
                         color: Colors.white,
@@ -299,15 +310,23 @@ class _AlternateNostrilScreenState extends State<AlternateNostrilScreen>
             children: [
               if (!_isActive && _roundsCompleted == 0)
                 _buildBtn(
-                    Icons.play_arrow, 'Start', Colors.green, _startExercise)
+                    Icons.play_arrow,
+                    AppCopy.of(context, 'Start'),
+                    Colors.green,
+                    _startExercise)
               else if (!_isActive)
                 _buildBtn(
-                    Icons.play_arrow, 'Resume', Colors.orange, _resumeExercise)
+                    Icons.play_arrow,
+                    AppCopy.of(context, 'Resume'),
+                    Colors.orange,
+                    _resumeExercise)
               else
-                _buildBtn(Icons.pause, 'Pause', Colors.red, _pauseExercise),
+                _buildBtn(Icons.pause, AppCopy.of(context, 'Pause'),
+                    Colors.red, _pauseExercise),
               if (_roundsCompleted > 0 || _isActive) ...[
                 const SizedBox(width: 12),
-                _buildBtn(Icons.refresh, 'Reset', Colors.blue, _resetExercise),
+                _buildBtn(Icons.refresh, AppCopy.of(context, 'Reset'),
+                    Colors.blue, _resetExercise),
               ],
             ],
           ),

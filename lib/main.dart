@@ -1,5 +1,7 @@
-import 'dart:ui';
+import 'dart:async';
 
+import 'package:firebase_core/firebase_core.dart';
+import 'package:firebase_crashlytics/firebase_crashlytics.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
@@ -8,11 +10,15 @@ import 'package:hive_flutter/hive_flutter.dart';
 import 'package:provider/provider.dart' as provider;
 import 'package:pranaverse/core/providers/app_settings_provider.dart';
 import 'package:pranaverse/core/responsive/responsive_context.dart';
-import 'package:pranaverse/core/services/auth_service.dart';
+import 'package:pranaverse/core/services/analytics_service.dart';
+import 'package:pranaverse/core/services/ad_service.dart';
+import 'package:pranaverse/core/services/fcm_service.dart';
+import 'package:pranaverse/core/services/sound_service.dart';
 import 'package:pranaverse/core/services/wallet_service.dart';
 import 'package:pranaverse/core/themes/app_theme.dart';
 import 'package:pranaverse/data/local_storage/local_storage_service.dart';
 import 'package:pranaverse/data/repositories/achievement_repository.dart';
+import 'package:pranaverse/firebase_options.dart';
 import 'package:pranaverse/l10n/app_localizations.dart';
 import 'package:pranaverse/presentation/providers/achievement_provider.dart';
 import 'package:pranaverse/presentation/providers/auth_provider.dart';
@@ -23,28 +29,22 @@ import 'package:pranaverse/presentation/providers/subscription_provider.dart';
 import 'package:pranaverse/presentation/providers/user_provider.dart';
 import 'package:pranaverse/presentation/providers/wallet_provider.dart';
 import 'package:pranaverse/presentation/routes/app_router.dart';
-import 'package:pranaverse/services/backend_integration_service.dart';
 
 void _log(String message) {
-  if (kDebugMode) {
-    debugPrint(message);
-  }
+  if (kDebugMode) debugPrint(message);
 }
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  FlutterError.onError = (details) {
-    FlutterError.presentError(details);
-    _log('FLUTTER ERROR: ${details.exception}');
-    _log('Stack trace: ${details.stack}');
-  };
+  // ── Firebase core (must come first) ──────────────────────────────────────
+  await Firebase.initializeApp(
+    options: DefaultFirebaseOptions.currentPlatform,
+  );
 
-  PlatformDispatcher.instance.onError = (error, stack) {
-    _log('PLATFORM ERROR: $error');
-    _log('Stack trace: $stack');
-    return true;
-  };
+  // ── Analytics + Crashlytics ───────────────────────────────────────────────
+  // This call sets up FlutterError.onError and PlatformDispatcher.instance.onError
+  await AnalyticsService().initialize();
 
   try {
     _log('Initializing PranaVerse: Healing Frequencies...');
@@ -59,16 +59,14 @@ Future<void> main() async {
       _log('LocalStorageService initialization failed: $e');
     }
 
-    try {
-      final backendService = BackendIntegrationService();
-      await backendService.initialize();
-      _log('Backend integration service initialized');
+    // ── FCM (non-blocking) ────────────────────────────────────────────────
+    unawaited(FcmService().initialize());
 
-      await AuthService.initialize(backendService);
-      _log('Auth service initialized with backend');
-    } catch (e) {
-      _log('Backend integration initialization failed: $e');
-    }
+    // ── AdMob (non-blocking — never delays app start) ─────────────────────
+    unawaited(AdService().initialize());
+
+    // ── Sound service ─────────────────────────────────────────────────────
+    unawaited(SoundService().initialize());
 
     runApp(
       const riverpod.ProviderScope(
@@ -78,7 +76,7 @@ Future<void> main() async {
   } catch (e, s) {
     _log('Fatal error during initialization: $e');
     _log('Stack trace: $s');
-
+    FirebaseCrashlytics.instance.recordError(e, s, fatal: true);
     runApp(const _ErrorApp());
   }
 }
@@ -159,6 +157,11 @@ class MindfulnessGardenApp extends riverpod.ConsumerWidget {
           final uiThemeData = appSettings.uiThemeData;
           final locale = appSettings.language.locale;
 
+          // ── Sync premium status into AdService ───────────────────────────
+          final isPremium =
+              context.watch<SubscriptionProvider>().isPremiumUser();
+          AdService().setPremium(isPremium);
+
           return MaterialApp.router(
             debugShowCheckedModeBanner: false,
             title: 'PranaVerse',
@@ -179,7 +182,16 @@ class MindfulnessGardenApp extends riverpod.ConsumerWidget {
             ],
             routerConfig: AppRouter.router,
             builder: (context, child) {
-              return ResponsiveScope(child: child ?? const SizedBox.shrink());
+              final theme = Theme.of(context);
+              final defaultTextStyle = theme.textTheme.bodyLarge?.copyWith(
+                    color: theme.colorScheme.onSurface,
+                  ) ??
+                  TextStyle(color: theme.colorScheme.onSurface);
+
+              return DefaultTextStyle(
+                style: defaultTextStyle,
+                child: ResponsiveScope(child: child ?? const SizedBox.shrink()),
+              );
             },
           );
         },

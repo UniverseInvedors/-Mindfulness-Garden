@@ -1,6 +1,6 @@
 import 'package:flutter_tts/flutter_tts.dart';
+import 'package:pranaverse/core/localization/app_copy.dart';
 import 'package:pranaverse/core/providers/app_settings_provider.dart';
-import 'package:pranaverse/core/services/localization_service.dart';
 import 'package:pranaverse/data/local_storage/local_storage_service.dart';
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -21,7 +21,7 @@ class VoiceService {
   bool _initialized = false;
   bool _enabled = true;
   double _rate = 0.42;
-  final double _pitch = 0.85; // Slightly lower = more serene / authoritative
+  double _pitch = 0.85; // Slightly lower = more serene / authoritative
   final double _volume = 0.9;
   String _language = 'en-US';
   AppLanguage _appLanguage = AppLanguage.english;
@@ -78,6 +78,8 @@ class VoiceService {
     await setLanguage(_language);
   }
 
+  Future<void> setAppLanguage(AppLanguage language) => updateLanguage(language);
+
   String _getTtsLanguageCode(AppLanguage language) {
     switch (language) {
       case AppLanguage.english:
@@ -95,13 +97,14 @@ class VoiceService {
   Future<void> speak(String text, {bool await_ = false}) async {
     if (!_enabled || text.isEmpty) return;
     await initialize();
+    final spokenText = AppCopy.voice(_appLanguage, text);
     await _tts.stop();
     if (await_) {
       await _tts.awaitSpeakCompletion(true);
-      await _tts.speak(text);
+      await _tts.speak(spokenText);
       await _tts.awaitSpeakCompletion(false);
     } else {
-      await _tts.speak(text);
+      await _tts.speak(spokenText);
     }
   }
 
@@ -117,6 +120,12 @@ class VoiceService {
     _rate = rate.clamp(0.1, 1.0);
     await _tts.setSpeechRate(_rate);
     await LocalStorageService.saveSetting('voice_rate', _rate);
+  }
+
+  Future<void> setPitch(double pitch) async {
+    _pitch = pitch.clamp(0.5, 2.0);
+    await _tts.setPitch(_pitch);
+    await LocalStorageService.saveSetting('voice_pitch', _pitch);
   }
 
   Future<void> setLanguage(String lang) async {
@@ -255,45 +264,49 @@ class VoiceService {
     await speak(phrases[idx]);
   }
 
-  Future<void> speakBreathingIntro() => speakRandom(
-      LocalizationService.translateList('breathingIntro', _appLanguage));
-  Future<void> speakInhale() => speakRandom(
-      LocalizationService.translateList('inhalePrompts', _appLanguage));
-  Future<void> speakHold() => speakRandom(
-      LocalizationService.translateList('holdPrompts', _appLanguage));
-  Future<void> speakExhale() => speakRandom(
-      LocalizationService.translateList('exhalePrompts', _appLanguage));
-  Future<void> speakPoseTransition() => speakRandom(
-      LocalizationService.translateList('poseTransitions', _appLanguage));
-  Future<void> speakComplete() => speakRandom(
-      LocalizationService.translateList('sessionCompleteLines', _appLanguage));
-  Future<void> speakEncouragement() => speakRandom(
-      LocalizationService.translateList('encouragement', _appLanguage));
+  Future<void> speakBreathingIntro() =>
+      speakRandom(AppCopy.list(_appLanguage, 'breathingIntro'));
+  Future<void> speakInhale() =>
+      speakRandom(AppCopy.list(_appLanguage, 'inhalePrompts'));
+  Future<void> speakHold() =>
+      speakRandom(AppCopy.list(_appLanguage, 'holdPrompts'));
+  Future<void> speakExhale() =>
+      speakRandom(AppCopy.list(_appLanguage, 'exhalePrompts'));
+  Future<void> speakPoseTransition() =>
+      speakRandom(AppCopy.list(_appLanguage, 'poseTransitions'));
+  Future<void> speakComplete() =>
+      speakRandom(AppCopy.list(_appLanguage, 'sessionCompleteLines'));
+  Future<void> speakEncouragement() =>
+      speakRandom(AppCopy.list(_appLanguage, 'encouragement'));
 
   Future<void> sessionStart(String sessionType) async {
-    final greeting = _timeGreeting();
-    final startText =
-        LocalizationService.translate('session_start', _appLanguage);
-    await speak('$greeting. $startText $sessionType practice begins.');
+    await speak(
+      AppCopy.tr(
+        _appLanguage,
+        'voiceSessionStart',
+        vars: {
+          'greeting': _timeGreeting(),
+          'sessionType': AppCopy.tr(_appLanguage, sessionType),
+        },
+      ),
+    );
   }
 
   Future<void> sessionComplete(int minutes) async {
-    final completeText =
-        LocalizationService.translate('session_complete', _appLanguage);
     await speak(
-        'You have sat with yourself for $minutes minutes. $completeText');
+      AppCopy.tr(
+        _appLanguage,
+        'voiceSessionComplete',
+        vars: {'minutes': minutes},
+      ),
+    );
   }
 
   String _timeGreeting() {
-    final hour = DateTime.now().hour;
-    if (hour < 12) return 'Good morning';
-    if (hour < 17) return 'Good afternoon';
-    return 'Good evening';
+    return AppCopy.greeting(_appLanguage);
   }
 
   Future<void> speakPoseInstruction(String poseName) async {
-    final instruction =
-        LocalizationService.translatePoseInstruction(poseName, _appLanguage);
-    await speak(instruction);
+    await speak(AppCopy.poseInstruction(_appLanguage, poseName));
   }
 }

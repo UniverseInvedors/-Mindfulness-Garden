@@ -3,10 +3,12 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart' as provider;
 import 'package:go_router/go_router.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:pranaverse/core/localization/app_copy.dart';
 import 'package:pranaverse/core/widgets/meditation_scene_widget.dart';
 import 'package:pranaverse/core/widgets/character/teacher_personality.dart';
 import 'package:pranaverse/presentation/providers/user_provider.dart';
 import 'package:pranaverse/core/services/ad_service.dart';
+import 'package:pranaverse/core/services/sound_service.dart';
 import 'package:pranaverse/core/services/voice_service.dart';
 import 'package:pranaverse/data/local_storage/local_storage_service.dart';
 import 'package:pranaverse/core/utils/responsive_helper.dart';
@@ -43,6 +45,8 @@ class _MainMenuContentState extends State<_MainMenuContent>
   late AnimationController _ambientCtrl;
   int _tapCount = 0;
   int _selectedNav = 0;
+
+  ColorScheme get colors => Theme.of(context).colorScheme;
 
   // ── Feature rows ────────────────────────────────────────────────────────────
   static const _rows = [
@@ -142,12 +146,20 @@ class _MainMenuContentState extends State<_MainMenuContent>
     WidgetsBinding.instance.addPostFrameCallback((_) {
       context.read<UserProvider>().loadUser();
       VoiceService().initialize();
+      // Start garden bg music
+      final hour = DateTime.now().hour;
+      if (hour >= 6 && hour < 20) {
+        SoundService().playGardenDay();
+      } else {
+        SoundService().playGardenNight();
+      }
     });
   }
 
   @override
   void dispose() {
     _ambientCtrl.dispose();
+    SoundService().stopBg();
     super.dispose();
   }
 
@@ -155,7 +167,10 @@ class _MainMenuContentState extends State<_MainMenuContent>
 
   void _navigate(String route) {
     _tapCount++;
-    if (_tapCount % 3 == 0) AdService().showInterstitial();
+    // Interstitial: fire every 3rd navigation, with placement context + cooldown
+    if (_tapCount % 3 == 0) {
+      AdService().showInterstitial(placement: AdPlacement.menuNavigation);
+    }
 
     const valid = [
       '/breathing',
@@ -202,13 +217,18 @@ class _MainMenuContentState extends State<_MainMenuContent>
       builder: (_) => AlertDialog(
         backgroundColor: const Color(0xFF1a1a2e),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        title: const Text('Coming Soon', style: TextStyle(color: Colors.white)),
-        content: Text('$route is coming soon!',
-            style: const TextStyle(color: Colors.white70)),
+        title: Text(AppCopy.read(context, 'Coming Soon'),
+            style: TextStyle(color: Theme.of(context).colorScheme.onSurface)),
+        content: Text(
+            AppCopy.read(context, 'routeComingSoon', vars: {'route': route}),
+            style: TextStyle(
+                color:
+                    Theme.of(context).colorScheme.onSurface.withOpacity(0.7))),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: const Text('OK', style: TextStyle(color: Color(0xFF00b4d8))),
+            child: Text(AppCopy.read(context, 'OK'),
+                style: const TextStyle(color: Color(0xFF00b4d8))),
           ),
         ],
       ),
@@ -217,12 +237,7 @@ class _MainMenuContentState extends State<_MainMenuContent>
 
   // ── Helpers ─────────────────────────────────────────────────────────────────
 
-  String _greeting() {
-    final h = DateTime.now().hour;
-    if (h < 12) return 'Good morning';
-    if (h < 17) return 'Good afternoon';
-    return 'Good evening';
-  }
+  String _greeting() => AppCopy.greeting(AppCopy.languageOf(context));
 
   // ── Build ────────────────────────────────────────────────────────────────────
 
@@ -232,9 +247,10 @@ class _MainMenuContentState extends State<_MainMenuContent>
     final size = MediaQuery.of(context).size;
     final isMobile = ResponsiveHelper.isMobile(context);
     final isDesktop = ResponsiveHelper.isDesktop(context);
+    final colors = Theme.of(context).colorScheme;
 
     return Scaffold(
-      backgroundColor: const Color(0xFF0a0a1a),
+      backgroundColor: colors.surface,
       extendBody: false,
       body: Stack(
         children: [
@@ -245,20 +261,20 @@ class _MainMenuContentState extends State<_MainMenuContent>
             right: 0,
             height: isDesktop ? size.height * 0.5 : size.height * 0.42,
             child: Consumer(
-            builder: (context, ref, _) {
-              final themeSettings = ref.watch(themePreferenceProvider);
-              return MeditationSceneWidget(
-                breathPhase: BreathPhase.idle,
-                pose: ZenoPose.sitting,
-                environment: themeSettings.environment,
-                timeOfDay: themeSettings.timeOfDay,
-                instruction: '',
-                isActive: true,
-                height: isDesktop ? size.height * 0.5 : size.height * 0.42,
-                teacher: ref.watch(teacherPreferenceProvider),
-              );
-            },
-          ),
+              builder: (context, ref, _) {
+                final themeSettings = ref.watch(themePreferenceProvider);
+                return MeditationSceneWidget(
+                  breathPhase: BreathPhase.idle,
+                  pose: ZenoPose.sitting,
+                  environment: themeSettings.environment,
+                  timeOfDay: themeSettings.timeOfDay,
+                  instruction: '',
+                  isActive: true,
+                  height: isDesktop ? size.height * 0.5 : size.height * 0.42,
+                  teacher: ref.watch(teacherPreferenceProvider),
+                );
+              },
+            ),
           ),
 
           // ── Gradient fade from scene to content ────────────────────────────
@@ -268,11 +284,11 @@ class _MainMenuContentState extends State<_MainMenuContent>
             right: 0,
             height: size.height * 0.16,
             child: Container(
-              decoration: const BoxDecoration(
+              decoration: BoxDecoration(
                 gradient: LinearGradient(
                   begin: Alignment.topCenter,
                   end: Alignment.bottomCenter,
-                  colors: [Colors.transparent, Color(0xFF0a0a1a)],
+                  colors: [Colors.transparent, colors.surface],
                 ),
               ),
             ),
@@ -285,7 +301,11 @@ class _MainMenuContentState extends State<_MainMenuContent>
               physics: const BouncingScrollPhysics(),
               slivers: [
                 // Space for the hero scene
-                SliverToBoxAdapter(child: SizedBox(height: isDesktop ? size.height * 0.38 : size.height * 0.30)),
+                SliverToBoxAdapter(
+                    child: SizedBox(
+                        height: isDesktop
+                            ? size.height * 0.38
+                            : size.height * 0.30)),
 
                 // ── Greeting + stats card ──────────────────────────────────
                 SliverToBoxAdapter(child: _buildGreetingCard(user)),
@@ -318,8 +338,14 @@ class _MainMenuContentState extends State<_MainMenuContent>
         ],
       ),
 
-      // ── Bottom nav bar ─────────────────────────────────────────────────────
-      bottomNavigationBar: _buildBottomNav(),
+      // ── Bottom nav bar — banner sits above it, zero layout impact when empty ──
+      bottomNavigationBar: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          const AdBannerWidget(),
+          _buildBottomNav(),
+        ],
+      ),
     );
   }
 
@@ -330,13 +356,13 @@ class _MainMenuContentState extends State<_MainMenuContent>
       child: Row(
         children: [
           // App name
-          const Text(
-            'Mindfulness Garden',
+          Text(
+            AppCopy.of(context, 'Mindfulness Garden'),
             style: TextStyle(
-              color: Colors.white,
+              color: colors.onSurface,
               fontSize: 16,
               fontWeight: FontWeight.w700,
-              shadows: [Shadow(color: Colors.black54, blurRadius: 8)],
+              shadows: [const Shadow(color: Colors.black54, blurRadius: 8)],
             ),
           ),
           const Spacer(),
@@ -360,9 +386,9 @@ class _MainMenuContentState extends State<_MainMenuContent>
           decoration: BoxDecoration(
             color: Colors.black.withAlpha(100),
             shape: BoxShape.circle,
-            border: Border.all(color: Colors.white.withAlpha(40)),
+            border: Border.all(color: colors.onSurface.withAlpha(40)),
           ),
-          child: Icon(icon, color: Colors.white, size: 18),
+          child: Icon(icon, color: colors.onSurface, size: 18),
         ),
       );
 
@@ -387,11 +413,12 @@ class _MainMenuContentState extends State<_MainMenuContent>
           ResponsiveHelper.getResponsivePadding(context, mobilePadding: 20),
         ),
         decoration: BoxDecoration(
-          color: Colors.white.withAlpha(12),
+          color: colors.onSurface.withAlpha(12),
           borderRadius: BorderRadius.circular(
-            ResponsiveHelper.getResponsiveBorderRadius(context, mobileRadius: 24),
+            ResponsiveHelper.getResponsiveBorderRadius(context,
+                mobileRadius: 24),
           ),
-          border: Border.all(color: Colors.white.withAlpha(25)),
+          border: Border.all(color: colors.onSurface.withAlpha(25)),
           boxShadow: [
             BoxShadow(color: Colors.black.withAlpha(60), blurRadius: 20),
           ],
@@ -404,55 +431,82 @@ class _MainMenuContentState extends State<_MainMenuContent>
                 GestureDetector(
                   onTap: () => context.push('/profile'),
                   child: Container(
-                    width: ResponsiveHelper.getResponsiveContainerWidth(context, mobileWidth: 56, tabletWidth: 64, desktopWidth: 72),
-                    height: ResponsiveHelper.getResponsiveContainerHeight(context, mobileHeight: 56, tabletHeight: 64, desktopHeight: 72),
+                    width: ResponsiveHelper.getResponsiveContainerWidth(context,
+                        mobileWidth: 56, tabletWidth: 64, desktopWidth: 72),
+                    height: ResponsiveHelper.getResponsiveContainerHeight(
+                        context,
+                        mobileHeight: 56,
+                        tabletHeight: 64,
+                        desktopHeight: 72),
                     decoration: BoxDecoration(
-                      gradient: const LinearGradient(
-                        colors: [Color(0xFF9d4edd), Color(0xFF00b4d8)],
+                      gradient: LinearGradient(
+                        colors: [colors.primary, colors.secondary],
                       ),
                       shape: BoxShape.circle,
                       boxShadow: [
                         BoxShadow(
-                          color: const Color(0xFF9d4edd).withAlpha(100),
+                          color: colors.primary.withAlpha(100),
                           blurRadius: 12,
                           spreadRadius: 2,
                         ),
                       ],
                     ),
                     child: Center(
-                        child:
-                            Text(avatar, style: TextStyle(fontSize: ResponsiveHelper.getResponsiveFontSize(context, mobileSize: 26, tabletSize: 30, desktopSize: 34)))),
+                        child: Text(avatar,
+                            style: TextStyle(
+                                fontSize:
+                                    ResponsiveHelper.getResponsiveFontSize(
+                                        context,
+                                        mobileSize: 26,
+                                        tabletSize: 30,
+                                        desktopSize: 34)))),
                   ),
                 ),
-                SizedBox(width: ResponsiveHelper.getResponsiveSpacing(context, mobileSpacing: 14)),
+                SizedBox(
+                    width: ResponsiveHelper.getResponsiveSpacing(context,
+                        mobileSpacing: 14)),
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(_greeting(),
                           style: TextStyle(
-                              color: Colors.white.withAlpha(160),
-                              fontSize: ResponsiveHelper.getResponsiveFontSize(context, mobileSize: 13, tabletSize: 15, desktopSize: 17))),
-                      SizedBox(height: ResponsiveHelper.getResponsiveSpacing(context, mobileSpacing: 2)),
-                      Text(user.currentUser?.name ?? 'Mindful Gardener',
+                              color: colors.onSurface.withAlpha(160),
+                              fontSize: ResponsiveHelper.getResponsiveFontSize(
+                                  context,
+                                  mobileSize: 13,
+                                  tabletSize: 15,
+                                  desktopSize: 17))),
+                      SizedBox(
+                          height: ResponsiveHelper.getResponsiveSpacing(context,
+                              mobileSpacing: 2)),
+                      Text(
+                          user.currentUser?.name ??
+                              AppCopy.of(context, 'Mindful Gardener'),
                           style: TextStyle(
-                              color: Colors.white,
-                              fontSize: ResponsiveHelper.getResponsiveFontSize(context, mobileSize: 20, tabletSize: 24, desktopSize: 28),
+                              color: colors.onSurface,
+                              fontSize: ResponsiveHelper.getResponsiveFontSize(
+                                  context,
+                                  mobileSize: 20,
+                                  tabletSize: 24,
+                                  desktopSize: 28),
                               fontWeight: FontWeight.w800)),
                     ],
                   ),
                 ),
                 // Streak badge
                 Container(
-                  padding:
-                      EdgeInsets.symmetric(
-                        horizontal: ResponsiveHelper.getResponsivePadding(context, mobilePadding: 12),
-                        vertical: ResponsiveHelper.getResponsivePadding(context, mobilePadding: 8),
-                      ),
+                  padding: EdgeInsets.symmetric(
+                    horizontal: ResponsiveHelper.getResponsivePadding(context,
+                        mobilePadding: 12),
+                    vertical: ResponsiveHelper.getResponsivePadding(context,
+                        mobilePadding: 8),
+                  ),
                   decoration: BoxDecoration(
                     color: Colors.orange.withAlpha(40),
                     borderRadius: BorderRadius.circular(
-                      ResponsiveHelper.getResponsiveBorderRadius(context, mobileRadius: 16),
+                      ResponsiveHelper.getResponsiveBorderRadius(context,
+                          mobileRadius: 16),
                     ),
                     border: Border.all(color: Colors.orange.withAlpha(80)),
                   ),
@@ -460,12 +514,20 @@ class _MainMenuContentState extends State<_MainMenuContent>
                     mainAxisSize: MainAxisSize.min,
                     children: [
                       Icon(Icons.local_fire_department,
-                          color: Colors.orange, size: ResponsiveHelper.getResponsiveIconSize(context, mobileSize: 18, tabletSize: 20, desktopSize: 22)),
-                      SizedBox(width: ResponsiveHelper.getResponsiveSpacing(context, mobileSpacing: 4)),
+                          color: Colors.orange,
+                          size: ResponsiveHelper.getResponsiveIconSize(context,
+                              mobileSize: 18, tabletSize: 20, desktopSize: 22)),
+                      SizedBox(
+                          width: ResponsiveHelper.getResponsiveSpacing(context,
+                              mobileSpacing: 4)),
                       Text('${user.currentUser?.currentStreak ?? 0}',
                           style: TextStyle(
-                              color: Colors.white,
-                              fontSize: ResponsiveHelper.getResponsiveFontSize(context, mobileSize: 16, tabletSize: 18, desktopSize: 20),
+                              color: colors.onSurface,
+                              fontSize: ResponsiveHelper.getResponsiveFontSize(
+                                  context,
+                                  mobileSize: 16,
+                                  tabletSize: 18,
+                                  desktopSize: 20),
                               fontWeight: FontWeight.w800)),
                     ],
                   ),
@@ -473,18 +535,25 @@ class _MainMenuContentState extends State<_MainMenuContent>
               ],
             ),
 
-            SizedBox(height: ResponsiveHelper.getResponsiveSpacing(context, mobileSpacing: 16)),
+            SizedBox(
+                height: ResponsiveHelper.getResponsiveSpacing(context,
+                    mobileSpacing: 16)),
 
             // Stats strip
             Row(
               children: [
-                _statChip(
-                    '${sessions.length}', 'Sessions', const Color(0xFF9d4edd)),
-                SizedBox(width: ResponsiveHelper.getResponsiveSpacing(context, mobileSpacing: 10)),
-                _statChip('$totalMin', 'Minutes', const Color(0xFF00b4d8)),
-                SizedBox(width: ResponsiveHelper.getResponsiveSpacing(context, mobileSpacing: 10)),
-                _statChip('${user.currentUser?.gardenLevel ?? 1}', 'Garden Lv',
-                    const Color(0xFF38b000)),
+                _statChip('${sessions.length}', AppCopy.of(context, 'Sessions'),
+                    const Color(0xFF9d4edd)),
+                SizedBox(
+                    width: ResponsiveHelper.getResponsiveSpacing(context,
+                        mobileSpacing: 10)),
+                _statChip('$totalMin', AppCopy.of(context, 'Minutes'),
+                    const Color(0xFF00b4d8)),
+                SizedBox(
+                    width: ResponsiveHelper.getResponsiveSpacing(context,
+                        mobileSpacing: 10)),
+                _statChip('${user.currentUser?.gardenLevel ?? 1}',
+                    AppCopy.of(context, 'Garden Lv'), const Color(0xFF38b000)),
               ],
             ),
           ],
@@ -508,7 +577,7 @@ class _MainMenuContentState extends State<_MainMenuContent>
                       color: color, fontSize: 18, fontWeight: FontWeight.w800)),
               Text(label,
                   style: TextStyle(
-                      color: Colors.white.withAlpha(140), fontSize: 10)),
+                      color: colors.onSurface.withAlpha(140), fontSize: 10)),
             ],
           ),
         ),
@@ -517,7 +586,7 @@ class _MainMenuContentState extends State<_MainMenuContent>
   // ── Featured CTA ─────────────────────────────────────────────────────────────
   Widget _buildFeaturedCTA() {
     final isDesktop = ResponsiveHelper.isDesktop(context);
-    
+
     return Padding(
       padding: EdgeInsets.fromLTRB(
         ResponsiveHelper.getResponsivePadding(context, mobilePadding: 16),
@@ -531,7 +600,8 @@ class _MainMenuContentState extends State<_MainMenuContent>
           _navigate('/breathing/zeno');
         },
         child: Container(
-          height: ResponsiveHelper.getResponsiveContainerHeight(context, mobileHeight: 90, tabletHeight: 100, desktopHeight: 110),
+          height: ResponsiveHelper.getResponsiveContainerHeight(context,
+              mobileHeight: 90, tabletHeight: 100, desktopHeight: 110),
           decoration: BoxDecoration(
             gradient: const LinearGradient(
               colors: [Color(0xFF9d4edd), Color(0xFF00b4d8)],
@@ -539,7 +609,8 @@ class _MainMenuContentState extends State<_MainMenuContent>
               end: Alignment.centerRight,
             ),
             borderRadius: BorderRadius.circular(
-              ResponsiveHelper.getResponsiveBorderRadius(context, mobileRadius: 22),
+              ResponsiveHelper.getResponsiveBorderRadius(context,
+                  mobileRadius: 22),
             ),
             boxShadow: [
               BoxShadow(
@@ -561,7 +632,7 @@ class _MainMenuContentState extends State<_MainMenuContent>
                   height: 100,
                   decoration: BoxDecoration(
                     shape: BoxShape.circle,
-                    color: Colors.white.withAlpha(15),
+                    color: colors.onSurface.withAlpha(15),
                   ),
                 ),
               ),
@@ -573,46 +644,74 @@ class _MainMenuContentState extends State<_MainMenuContent>
                   height: 80,
                   decoration: BoxDecoration(
                     shape: BoxShape.circle,
-                    color: Colors.white.withAlpha(10),
+                    color: colors.onSurface.withAlpha(10),
                   ),
                 ),
               ),
               // Content
               Padding(
                 padding: EdgeInsets.symmetric(
-                  horizontal: ResponsiveHelper.getResponsivePadding(context, mobilePadding: 22),
+                  horizontal: ResponsiveHelper.getResponsivePadding(context,
+                      mobilePadding: 22),
                 ),
                 child: Row(
                   children: [
                     Container(
-                      width: ResponsiveHelper.getResponsiveContainerWidth(context, mobileWidth: 52, tabletWidth: 60, desktopWidth: 68),
-                      height: ResponsiveHelper.getResponsiveContainerHeight(context, mobileHeight: 52, tabletHeight: 60, desktopHeight: 68),
+                      width: ResponsiveHelper.getResponsiveContainerWidth(
+                          context,
+                          mobileWidth: 52,
+                          tabletWidth: 60,
+                          desktopWidth: 68),
+                      height: ResponsiveHelper.getResponsiveContainerHeight(
+                          context,
+                          mobileHeight: 52,
+                          tabletHeight: 60,
+                          desktopHeight: 68),
                       decoration: BoxDecoration(
-                        color: Colors.white.withAlpha(30),
+                        color: colors.onSurface.withAlpha(30),
                         shape: BoxShape.circle,
                       ),
                       child: Icon(Icons.play_arrow_rounded,
-                          color: Colors.white, size: ResponsiveHelper.getResponsiveIconSize(context, mobileSize: 30, tabletSize: 34, desktopSize: 38)),
+                          color: colors.onSurface,
+                          size: ResponsiveHelper.getResponsiveIconSize(context,
+                              mobileSize: 30, tabletSize: 34, desktopSize: 38)),
                     ),
-                    SizedBox(width: ResponsiveHelper.getResponsiveSpacing(context, mobileSpacing: 16)),
+                    SizedBox(
+                        width: ResponsiveHelper.getResponsiveSpacing(context,
+                            mobileSpacing: 16)),
                     Expanded(
                       child: Column(
                         mainAxisAlignment: MainAxisAlignment.center,
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Text('Begin Today',
+                          Text(AppCopy.of(context, 'Begin Today'),
                               style: TextStyle(
-                                  color: Colors.white,
-                                  fontSize: ResponsiveHelper.getResponsiveFontSize(context, mobileSize: 20, tabletSize: 24, desktopSize: 28),
+                                  color: colors.onSurface,
+                                  fontSize:
+                                      ResponsiveHelper.getResponsiveFontSize(
+                                          context,
+                                          mobileSize: 20,
+                                          tabletSize: 24,
+                                          desktopSize: 28),
                                   fontWeight: FontWeight.w800)),
-                          Text('Start a 2-min Zeno breathing session',
+                          Text(
+                              AppCopy.of(context,
+                                  'Start a 2-min Zeno breathing session'),
                               style: TextStyle(
-                                  color: Colors.white70, fontSize: ResponsiveHelper.getResponsiveFontSize(context, mobileSize: 12, tabletSize: 14, desktopSize: 16))),
+                                  color: colors.onSurface.withOpacity(0.7),
+                                  fontSize:
+                                      ResponsiveHelper.getResponsiveFontSize(
+                                          context,
+                                          mobileSize: 12,
+                                          tabletSize: 14,
+                                          desktopSize: 16))),
                         ],
                       ),
                     ),
                     Icon(Icons.arrow_forward_ios,
-                        color: Colors.white70, size: ResponsiveHelper.getResponsiveIconSize(context, mobileSize: 16, tabletSize: 18, desktopSize: 20)),
+                        color: colors.onSurface.withOpacity(0.7),
+                        size: ResponsiveHelper.getResponsiveIconSize(context,
+                            mobileSize: 16, tabletSize: 18, desktopSize: 20)),
                   ],
                 ),
               ),
@@ -634,12 +733,18 @@ class _MainMenuContentState extends State<_MainMenuContent>
       ),
       child: Row(
         children: [
-          Text(row.emoji, style: TextStyle(fontSize: ResponsiveHelper.getResponsiveFontSize(context, mobileSize: 18, tabletSize: 20, desktopSize: 22))),
-          SizedBox(width: ResponsiveHelper.getResponsiveSpacing(context, mobileSpacing: 8)),
-          Text(row.label,
+          Text(row.emoji,
+              style: TextStyle(
+                  fontSize: ResponsiveHelper.getResponsiveFontSize(context,
+                      mobileSize: 18, tabletSize: 20, desktopSize: 22))),
+          SizedBox(
+              width: ResponsiveHelper.getResponsiveSpacing(context,
+                  mobileSpacing: 8)),
+          Text(AppCopy.of(context, row.label),
               style: TextStyle(
                 color: row.color,
-                fontSize: ResponsiveHelper.getResponsiveFontSize(context, mobileSize: 12, tabletSize: 14, desktopSize: 16),
+                fontSize: ResponsiveHelper.getResponsiveFontSize(context,
+                    mobileSize: 12, tabletSize: 14, desktopSize: 16),
                 fontWeight: FontWeight.w700,
                 letterSpacing: 1.8,
               )),
@@ -657,7 +762,8 @@ class _MainMenuContentState extends State<_MainMenuContent>
   // ── Feature row (horizontal scroll) ─────────────────────────────────────────
   Widget _buildFeatureRow(_FeatureRow row) {
     return SizedBox(
-      height: ResponsiveHelper.getResponsiveContainerHeight(context, mobileHeight: 120, tabletHeight: 140, desktopHeight: 160),
+      height: ResponsiveHelper.getResponsiveContainerHeight(context,
+          mobileHeight: 120, tabletHeight: 140, desktopHeight: 160),
       child: ListView.separated(
         scrollDirection: Axis.horizontal,
         padding: EdgeInsets.fromLTRB(
@@ -667,7 +773,9 @@ class _MainMenuContentState extends State<_MainMenuContent>
           ResponsiveHelper.getResponsivePadding(context, mobilePadding: 12),
         ),
         itemCount: row.items.length,
-        separatorBuilder: (_, __) => SizedBox(width: ResponsiveHelper.getResponsiveSpacing(context, mobileSpacing: 12)),
+        separatorBuilder: (_, __) => SizedBox(
+            width: ResponsiveHelper.getResponsiveSpacing(context,
+                mobileSpacing: 12)),
         itemBuilder: (_, i) => _buildFeatureCard(row.items[i]),
       ),
     );
@@ -677,11 +785,13 @@ class _MainMenuContentState extends State<_MainMenuContent>
     return GestureDetector(
       onTap: () => _navigate(item.route),
       child: Container(
-        width: ResponsiveHelper.getResponsiveContainerWidth(context, mobileWidth: 110, tabletWidth: 130, desktopWidth: 150),
+        width: ResponsiveHelper.getResponsiveContainerWidth(context,
+            mobileWidth: 110, tabletWidth: 130, desktopWidth: 150),
         decoration: BoxDecoration(
-          color: Colors.white.withAlpha(8),
+          color: colors.onSurface.withAlpha(8),
           borderRadius: BorderRadius.circular(
-            ResponsiveHelper.getResponsiveBorderRadius(context, mobileRadius: 18),
+            ResponsiveHelper.getResponsiveBorderRadius(context,
+                mobileRadius: 18),
           ),
           border: Border.all(color: item.color.withAlpha(50)),
           boxShadow: [
@@ -697,8 +807,10 @@ class _MainMenuContentState extends State<_MainMenuContent>
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Container(
-              width: ResponsiveHelper.getResponsiveContainerWidth(context, mobileWidth: 46, tabletWidth: 54, desktopWidth: 62),
-              height: ResponsiveHelper.getResponsiveContainerHeight(context, mobileHeight: 46, tabletHeight: 54, desktopHeight: 62),
+              width: ResponsiveHelper.getResponsiveContainerWidth(context,
+                  mobileWidth: 46, tabletWidth: 54, desktopWidth: 62),
+              height: ResponsiveHelper.getResponsiveContainerHeight(context,
+                  mobileHeight: 46, tabletHeight: 54, desktopHeight: 62),
               decoration: BoxDecoration(
                 gradient: LinearGradient(
                   colors: [item.color.withAlpha(180), item.color.withAlpha(80)],
@@ -714,25 +826,37 @@ class _MainMenuContentState extends State<_MainMenuContent>
                   ),
                 ],
               ),
-              child: Icon(item.icon, color: Colors.white, size: ResponsiveHelper.getResponsiveIconSize(context, mobileSize: 22, tabletSize: 26, desktopSize: 30)),
+              child: Icon(item.icon,
+                  color: colors.onSurface,
+                  size: ResponsiveHelper.getResponsiveIconSize(context,
+                      mobileSize: 22, tabletSize: 26, desktopSize: 30)),
             ),
-            SizedBox(height: ResponsiveHelper.getResponsiveSpacing(context, mobileSpacing: 6)),
+            SizedBox(
+                height: ResponsiveHelper.getResponsiveSpacing(context,
+                    mobileSpacing: 6)),
             Padding(
-              padding: EdgeInsets.symmetric(horizontal: ResponsiveHelper.getResponsivePadding(context, mobilePadding: 6)),
-              child: Text(item.title,
+              padding: EdgeInsets.symmetric(
+                  horizontal: ResponsiveHelper.getResponsivePadding(context,
+                      mobilePadding: 6)),
+              child: Text(AppCopy.of(context, item.title),
                   textAlign: TextAlign.center,
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,
                   style: TextStyle(
-                      color: Colors.white,
-                      fontSize: ResponsiveHelper.getResponsiveFontSize(context, mobileSize: 11, tabletSize: 13, desktopSize: 15),
+                      color: colors.onSurface,
+                      fontSize: ResponsiveHelper.getResponsiveFontSize(context,
+                          mobileSize: 11, tabletSize: 13, desktopSize: 15),
                       fontWeight: FontWeight.w600,
                       height: 1.1)),
             ),
-            SizedBox(height: ResponsiveHelper.getResponsiveSpacing(context, mobileSpacing: 2)),
-            Text(item.subtitle,
-                style:
-                    TextStyle(color: item.color.withAlpha(200), fontSize: ResponsiveHelper.getResponsiveFontSize(context, mobileSize: 9, tabletSize: 10, desktopSize: 11))),
+            SizedBox(
+                height: ResponsiveHelper.getResponsiveSpacing(context,
+                    mobileSpacing: 2)),
+            Text(AppCopy.of(context, item.subtitle),
+                style: TextStyle(
+                    color: item.color.withAlpha(200),
+                    fontSize: ResponsiveHelper.getResponsiveFontSize(context,
+                        mobileSize: 9, tabletSize: 10, desktopSize: 11))),
           ],
         ),
       ),
@@ -752,7 +876,7 @@ class _MainMenuContentState extends State<_MainMenuContent>
     return Container(
       decoration: BoxDecoration(
         color: const Color(0xFF0d0d1f),
-        border: Border(top: BorderSide(color: Colors.white.withAlpha(20))),
+        border: Border(top: BorderSide(color: colors.onSurface.withAlpha(20))),
         boxShadow: [
           BoxShadow(color: Colors.black.withAlpha(80), blurRadius: 20),
         ],
@@ -761,7 +885,9 @@ class _MainMenuContentState extends State<_MainMenuContent>
       child: SafeArea(
         top: false,
         child: Padding(
-          padding: EdgeInsets.symmetric(vertical: ResponsiveHelper.getResponsivePadding(context, mobilePadding: 8)),
+          padding: EdgeInsets.symmetric(
+              vertical: ResponsiveHelper.getResponsivePadding(context,
+                  mobilePadding: 8)),
           child: Row(
             children: List.generate(items.length, (i) {
               final selected = _selectedNav == i;
@@ -778,34 +904,70 @@ class _MainMenuContentState extends State<_MainMenuContent>
                     children: [
                       AnimatedContainer(
                         duration: const Duration(milliseconds: 200),
-                        width: selected ? ResponsiveHelper.getResponsiveContainerWidth(context, mobileWidth: 38, tabletWidth: 44, desktopWidth: 50) : ResponsiveHelper.getResponsiveContainerWidth(context, mobileWidth: 32, tabletWidth: 38, desktopWidth: 44),
-                        height: selected ? ResponsiveHelper.getResponsiveContainerHeight(context, mobileHeight: 38, tabletHeight: 44, desktopHeight: 50) : ResponsiveHelper.getResponsiveContainerHeight(context, mobileHeight: 32, tabletHeight: 38, desktopHeight: 44),
+                        width: selected
+                            ? ResponsiveHelper.getResponsiveContainerWidth(
+                                context,
+                                mobileWidth: 38,
+                                tabletWidth: 44,
+                                desktopWidth: 50)
+                            : ResponsiveHelper.getResponsiveContainerWidth(
+                                context,
+                                mobileWidth: 32,
+                                tabletWidth: 38,
+                                desktopWidth: 44),
+                        height: selected
+                            ? ResponsiveHelper.getResponsiveContainerHeight(
+                                context,
+                                mobileHeight: 38,
+                                tabletHeight: 44,
+                                desktopHeight: 50)
+                            : ResponsiveHelper.getResponsiveContainerHeight(
+                                context,
+                                mobileHeight: 32,
+                                tabletHeight: 38,
+                                desktopHeight: 44),
                         decoration: BoxDecoration(
                           color: selected
                               ? const Color(0xFF9d4edd).withAlpha(40)
                               : Colors.transparent,
                           borderRadius: BorderRadius.circular(
-                            ResponsiveHelper.getResponsiveBorderRadius(context, mobileRadius: 12),
+                            ResponsiveHelper.getResponsiveBorderRadius(context,
+                                mobileRadius: 12),
                           ),
                         ),
                         child: Icon(
                           items[i].icon,
                           color: selected
                               ? const Color(0xFF9d4edd)
-                              : Colors.white.withAlpha(100),
-                          size: selected ? ResponsiveHelper.getResponsiveIconSize(context, mobileSize: 20, tabletSize: 24, desktopSize: 28) : ResponsiveHelper.getResponsiveIconSize(context, mobileSize: 18, tabletSize: 22, desktopSize: 26),
+                              : colors.onSurface.withAlpha(100),
+                          size: selected
+                              ? ResponsiveHelper.getResponsiveIconSize(context,
+                                  mobileSize: 20,
+                                  tabletSize: 24,
+                                  desktopSize: 28)
+                              : ResponsiveHelper.getResponsiveIconSize(context,
+                                  mobileSize: 18,
+                                  tabletSize: 22,
+                                  desktopSize: 26),
                         ),
                       ),
-                      SizedBox(height: ResponsiveHelper.getResponsiveSpacing(context, mobileSpacing: 4)),
+                      SizedBox(
+                          height: ResponsiveHelper.getResponsiveSpacing(context,
+                              mobileSpacing: 4)),
                       Flexible(
                         child: FittedBox(
                           fit: BoxFit.scaleDown,
-                          child: Text(items[i].label,
+                          child: Text(AppCopy.of(context, items[i].label),
                               style: TextStyle(
                                 color: selected
                                     ? const Color(0xFF9d4edd)
-                                    : Colors.white.withAlpha(80),
-                                fontSize: ResponsiveHelper.getResponsiveFontSize(context, mobileSize: 10, tabletSize: 12, desktopSize: 14),
+                                    : colors.onSurface.withAlpha(80),
+                                fontSize:
+                                    ResponsiveHelper.getResponsiveFontSize(
+                                        context,
+                                        mobileSize: 10,
+                                        tabletSize: 12,
+                                        desktopSize: 14),
                                 fontWeight: selected
                                     ? FontWeight.w700
                                     : FontWeight.normal,

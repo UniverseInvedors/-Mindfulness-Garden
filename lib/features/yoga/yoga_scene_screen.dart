@@ -3,11 +3,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:pranaverse/core/localization/app_copy.dart';
 import 'package:pranaverse/core/widgets/meditation_scene_widget.dart';
 import 'package:pranaverse/core/widgets/character/teacher_personality.dart';
 import 'package:pranaverse/core/services/voice_service.dart';
-import 'package:pranaverse/core/services/localization_service.dart';
-import 'package:pranaverse/core/providers/app_settings_provider.dart';
 import 'package:pranaverse/l10n/app_localizations.dart';
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -173,12 +172,15 @@ class _YogaSceneScreenState extends ConsumerState<YogaSceneScreen>
   void _startSession() {
     HapticFeedback.mediumImpact();
     VoiceService().sessionStart('yoga');
+    final themeSettings = ref.read(themePreferenceProvider);
     setState(() {
       _isActive = true;
       _isPaused = false;
       _poseIndex = 0;
       _totalSeconds = 0;
       _holdSecondsLeft = _sequence[0].holdSec;
+      _environment = themeSettings.environment;
+      _timeOfDay = themeSettings.timeOfDay;
     });
     _startBreathCycle();
     _startPoseCountdown();
@@ -301,17 +303,17 @@ class _YogaSceneScreenState extends ConsumerState<YogaSceneScreen>
   String get _breathLabel {
     switch (_breathPhase) {
       case BreathPhase.inhale:
-        return 'Inhale';
+        return AppCopy.of(context, 'Inhale');
       case BreathPhase.hold:
-        return 'Hold';
+        return AppCopy.of(context, 'Hold');
       case BreathPhase.exhale:
-        return 'Exhale';
+        return AppCopy.of(context, 'Exhale');
       case BreathPhase.rest:
-        return 'Paused';
+        return AppCopy.of(context, 'Paused');
       case BreathPhase.complete:
-        return 'Complete ✓';
+        return AppCopy.of(context, 'Complete');
       case BreathPhase.idle:
-        return 'Ready';
+        return AppCopy.of(context, 'Ready');
     }
   }
 
@@ -333,6 +335,16 @@ class _YogaSceneScreenState extends ConsumerState<YogaSceneScreen>
   }
 
   _PoseStep get _currentStep => _sequence[_poseIndex];
+
+  Future<void> _selectEnvironment(SceneEnvironment environment) async {
+    setState(() => _environment = environment);
+    await ref.read(themePreferenceProvider.notifier).setEnvironment(environment);
+  }
+
+  Future<void> _selectTimeOfDay(SceneTimeOfDay timeOfDay) async {
+    setState(() => _timeOfDay = timeOfDay);
+    await ref.read(themePreferenceProvider.notifier).setTimeOfDay(timeOfDay);
+  }
 
   // ── Build ──────────────────────────────────────────────────────────────────
 
@@ -356,11 +368,12 @@ class _YogaSceneScreenState extends ConsumerState<YogaSceneScreen>
                 return MeditationSceneWidget(
                   breathPhase: _breathPhase,
                   pose: _currentStep.pose,
-                  environment: _isActive ? _environment : themeSettings.environment,
+                  environment:
+                      _isActive ? _environment : themeSettings.environment,
                   timeOfDay: _isActive ? _timeOfDay : themeSettings.timeOfDay,
                   instruction: _isActive
-                      ? _currentStep.instruction
-                      : 'Choose your environment',
+                      ? AppCopy.of(context, _currentStep.instruction)
+                      : AppCopy.of(context, 'Choose your environment'),
                   isActive: _isActive && !_isPaused,
                   height: double.infinity,
                   teacher: ref.watch(teacherPreferenceProvider),
@@ -396,6 +409,7 @@ class _YogaSceneScreenState extends ConsumerState<YogaSceneScreen>
   }
 
   Widget _buildHeader() {
+    final colors = Theme.of(context).colorScheme;
     return Padding(
       padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
       child: Row(
@@ -409,25 +423,27 @@ class _YogaSceneScreenState extends ConsumerState<YogaSceneScreen>
               width: 40,
               height: 40,
               decoration: BoxDecoration(
-                color: Colors.white.withAlpha(20),
+                color: colors.onSurface.withOpacity(0.16),
                 shape: BoxShape.circle,
               ),
-              child:
-                  const Icon(Icons.arrow_back, color: Colors.white, size: 20),
+              child: Icon(Icons.arrow_back,
+                  color: colors.onSurface, size: 20),
             ),
           ),
           const SizedBox(width: 14),
-          const Expanded(
+          Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text('Yoga with Zeno',
+                Text(AppCopy.of(context, 'Yoga with Zeno'),
                     style: TextStyle(
-                        color: Colors.white,
+                        color: colors.onSurface,
                         fontSize: 20,
                         fontWeight: FontWeight.w800)),
-                Text('2.5D immersive experience',
-                    style: TextStyle(color: Colors.white54, fontSize: 12)),
+                Text(AppCopy.of(context, '2.5D immersive experience'),
+                    style: TextStyle(
+                        color: colors.onSurface.withOpacity(0.65),
+                        fontSize: 12)),
               ],
             ),
           ),
@@ -435,13 +451,13 @@ class _YogaSceneScreenState extends ConsumerState<YogaSceneScreen>
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
               decoration: BoxDecoration(
-                color: Colors.white.withAlpha(15),
+                color: colors.onSurface.withOpacity(0.15),
                 borderRadius: BorderRadius.circular(20),
               ),
               child: Text(
                 _formatTime(_totalSeconds),
-                style: const TextStyle(
-                    color: Colors.white,
+                style: TextStyle(
+                    color: colors.onSurface,
                     fontSize: 14,
                     fontWeight: FontWeight.w700,
                     fontFamily: 'RobotoMono'),
@@ -455,12 +471,16 @@ class _YogaSceneScreenState extends ConsumerState<YogaSceneScreen>
   // ── Setup panel (before session starts) ───────────────────────────────────
 
   Widget _buildSetupPanel() {
+    final themeSettings = ref.watch(themePreferenceProvider);
+    final selectedEnvironment = themeSettings.environment;
+    final selectedTimeOfDay = themeSettings.timeOfDay;
+
     return SingleChildScrollView(
       padding: const EdgeInsets.all(16),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          _sectionLabel('ENVIRONMENT'),
+          _sectionLabel(AppCopy.of(context, 'ENVIRONMENT')),
           const SizedBox(height: 10),
           SizedBox(
             height: 72,
@@ -470,20 +490,21 @@ class _YogaSceneScreenState extends ConsumerState<YogaSceneScreen>
               separatorBuilder: (_, __) => const SizedBox(width: 10),
               itemBuilder: (_, i) {
                 final opt = _environments[i];
-                final selected = opt.env == _environment;
+                final selected = opt.env == selectedEnvironment;
                 return GestureDetector(
-                  onTap: () => setState(() => _environment = opt.env),
+                  onTap: () => _selectEnvironment(opt.env),
                   child: AnimatedContainer(
                     duration: const Duration(milliseconds: 200),
                     width: 72,
                     decoration: BoxDecoration(
                       color: selected
                           ? opt.color.withAlpha(60)
-                          : Colors.white.withAlpha(10),
+                          : Theme.of(context).colorScheme.onSurface.withOpacity(0.10),
                       borderRadius: BorderRadius.circular(16),
                       border: Border.all(
-                        color:
-                            selected ? opt.color : Colors.white.withAlpha(30),
+                        color: selected
+                            ? opt.color
+                            : Theme.of(context).colorScheme.onSurface.withOpacity(0.30),
                         width: selected ? 2 : 1,
                       ),
                     ),
@@ -491,12 +512,16 @@ class _YogaSceneScreenState extends ConsumerState<YogaSceneScreen>
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
                         Icon(opt.icon,
-                            color: selected ? opt.color : Colors.white54,
+                            color: selected
+                                ? opt.color
+                                : Theme.of(context).colorScheme.onSurface.withOpacity(0.54),
                             size: 22),
                         const SizedBox(height: 4),
-                        Text(opt.label,
+                        Text(AppCopy.of(context, opt.label),
                             style: TextStyle(
-                              color: selected ? Colors.white : Colors.white54,
+                              color: selected
+                                  ? Theme.of(context).colorScheme.onSurface
+                                  : Theme.of(context).colorScheme.onSurface.withOpacity(0.54),
                               fontSize: 10,
                               fontWeight: selected
                                   ? FontWeight.w700
@@ -510,7 +535,7 @@ class _YogaSceneScreenState extends ConsumerState<YogaSceneScreen>
             ),
           ),
           const SizedBox(height: 16),
-          _sectionLabel('TIME OF DAY'),
+          _sectionLabel(AppCopy.of(context, 'TIME OF DAY')),
           const SizedBox(height: 10),
           SizedBox(
             height: 52,
@@ -520,9 +545,9 @@ class _YogaSceneScreenState extends ConsumerState<YogaSceneScreen>
               separatorBuilder: (_, __) => const SizedBox(width: 8),
               itemBuilder: (_, i) {
                 final opt = _times[i];
-                final selected = opt.time == _timeOfDay;
+                final selected = opt.time == selectedTimeOfDay;
                 return GestureDetector(
-                  onTap: () => setState(() => _timeOfDay = opt.time),
+                  onTap: () => _selectTimeOfDay(opt.time),
                   child: AnimatedContainer(
                     duration: const Duration(milliseconds: 200),
                     padding:
@@ -530,12 +555,12 @@ class _YogaSceneScreenState extends ConsumerState<YogaSceneScreen>
                     decoration: BoxDecoration(
                       color: selected
                           ? const Color(0xFF9d4edd).withAlpha(60)
-                          : Colors.white.withAlpha(10),
+                          : Theme.of(context).colorScheme.onSurface.withOpacity(0.10),
                       borderRadius: BorderRadius.circular(26),
                       border: Border.all(
                         color: selected
                             ? const Color(0xFF9d4edd)
-                            : Colors.white.withAlpha(30),
+                            : Theme.of(context).colorScheme.onSurface.withOpacity(0.30),
                         width: selected ? 2 : 1,
                       ),
                     ),
@@ -546,11 +571,13 @@ class _YogaSceneScreenState extends ConsumerState<YogaSceneScreen>
                             size: 14,
                             color: selected
                                 ? const Color(0xFF9d4edd)
-                                : Colors.white54),
+                                : Theme.of(context).colorScheme.onSurface.withOpacity(0.54)),
                         const SizedBox(width: 6),
-                        Text(opt.label,
+                        Text(AppCopy.of(context, opt.label),
                             style: TextStyle(
-                              color: selected ? Colors.white : Colors.white54,
+                              color: selected
+                                  ? Theme.of(context).colorScheme.onSurface
+                                  : Theme.of(context).colorScheme.onSurface.withOpacity(0.54),
                               fontSize: 12,
                               fontWeight: selected
                                   ? FontWeight.w700
@@ -564,7 +591,7 @@ class _YogaSceneScreenState extends ConsumerState<YogaSceneScreen>
             ),
           ),
           const SizedBox(height: 16),
-          _sectionLabel('TEACHER'),
+          _sectionLabel(AppCopy.of(context, 'TEACHER')),
           const SizedBox(height: 10),
           SizedBox(
             height: 72,
@@ -574,12 +601,15 @@ class _YogaSceneScreenState extends ConsumerState<YogaSceneScreen>
               separatorBuilder: (_, __) => const SizedBox(width: 10),
               itemBuilder: (_, i) {
                 final personality = TeacherPersonality.values[i];
-                final appearance = TeacherAppearance.personalities[personality]!;
+                final appearance =
+                    TeacherAppearance.personalities[personality]!;
                 final currentTeacher = ref.watch(teacherPreferenceProvider);
                 final selected = personality == currentTeacher;
                 return GestureDetector(
                   onTap: () async {
-                    await ref.read(teacherPreferenceProvider.notifier).setTeacher(personality);
+                    await ref
+                        .read(teacherPreferenceProvider.notifier)
+                        .setTeacher(personality);
                   },
                   child: AnimatedContainer(
                     duration: const Duration(milliseconds: 200),
@@ -587,12 +617,12 @@ class _YogaSceneScreenState extends ConsumerState<YogaSceneScreen>
                     decoration: BoxDecoration(
                       color: selected
                           ? appearance.auraPrimary.withAlpha(60)
-                          : Colors.white.withAlpha(10),
+                          : Theme.of(context).colorScheme.onSurface.withOpacity(0.10),
                       borderRadius: BorderRadius.circular(16),
                       border: Border.all(
                         color: selected
                             ? appearance.auraPrimary
-                            : Colors.white.withAlpha(30),
+                            : Theme.of(context).colorScheme.onSurface.withOpacity(0.30),
                         width: selected ? 2 : 1,
                       ),
                     ),
@@ -601,18 +631,21 @@ class _YogaSceneScreenState extends ConsumerState<YogaSceneScreen>
                       children: [
                         Icon(
                           _getTeacherIcon(personality),
-                          color: selected ? appearance.auraPrimary : Colors.white54,
+                          color: selected
+                              ? appearance.auraPrimary
+                              : Theme.of(context).colorScheme.onSurface.withOpacity(0.54),
                           size: 22,
                         ),
                         const SizedBox(height: 4),
                         Text(
-                          appearance.name,
+                          AppCopy.of(context, appearance.name),
                           style: TextStyle(
-                            color: selected ? Colors.white : Colors.white54,
+                            color: selected
+                                ? Theme.of(context).colorScheme.onSurface
+                                : Theme.of(context).colorScheme.onSurface.withOpacity(0.54),
                             fontSize: 10,
-                            fontWeight: selected
-                                ? FontWeight.w700
-                                : FontWeight.normal,
+                            fontWeight:
+                                selected ? FontWeight.w700 : FontWeight.normal,
                           ),
                         ),
                       ],
@@ -623,7 +656,7 @@ class _YogaSceneScreenState extends ConsumerState<YogaSceneScreen>
             ),
           ),
           const SizedBox(height: 20),
-          _sectionLabel('SEQUENCE PREVIEW'),
+          _sectionLabel(AppCopy.of(context, 'SEQUENCE PREVIEW')),
           const SizedBox(height: 10),
           SizedBox(
             height: 60,
@@ -637,21 +670,24 @@ class _YogaSceneScreenState extends ConsumerState<YogaSceneScreen>
                   padding:
                       const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                   decoration: BoxDecoration(
-                    color: Colors.white.withAlpha(8),
+                    color: Theme.of(context).colorScheme.onSurface.withOpacity(0.08),
                     borderRadius: BorderRadius.circular(12),
-                    border: Border.all(color: Colors.white.withAlpha(20)),
+                    border: Border.all(
+                        color:
+                            Theme.of(context).colorScheme.onSurface.withOpacity(0.20)),
                   ),
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      Text(step.name,
-                          style: const TextStyle(
-                              color: Colors.white,
+                      Text(AppCopy.of(context, step.name),
+                          style: TextStyle(
+                              color: Theme.of(context).colorScheme.onSurface,
                               fontSize: 11,
                               fontWeight: FontWeight.w600)),
                       Text('${step.holdSec}s',
-                          style: const TextStyle(
-                              color: Colors.white54, fontSize: 10)),
+                          style: TextStyle(
+                              color: Theme.of(context).colorScheme.onSurface.withOpacity(0.65),
+                              fontSize: 10)),
                     ],
                   ),
                 );
@@ -671,14 +707,15 @@ class _YogaSceneScreenState extends ConsumerState<YogaSceneScreen>
                 elevation: 8,
                 shadowColor: const Color(0xFF9d4edd).withAlpha(100),
               ),
-              child: const Row(
+              child: Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Icon(Icons.self_improvement, color: Colors.white, size: 22),
-                  SizedBox(width: 10),
-                  Text('Begin Yoga Session',
+                  const Icon(Icons.self_improvement,
+                      color: Colors.white, size: 22),
+                  const SizedBox(width: 10),
+                  Text(AppCopy.of(context, 'Begin Yoga Session'),
                       style: TextStyle(
-                          color: Colors.white,
+                          color: Theme.of(context).colorScheme.onSurface,
                           fontSize: 17,
                           fontWeight: FontWeight.w700)),
                 ],
@@ -690,8 +727,9 @@ class _YogaSceneScreenState extends ConsumerState<YogaSceneScreen>
             width: double.infinity,
             child: TextButton(
               onPressed: _showBenefits,
-              child: const Text('Benefits',
-                  style: TextStyle(color: Colors.white70)),
+              child: Text(AppCopy.of(context, 'Benefits'),
+                  style: TextStyle(
+                      color: Theme.of(context).colorScheme.onSurface.withOpacity(0.70))),
             ),
           ),
         ],
@@ -712,18 +750,24 @@ class _YogaSceneScreenState extends ConsumerState<YogaSceneScreen>
           padding: const EdgeInsets.all(18),
           child: Column(mainAxisSize: MainAxisSize.min, children: [
             Text(l10n.benefitsBreathing,
-                style: const TextStyle(
-                    color: Colors.white,
+                style: TextStyle(
+                    color: Theme.of(context).colorScheme.onSurface,
                     fontSize: 18,
                     fontWeight: FontWeight.w800)),
             const SizedBox(height: 12),
             Text(l10n.breathingBenefits,
-                style: const TextStyle(color: Colors.white70, fontSize: 14)),
+                style: TextStyle(
+                    color: Theme.of(context).colorScheme.onSurface.withOpacity(0.70),
+                    fontSize: 14)), 
             const SizedBox(height: 12),
             TextButton(
                 onPressed: () => Navigator.pop(context),
                 child: Text(l10n.back,
-                    style: const TextStyle(color: Colors.white70)))
+                    style: TextStyle(
+                        color: Theme.of(context)
+                            .colorScheme
+                            .onSurface
+                            .withOpacity(0.70))))
           ]),
         ),
       ),
@@ -747,15 +791,16 @@ class _YogaSceneScreenState extends ConsumerState<YogaSceneScreen>
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(step.name,
-                        style: const TextStyle(
-                            color: Colors.white,
+                    Text(AppCopy.of(context, step.name),
+                        style: TextStyle(
+                            color: Theme.of(context).colorScheme.onSurface,
                             fontSize: 22,
                             fontWeight: FontWeight.w800)),
                     const SizedBox(height: 2),
-                    Text(step.instruction,
-                        style: const TextStyle(
-                            color: Colors.white60, fontSize: 13)),
+                    Text(AppCopy.of(context, step.instruction),
+                        style: TextStyle(
+                            color: Theme.of(context).colorScheme.onSurface.withOpacity(0.60),
+                            fontSize: 13)),
                   ],
                 ),
               ),
@@ -785,7 +830,8 @@ class _YogaSceneScreenState extends ConsumerState<YogaSceneScreen>
             child: LinearProgressIndicator(
               value: progress,
               minHeight: 6,
-              backgroundColor: Colors.white.withAlpha(20),
+              backgroundColor:
+                  Theme.of(context).colorScheme.onSurface.withOpacity(0.20),
               valueColor: AlwaysStoppedAnimation<Color>(_breathColor),
             ),
           ),
@@ -793,10 +839,22 @@ class _YogaSceneScreenState extends ConsumerState<YogaSceneScreen>
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text('Pose ${_poseIndex + 1} of ${_sequence.length}',
-                  style: const TextStyle(color: Colors.white38, fontSize: 11)),
-              Text('${_holdSecondsLeft}s remaining',
-                  style: const TextStyle(color: Colors.white38, fontSize: 11)),
+              Text(
+                  AppCopy.of(context, 'Pose {current} of {total}', vars: {
+                    'current': _poseIndex + 1,
+                    'total': _sequence.length,
+                  }),
+                  style: TextStyle(
+                      color:
+                          Theme.of(context).colorScheme.onSurface.withOpacity(0.38),
+                      fontSize: 11)),
+              Text(
+                  AppCopy.of(context, '{seconds}s remaining',
+                      vars: {'seconds': _holdSecondsLeft}),
+                  style: TextStyle(
+                      color:
+                          Theme.of(context).colorScheme.onSurface.withOpacity(0.38),
+                      fontSize: 11)),
             ],
           ),
           const SizedBox(height: 14),
@@ -818,8 +876,12 @@ class _YogaSceneScreenState extends ConsumerState<YogaSceneScreen>
                           )),
                       const Spacer(),
                       Text('$_inhaleSeconds-$_holdSeconds-$_exhaleSeconds',
-                          style: const TextStyle(
-                              color: Colors.white38, fontSize: 12)),
+                          style: TextStyle(
+                              color: Theme.of(context)
+                                  .colorScheme
+                                  .onSurface
+                                  .withOpacity(0.38),
+                              fontSize: 12)),
                     ],
                   ),
                   const SizedBox(height: 6),
@@ -832,7 +894,8 @@ class _YogaSceneScreenState extends ConsumerState<YogaSceneScreen>
                               ? _breathBarAnim.value
                               : 1.0),
                       minHeight: 10,
-                      backgroundColor: Colors.white.withAlpha(15),
+                      backgroundColor:
+                          Theme.of(context).colorScheme.onSurface.withOpacity(0.15),
                       valueColor: AlwaysStoppedAnimation<Color>(
                           _breathColor.withAlpha(200)),
                     ),
@@ -859,7 +922,7 @@ class _YogaSceneScreenState extends ConsumerState<YogaSceneScreen>
                       ? const Color(0xFF38b000)
                       : current
                           ? _breathColor
-                          : Colors.white.withAlpha(30),
+                          : Theme.of(context).colorScheme.onSurface.withOpacity(0.30),
                   borderRadius: BorderRadius.circular(4),
                 ),
               );
@@ -875,10 +938,16 @@ class _YogaSceneScreenState extends ConsumerState<YogaSceneScreen>
                   onPressed: _pauseResume,
                   icon: Icon(_isPaused ? Icons.play_arrow : Icons.pause,
                       size: 18),
-                  label: Text(_isPaused ? 'Resume' : 'Pause'),
+                  label:
+                      Text(AppCopy.of(context, _isPaused ? 'Resume' : 'Pause')),
                   style: OutlinedButton.styleFrom(
-                    foregroundColor: Colors.white,
-                    side: BorderSide(color: Colors.white.withAlpha(40)),
+                    foregroundColor:
+                        Theme.of(context).colorScheme.onSurface,
+                    side: BorderSide(
+                        color: Theme.of(context)
+                            .colorScheme
+                            .onSurface
+                            .withOpacity(0.40)),
                     padding: const EdgeInsets.symmetric(vertical: 14),
                     shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(12)),
@@ -890,7 +959,7 @@ class _YogaSceneScreenState extends ConsumerState<YogaSceneScreen>
                 child: OutlinedButton.icon(
                   onPressed: _advancePose,
                   icon: const Icon(Icons.skip_next, size: 18),
-                  label: const Text('Next Pose'),
+                  label: Text(AppCopy.of(context, 'Next Pose')),
                   style: OutlinedButton.styleFrom(
                     foregroundColor: const Color(0xFF9d4edd),
                     side: const BorderSide(color: Color(0xFF9d4edd)),
@@ -935,6 +1004,10 @@ class _YogaSceneScreenState extends ConsumerState<YogaSceneScreen>
         return Icons.person;
       case TeacherPersonality.monk:
         return Icons.accessibility;
+      case TeacherPersonality.shiva:
+        return Icons.auto_awesome;
+      case TeacherPersonality.tiger:
+        return Icons.local_fire_department;
     }
   }
 }

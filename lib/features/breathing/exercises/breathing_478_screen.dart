@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:pranaverse/core/localization/app_copy.dart';
 import 'package:pranaverse/core/services/audio_service.dart';
 import 'package:pranaverse/core/services/tts_service.dart';
 import 'package:pranaverse/core/services/ad_service.dart';
@@ -148,13 +149,13 @@ class _Breathing478ScreenState extends State<Breathing478Screen>
   String _getPhaseText() {
     switch (_phase) {
       case BreathingPhase.inhale:
-        return 'INHALE';
+        return AppCopy.of(context, 'Inhale').toUpperCase();
       case BreathingPhase.hold:
-        return 'HOLD';
+        return AppCopy.of(context, 'Hold').toUpperCase();
       case BreathingPhase.exhale:
-        return 'EXHALE';
+        return AppCopy.of(context, 'Exhale').toUpperCase();
       case BreathingPhase.complete:
-        return 'COMPLETE';
+        return AppCopy.of(context, 'Complete').toUpperCase();
     }
   }
 
@@ -225,13 +226,13 @@ class _Breathing478ScreenState extends State<Breathing478Screen>
   String get _sceneInstruction {
     switch (_phase) {
       case BreathingPhase.inhale:
-        return 'Breathe in... 4 seconds';
+        return AppCopy.of(context, 'Inhale for 4 seconds');
       case BreathingPhase.hold:
-        return 'Hold... 7 seconds';
+        return AppCopy.of(context, 'Hold for 7 seconds');
       case BreathingPhase.exhale:
-        return 'Release... 8 seconds';
+        return AppCopy.of(context, 'Exhale slowly for 8 seconds');
       case BreathingPhase.complete:
-        return 'Well done 🙏';
+        return AppCopy.of(context, 'Well done');
     }
   }
 
@@ -248,7 +249,7 @@ class _Breathing478ScreenState extends State<Breathing478Screen>
   @override
   Widget build(BuildContext context) {
     return ExerciseSceneShell(
-      title: '4-7-8 Breathing',
+      title: AppCopy.of(context, '4-7-8 Breathing'),
       breathPhase: _scenePhase,
       instruction: _sceneInstruction,
       isActive: _isRunning,
@@ -311,10 +312,11 @@ class _Breathing478ScreenState extends State<Breathing478Screen>
                 color: Colors.white.withAlpha(15),
                 borderRadius: BorderRadius.circular(12),
               ),
-              child: const Text(
-                'Inhale 4s → Hold 7s → Exhale 8s  ·  Repeat 4×',
+              child: Text(
+                AppCopy.of(context,
+                    'Inhale 4s -> Hold 7s -> Exhale 8s  ·  Repeat 4x'),
                 textAlign: TextAlign.center,
-                style: TextStyle(fontSize: 12, color: Colors.white70),
+                style: const TextStyle(fontSize: 12, color: Colors.white70),
               ),
             ),
 
@@ -360,7 +362,9 @@ class _Breathing478ScreenState extends State<Breathing478Screen>
                                     fontSize: 28,
                                     fontWeight: FontWeight.w900,
                                     color: Colors.white)),
-                          Text('Cycle: $_totalCycles/4',
+                          Text(
+                              AppCopy.of(context, 'Cycle: {count}/4',
+                                  vars: {'count': _totalCycles}),
                               style: const TextStyle(
                                   fontSize: 11, color: Colors.white60)),
                         ],
@@ -378,13 +382,13 @@ class _Breathing478ScreenState extends State<Breathing478Screen>
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceAround,
             children: [
-              _buildPhaseIndicator('Inhale', '4s',
+              _buildPhaseIndicator(AppCopy.of(context, 'Inhale'), '4s',
                   isActive: _phase == BreathingPhase.inhale,
                   color: const Color(0xFF00b4d8)),
-              _buildPhaseIndicator('Hold', '7s',
+              _buildPhaseIndicator(AppCopy.of(context, 'Hold'), '7s',
                   isActive: _phase == BreathingPhase.hold,
                   color: const Color(0xFF9d4edd)),
-              _buildPhaseIndicator('Exhale', '8s',
+              _buildPhaseIndicator(AppCopy.of(context, 'Exhale'), '8s',
                   isActive: _phase == BreathingPhase.exhale,
                   color: const Color(0xFF38b000)),
             ],
@@ -404,8 +408,8 @@ class _Breathing478ScreenState extends State<Breathing478Screen>
                     shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(14)),
                   ),
-                  child: const Text('START AGAIN',
-                      style: TextStyle(
+                  child: Text(AppCopy.of(context, 'START AGAIN'),
+                      style: const TextStyle(
                           fontSize: 15,
                           fontWeight: FontWeight.w700,
                           color: Colors.white)),
@@ -414,8 +418,9 @@ class _Breathing478ScreenState extends State<Breathing478Screen>
               TextButton(
                 onPressed: () =>
                     context.canPop() ? context.pop() : context.go('/main'),
-                child: const Text('BACK TO EXERCISES',
-                    style: TextStyle(color: Colors.white70, fontSize: 13)),
+                child: Text(AppCopy.of(context, 'BACK TO EXERCISES'),
+                    style:
+                        const TextStyle(color: Colors.white70, fontSize: 13)),
               ),
             ])
           else
@@ -429,8 +434,8 @@ class _Breathing478ScreenState extends State<Breathing478Screen>
                   shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(14)),
                 ),
-                child: const Text('RESET',
-                    style: TextStyle(
+                child: Text(AppCopy.of(context, 'RESET'),
+                    style: const TextStyle(
                         fontSize: 15,
                         fontWeight: FontWeight.w700,
                         color: Colors.white)),

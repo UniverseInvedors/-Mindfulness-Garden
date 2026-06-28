@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:pranaverse/core/localization/app_copy.dart';
 import 'package:pranaverse/core/services/audio_service.dart';
 import 'package:pranaverse/core/services/tts_service.dart';
 import 'package:pranaverse/core/services/ad_service.dart';
@@ -193,15 +194,15 @@ class _BreathAwarenessScreenState extends State<BreathAwarenessScreen>
   String _getPhaseTitle() {
     switch (_phase) {
       case MeditationPhase.preparation:
-        return 'Preparation';
+        return AppCopy.of(context, 'Preparation');
       case MeditationPhase.focusing:
-        return 'Focusing';
+        return AppCopy.of(context, 'Focusing');
       case MeditationPhase.deepening:
-        return 'Deepening';
+        return AppCopy.of(context, 'Deepening');
       case MeditationPhase.closing:
-        return 'Closing';
+        return AppCopy.of(context, 'Closing');
       case MeditationPhase.complete:
-        return 'Complete';
+        return AppCopy.of(context, 'Complete');
     }
   }
 
@@ -253,25 +254,25 @@ class _BreathAwarenessScreenState extends State<BreathAwarenessScreen>
   }
 
   String get _sceneInstruction {
-    if (!_isPlaying) return 'Begin when ready...';
+    if (!_isPlaying) return AppCopy.of(context, 'Begin when ready...');
     switch (_phase) {
       case MeditationPhase.preparation:
-        return 'Find stillness...';
+        return AppCopy.of(context, 'Find stillness...');
       case MeditationPhase.focusing:
-        return 'Focus on your breath...';
+        return AppCopy.of(context, 'Focus on your breath...');
       case MeditationPhase.deepening:
-        return 'Deepen your awareness...';
+        return AppCopy.of(context, 'Deepen your awareness...');
       case MeditationPhase.closing:
-        return 'Gently return...';
+        return AppCopy.of(context, 'Gently return...');
       case MeditationPhase.complete:
-        return 'Well done 🙏';
+        return AppCopy.of(context, 'Well done');
     }
   }
 
   @override
   Widget build(BuildContext context) {
     return ExerciseSceneShell(
-      title: 'Breath Awareness',
+      title: AppCopy.of(context, 'Breath Awareness'),
       breathPhase: _scenePhase,
       instruction: _sceneInstruction,
       isActive: _isPlaying && !_isPaused,
@@ -379,8 +380,8 @@ class _BreathAwarenessScreenState extends State<BreathAwarenessScreen>
                   shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(14)),
                 ),
-                child: const Text('BEGIN MEDITATION',
-                    style: TextStyle(
+                child: Text(AppCopy.of(context, 'BEGIN MEDITATION'),
+                    style: const TextStyle(
                         fontSize: 15,
                         fontWeight: FontWeight.w700,
                         color: Colors.white)),
@@ -404,8 +405,8 @@ class _BreathAwarenessScreenState extends State<BreathAwarenessScreen>
                     shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(14)),
                   ),
-                  child: const Text('MEDITATE AGAIN',
-                      style: TextStyle(
+                  child: Text(AppCopy.of(context, 'MEDITATE AGAIN'),
+                      style: const TextStyle(
                           fontSize: 15,
                           fontWeight: FontWeight.w700,
                           color: Colors.white)),
@@ -414,8 +415,9 @@ class _BreathAwarenessScreenState extends State<BreathAwarenessScreen>
               TextButton(
                 onPressed: () =>
                     context.canPop() ? context.pop() : context.go('/main'),
-                child: const Text('BACK TO MENU',
-                    style: TextStyle(color: Colors.white70, fontSize: 13)),
+                child: Text(AppCopy.of(context, 'BACK TO MENU'),
+                    style:
+                        const TextStyle(color: Colors.white70, fontSize: 13)),
               ),
             ]),
         ],

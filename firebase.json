@@ -1,1 +1,30 @@
-{"flutter":{"platforms":{"android":{"default":{"projectId":"uno-color-clash-game","appId":"1:588170884079:android:842380d642d9b22e017c1a","fileOutput":"android/app/google-services.json"}},"dart":{"lib/firebase_options.dart":{"projectId":"uno-color-clash-game","configurations":{"android":"1:588170884079:android:842380d642d9b22e017c1a","ios":"1:588170884079:ios:f5c9b78b53280f2a017c1a","web":"1:588170884079:web:834eafcf3f923705017c1a"}}}}}}
+{
+  "flutter": {
+    "platforms": {
+      "android": {
+        "default": {
+          "projectId": "games-9bec6",
+          "appId": "REPLACE_WITH_GAMES_9BEC6_ANDROID_APP_ID",
+          "fileOutput": "android/app/google-services.json"
+        }
+      },
+      "ios": {
+        "default": {
+          "projectId": "games-9bec6",
+          "appId": "REPLACE_WITH_GAMES_9BEC6_IOS_APP_ID",
+          "fileOutput": "ios/Runner/GoogleService-Info.plist"
+        }
+      },
+      "dart": {
+        "lib/firebase_options.dart": {
+          "projectId": "games-9bec6",
+          "configurations": {
+            "android": "REPLACE_WITH_GAMES_9BEC6_ANDROID_APP_ID",
+            "ios": "REPLACE_WITH_GAMES_9BEC6_IOS_APP_ID",
+            "web": "REPLACE_WITH_GAMES_9BEC6_WEB_APP_ID"
+          }
+        }
+      }
+    }
+  }
+}

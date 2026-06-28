@@ -7,6 +7,7 @@ import 'package:pranaverse/core/services/audio_service.dart';
 import 'package:pranaverse/core/services/tts_service.dart';
 import 'package:pranaverse/core/widgets/meditation_scene_widget.dart';
 import 'package:pranaverse/core/widgets/character/teacher_personality.dart';
+import 'package:pranaverse/l10n/app_localizations.dart';
 import 'package:video_player/video_player.dart';
 
 class GuidedMeditationScreen extends ConsumerWidget {
@@ -22,7 +23,8 @@ class _GuidedMeditationContent extends StatefulWidget {
   const _GuidedMeditationContent();
 
   @override
-  State<_GuidedMeditationContent> createState() => _GuidedMeditationContentState();
+  State<_GuidedMeditationContent> createState() =>
+      _GuidedMeditationContentState();
 }
 
 class _GuidedMeditationContentState extends State<_GuidedMeditationContent>
@@ -189,13 +191,16 @@ class _GuidedMeditationContentState extends State<_GuidedMeditationContent>
         materialProgressColors: ChewieProgressColors(
           playedColor: session['color'],
           handleColor: session['color'],
-          backgroundColor: Colors.white24,
-          bufferedColor: Colors.white38,
+          backgroundColor:
+              Theme.of(context).colorScheme.onSurface.withOpacity(0.24),
+          bufferedColor:
+              Theme.of(context).colorScheme.onSurface.withOpacity(0.38),
         ),
         placeholder: Container(
-          color: const Color(0xFF0a0a1a),
-          child: const Center(
-            child: CircularProgressIndicator(color: Colors.white),
+          color: Theme.of(context).colorScheme.surface,
+          child: Center(
+            child: CircularProgressIndicator(
+                color: Theme.of(context).colorScheme.onSurface),
           ),
         ),
         errorBuilder: (_, __) => _audioFallback(session),
@@ -227,7 +232,7 @@ class _GuidedMeditationContentState extends State<_GuidedMeditationContent>
   }
 
   Widget _audioFallback(Map<String, dynamic> session) => Container(
-        color: const Color(0xFF0a0a1a),
+        color: Theme.of(context).colorScheme.surface,
         child: Padding(
           padding: const EdgeInsets.symmetric(horizontal: 24),
           child: Column(
@@ -247,93 +252,119 @@ class _GuidedMeditationContentState extends State<_GuidedMeditationContent>
                       ],
                     ),
                   ),
-                  child: Icon(session['icon'], size: 60, color: Colors.white),
+                  child: Icon(session['icon'],
+                      size: 60, color: Theme.of(context).colorScheme.onSurface),
                 ),
               ),
               const SizedBox(height: 20),
               Text(
                 session['title'],
                 textAlign: TextAlign.center,
-                style: const TextStyle(
-                  color: Colors.white,
+                style: TextStyle(
+                  color: Theme.of(context).colorScheme.onSurface,
                   fontSize: 22,
                   fontWeight: FontWeight.w700,
                 ),
               ),
               const SizedBox(height: 8),
               Text(
-                'Video could not start. Voice guidance is playing instead.',
+                AppLocalizations.of(context)!.videoNotStart,
                 textAlign: TextAlign.center,
                 style: TextStyle(
-                  color: Colors.white.withOpacity(0.82),
+                  color:
+                      Theme.of(context).colorScheme.onSurface.withOpacity(0.82),
                   fontSize: 14,
                 ),
               ),
               const SizedBox(height: 8),
               Text(
-                'The session has already started with audio.',
+                AppLocalizations.of(context)!.sessionStartedAudio,
                 textAlign: TextAlign.center,
-                style: TextStyle(color: Colors.white.withOpacity(0.65)),
+                style: TextStyle(
+                    color: Theme.of(context)
+                        .colorScheme
+                        .onSurface
+                        .withOpacity(0.65)),
               ),
               const SizedBox(height: 20),
               ElevatedButton.icon(
                 onPressed: () => _play(session),
                 icon: const Icon(Icons.refresh),
-                label: const Text('Retry Video'),
+                label: Text(AppLocalizations.of(context)!.retryVideo),
               ),
             ],
           ),
         ),
       );
 
-  Widget _placeholder() => Container(
-        decoration: const BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: [Color(0xFF1a1a2e), Color(0xFF16213e)],
-          ),
-        ),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            ScaleTransition(
-              scale: _pulseAnim,
-              child: Container(
-                width: 100,
-                height: 100,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  gradient: RadialGradient(
-                    colors: [
-                      const Color(0xFF4361ee).withOpacity(0.8),
-                      const Color(0xFF4361ee).withOpacity(0.2),
-                    ],
-                  ),
-                ),
-                child: const Icon(
-                  Icons.play_circle_filled,
-                  size: 60,
-                  color: Colors.white,
+  Widget _placeholder() => Consumer(
+        builder: (context, ref, _) {
+          final themeSettings = ref.watch(themePreferenceProvider);
+          final teacher = ref.watch(teacherPreferenceProvider);
+          final colors = Theme.of(context).colorScheme;
+
+          return Stack(
+            fit: StackFit.expand,
+            children: [
+              MeditationSceneWidget(
+                breathPhase: BreathPhase.idle,
+                pose: ZenoPose.sitting,
+                environment: themeSettings.environment,
+                timeOfDay: themeSettings.timeOfDay,
+                instruction: '',
+                isActive: true,
+                height: double.infinity,
+                teacher: teacher,
+              ),
+              Container(color: colors.surface.withOpacity(0.10)),
+              Center(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    ScaleTransition(
+                      scale: _pulseAnim,
+                      child: Container(
+                        width: 100,
+                        height: 100,
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          gradient: RadialGradient(
+                            colors: [
+                              colors.primary.withOpacity(0.8),
+                              colors.primary.withOpacity(0.2),
+                            ],
+                          ),
+                        ),
+                        child: Icon(
+                          Icons.play_circle_filled,
+                          size: 60,
+                          color: colors.onSurface,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 20),
+                    Text(
+                      AppLocalizations.of(context)!.selectSession,
+                      style: TextStyle(
+                        fontSize: 18,
+                        color: colors.onSurface,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      '${_sessions.length} ${AppLocalizations.of(context)!.sessions}',
+                      style: TextStyle(
+                        fontSize: 14,
+                        color: colors.onSurface.withOpacity(0.54),
+                      ),
+                    ),
+                  ],
                 ),
               ),
-            ),
-            const SizedBox(height: 20),
-            const Text(
-              'Select a session to begin',
-              style: TextStyle(
-                fontSize: 18,
-                color: Colors.white,
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-            const SizedBox(height: 8),
-            Text(
-              '${_sessions.length} sessions available',
-              style: const TextStyle(fontSize: 14, color: Colors.white54),
-            ),
-          ],
-        ),
+            ],
+          );
+        },
       );
 
   Widget _guidedInstructorScene(Map<String, dynamic> session) {
@@ -363,18 +394,24 @@ class _GuidedMeditationContentState extends State<_GuidedMeditationContent>
             decoration: BoxDecoration(
               color: Colors.black.withAlpha(115),
               borderRadius: BorderRadius.circular(18),
-              border: Border.all(color: Colors.white.withAlpha(41)),
+              border: Border.all(
+                  color: Theme.of(context)
+                      .colorScheme
+                      .onSurface
+                      .withOpacity(0.41)),
             ),
             child: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                const Icon(Icons.record_voice_over,
-                    size: 15, color: Colors.white),
+                Icon(Icons.record_voice_over,
+                    size: 15, color: Theme.of(context).colorScheme.onSurface),
                 const SizedBox(width: 6),
                 Text(
-                  _isLoading ? 'Preparing guide' : 'Voice guide speaking',
-                  style: const TextStyle(
-                    color: Colors.white,
+                  _isLoading
+                      ? AppLocalizations.of(context)!.preparingGuide
+                      : AppLocalizations.of(context)!.voiceGuide,
+                  style: TextStyle(
+                    color: Theme.of(context).colorScheme.onSurface,
                     fontSize: 12,
                     fontWeight: FontWeight.w700,
                   ),
@@ -422,8 +459,11 @@ class _GuidedMeditationContentState extends State<_GuidedMeditationContent>
         ? _sessions.firstWhere((s) => s['id'] == _selectedId)
         : null;
 
+    final colors = Theme.of(context).colorScheme;
+    final l10n = AppLocalizations.of(context)!;
+
     return Scaffold(
-      backgroundColor: const Color(0xFF0a0a1a),
+      backgroundColor: colors.surface,
       bottomNavigationBar: AdService().buildBanner(),
       body: SafeArea(
         child: Column(
@@ -439,28 +479,31 @@ class _GuidedMeditationContentState extends State<_GuidedMeditationContent>
                       width: 40,
                       height: 40,
                       decoration: BoxDecoration(
-                        color: Colors.white.withOpacity(0.1),
+                        color: colors.onSurface.withOpacity(0.10),
                         shape: BoxShape.circle,
                       ),
-                      child: const Icon(Icons.arrow_back, color: Colors.white),
+                      child: Icon(Icons.arrow_back, color: colors.onSurface),
                     ),
                   ),
                   const SizedBox(width: 14),
-                  const Expanded(
+                  Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          'Guided Meditation',
+                          l10n.guidedMeditation,
                           style: TextStyle(
                             fontSize: 22,
                             fontWeight: FontWeight.w800,
-                            color: Colors.white,
+                            color: colors.onSurface,
                           ),
                         ),
                         Text(
-                          'Expert-led sessions',
-                          style: TextStyle(fontSize: 13, color: Colors.white54),
+                          l10n.expertLedSessions,
+                          style: TextStyle(
+                            fontSize: 13,
+                            color: colors.onSurface.withOpacity(0.54),
+                          ),
                         ),
                       ],
                     ),
@@ -477,7 +520,7 @@ class _GuidedMeditationContentState extends State<_GuidedMeditationContent>
                             : Icons.favorite_border,
                         color: (_favorites[selectedSession['id']] ?? false)
                             ? Colors.red
-                            : Colors.white,
+                            : colors.onSurface,
                       ),
                     ),
                 ],
@@ -506,21 +549,21 @@ class _GuidedMeditationContentState extends State<_GuidedMeditationContent>
                                   color: selectedSession['color'],
                                 ),
                                 const SizedBox(height: 18),
-                                const Text(
-                                  'Loading local video...',
+                                Text(
+                                  l10n.loadingVideo,
                                   textAlign: TextAlign.center,
                                   style: TextStyle(
-                                    color: Colors.white,
+                                    color: colors.onSurface,
                                     fontSize: 18,
                                     fontWeight: FontWeight.w700,
                                   ),
                                 ),
                                 const SizedBox(height: 8),
                                 Text(
-                                  'Your voice guidance will begin automatically.',
+                                  l10n.voiceGuidanceBegin,
                                   textAlign: TextAlign.center,
                                   style: TextStyle(
-                                    color: Colors.white.withOpacity(0.68),
+                                    color: colors.onSurface.withOpacity(0.68),
                                     fontSize: 13,
                                   ),
                                 ),
@@ -589,14 +632,16 @@ class _GuidedMeditationContentState extends State<_GuidedMeditationContent>
                       decoration: BoxDecoration(
                         color: active
                             ? _catColor(cat)
-                            : Colors.white.withOpacity(0.08),
+                            : colors.onSurface.withOpacity(0.08),
                         borderRadius: BorderRadius.circular(20),
                       ),
                       child: Center(
                         child: Text(
                           cat,
                           style: TextStyle(
-                            color: active ? Colors.white : Colors.white60,
+                            color: active
+                                ? colors.onSurface
+                                : colors.onSurface.withOpacity(0.60),
                             fontSize: 12,
                             fontWeight:
                                 active ? FontWeight.w700 : FontWeight.normal,
@@ -617,20 +662,20 @@ class _GuidedMeditationContentState extends State<_GuidedMeditationContent>
                     padding: const EdgeInsets.fromLTRB(16, 4, 16, 8),
                     child: Row(
                       children: [
-                        const Text(
-                          'Meditation Library',
+                        Text(
+                          l10n.meditationLibrary,
                           style: TextStyle(
                             fontSize: 16,
                             fontWeight: FontWeight.w700,
-                            color: Colors.white,
+                            color: colors.onSurface,
                           ),
                         ),
                         const Spacer(),
                         Text(
-                          '${_filtered.length} sessions',
-                          style: const TextStyle(
+                          '${_filtered.length} ${l10n.sessions}',
+                          style: TextStyle(
                             fontSize: 12,
-                            color: Colors.white54,
+                            color: colors.onSurface.withOpacity(0.54),
                           ),
                         ),
                       ],
@@ -664,10 +709,12 @@ class _GuidedMeditationContentState extends State<_GuidedMeditationContent>
         width: 190,
         margin: const EdgeInsets.only(right: 14, bottom: 12),
         decoration: BoxDecoration(
-          color: Colors.white.withOpacity(0.05),
+          color: Theme.of(context).colorScheme.onSurface.withOpacity(0.05),
           borderRadius: BorderRadius.circular(20),
           border: Border.all(
-            color: isSelected ? color : Colors.white.withOpacity(0.1),
+            color: isSelected
+                ? color
+                : Theme.of(context).colorScheme.onSurface.withOpacity(0.1),
             width: isSelected ? 2 : 1,
           ),
           boxShadow: isSelected
@@ -701,7 +748,10 @@ class _GuidedMeditationContentState extends State<_GuidedMeditationContent>
                     child: Icon(
                       session['icon'],
                       size: 50,
-                      color: Colors.white.withOpacity(0.9),
+                      color: Theme.of(context)
+                          .colorScheme
+                          .onSurface
+                          .withOpacity(0.90),
                     ),
                   ),
                   Positioned(
@@ -718,9 +768,9 @@ class _GuidedMeditationContentState extends State<_GuidedMeditationContent>
                       ),
                       child: Text(
                         session['duration'],
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontSize: 11,
-                          color: Colors.white,
+                          color: Theme.of(context).colorScheme.onSurface,
                           fontWeight: FontWeight.w600,
                         ),
                       ),
@@ -759,10 +809,10 @@ class _GuidedMeditationContentState extends State<_GuidedMeditationContent>
                 children: [
                   Text(
                     session['title'],
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 13,
                       fontWeight: FontWeight.w700,
-                      color: Colors.white,
+                      color: Theme.of(context).colorScheme.onSurface,
                     ),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
@@ -770,7 +820,12 @@ class _GuidedMeditationContentState extends State<_GuidedMeditationContent>
                   const SizedBox(height: 2),
                   Text(
                     session['teacher'],
-                    style: const TextStyle(fontSize: 11, color: Colors.white54),
+                    style: TextStyle(
+                        fontSize: 11,
+                        color: Theme.of(context)
+                            .colorScheme
+                            .onSurface
+                            .withOpacity(0.54)),
                   ),
                   const SizedBox(height: 6),
                   Row(
@@ -779,27 +834,34 @@ class _GuidedMeditationContentState extends State<_GuidedMeditationContent>
                       const SizedBox(width: 3),
                       Text(
                         '${session['rating']}',
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontSize: 11,
-                          color: Colors.white70,
+                          color: Theme.of(context)
+                              .colorScheme
+                              .onSurface
+                              .withOpacity(0.70),
                         ),
                       ),
-                      const SizedBox(width: 8),
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 8,
-                          vertical: 3,
-                        ),
-                        decoration: BoxDecoration(
-                          color: color.withOpacity(0.2),
-                          borderRadius: BorderRadius.circular(10),
-                        ),
-                        child: Text(
-                          session['difficulty'],
-                          style: TextStyle(
-                            fontSize: 10,
-                            color: color,
-                            fontWeight: FontWeight.w600,
+                      const SizedBox(width: 6),
+                      Flexible(
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 6,
+                            vertical: 3,
+                          ),
+                          decoration: BoxDecoration(
+                            color: color.withOpacity(0.2),
+                            borderRadius: BorderRadius.circular(10),
+                          ),
+                          child: Text(
+                            session['difficulty'],
+                            style: TextStyle(
+                              fontSize: 10,
+                              color: color,
+                              fontWeight: FontWeight.w600,
+                            ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
                           ),
                         ),
                       ),

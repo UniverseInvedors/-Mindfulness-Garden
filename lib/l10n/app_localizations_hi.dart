@@ -484,4 +484,70 @@ class AppLocalizationsHi extends AppLocalizations {
 
   @override
   String get logoutError => 'लॉग आउट त्रुटि:';
+
+  @override
+  String get guidedMeditation => 'निर्देशित ध्यान';
+
+  @override
+  String get expertLedSessions => 'विशेषज्ञ-नेतृत्व वाले सत्र';
+
+  @override
+  String get tapPlayToBegin => 'शुरू करने के लिए प्ले करें';
+
+  @override
+  String get audioMeditation => 'ऑडियो ध्यान';
+
+  @override
+  String get immerseInSound => 'ध्वनि में डूब जाएं';
+
+  @override
+  String get breathingPattern => 'सांस पैटर्न';
+
+  @override
+  String get breatheIn => 'सांस लें';
+
+  @override
+  String get breatheOut => 'सांस छोड़ें';
+
+  @override
+  String get meditationLibrary => 'ध्यान पुस्तकालय';
+
+  @override
+  String get ambientSounds => 'परिवेशीय ध्वनियाँ';
+
+  @override
+  String get volume => 'वॉल्यूम';
+
+  @override
+  String get selectSession => 'शुरू करने के लिए एक सत्र चुनें';
+
+  @override
+  String get voiceGuide => 'आवाज़ गाइड बोल रहा है';
+
+  @override
+  String get preparingGuide => 'गाइड तैयार किया जा रहा है';
+
+  @override
+  String get loadingVideo => 'वीडियो लोड हो रहा है...';
+
+  @override
+  String get voiceGuidanceBegin =>
+      'आपका आवाज़ मार्गदर्शन स्वचालित रूप से शुरू होगा।';
+
+  @override
+  String get videoNotStart =>
+      'वीडियो शुरू नहीं हो सका। इसके बजाय आवाज़ मार्गदर्शन चल रहा है।';
+
+  @override
+  String get sessionStartedAudio =>
+      'सत्र पहले से ऑडियो के साथ शुरू हो चुका है।';
+
+  @override
+  String get retryVideo => 'वीडियो पुनः प्रयास करें';
+
+  @override
+  String get breathAwareness => 'सांस जागरूकता';
+
+  @override
+  String get followBreathRhythm => 'अपनी सांस की लय का अनुसरण करें';
 }

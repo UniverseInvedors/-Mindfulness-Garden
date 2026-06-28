@@ -1,12 +1,20 @@
+// ignore_for_file: deprecated_member_use
+import 'dart:async';
+import 'dart:math' as math;
+
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
 import 'package:go_router/go_router.dart';
-import 'dart:async';
-import 'package:pranaverse/data/local_storage/local_storage_service.dart';
+import 'package:provider/provider.dart';
+
+import 'package:pranaverse/presentation/providers/auth_provider.dart';
 import 'package:pranaverse/presentation/providers/user_provider.dart';
-import 'package:pranaverse/core/utils/responsive_helper.dart';
-import 'package:pranaverse/core/widgets/glassmorphism/glass_container.dart';
+
+// ─────────────────────────────────────────────────────────────────────────────
+// PRANVERSE  –  Immersive Garden Splash Screen
+// Design: deep night-garden with aurora glows, breathing orbs, rising fireflies,
+//         swaying lotus petals and the PRANVERSE wordmark emerging from mist.
+// ─────────────────────────────────────────────────────────────────────────────
 
 class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});
@@ -16,184 +24,176 @@ class SplashScreen extends StatefulWidget {
 }
 
 class _SplashScreenState extends State<SplashScreen>
-    with SingleTickerProviderStateMixin {
-  AnimationController? _mainController;
-  Animation<double>? _fadeInAnimation;
-  Animation<double>? _scaleAnimation;
-  Animation<double>? _logoScaleAnimation;
-  Animation<Color?>? _backgroundGradientAnimation;
-  Animation<Color?>? _textColorAnimation;
-  Animation<Offset>? _slideAnimation;
+    with TickerProviderStateMixin {
+  // ── Controllers ──────────────────────────────────────────────────────────
+  late AnimationController _breatheCtrl; // slow in-out for main orb
+  late AnimationController _auroraCtrl; // aurora colour shift
+  late AnimationController _particleCtrl; // fireflies / pollen rising
+  late AnimationController _revealCtrl; // title + tagline entrance
+  late AnimationController _petalCtrl; // lotus petal sway
+  late AnimationController _progressCtrl; // loading bar
 
-  // State variables
-  bool _isLoadingComplete = false;
-  bool _showWelcomeText = false;
-  bool _showProgressText = false;
+  // ── Derived animations ────────────────────────────────────────────────────
+  late Animation<double> _breatheScale;
+  late Animation<double> _breatheOpacity;
+  late Animation<double> _titleFade;
+  late Animation<Offset> _titleSlide;
+  late Animation<double> _taglineFade;
+  // ── Loading state ─────────────────────────────────────────────────────────
+  bool _disposed = false;
   bool _isInitialized = false;
-  String _loadingMessage = "Initializing garden...";
+  bool _showTagline = false;
+  String _loadingMessage = 'Awakening the garden…';
   int _loadingProgress = 0;
   Timer? _progressTimer;
   Timer? _messageTimer;
 
-  final List<String> _loadingMessages = [
-    "Planting tiny seeds of joy...",
-    "Growing a playful garden...",
-    "Watering happy thoughts...",
-    "Nurturing calm adventures...",
-    "Almost ready to explore...",
+  static const _messages = [
+    'Planting seeds of stillness…',
+    'Weaving moonlight into leaves…',
+    'Calling the fireflies home…',
+    'Breathing life into petals…',
+    'PRANVERSE is ready…',
   ];
 
-  bool _disposed = false;
+  // ── Firefly / particle data ───────────────────────────────────────────────
+  late final List<_Particle> _particles;
+  final _rng = math.Random(42);
 
   @override
   void initState() {
     super.initState();
 
-    // Initialize after the first frame
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      _initializeAnimations();
-    });
-  }
-
-  void _initializeAnimations() {
-    // Create animation controller
-    _mainController = AnimationController(
-      duration: const Duration(milliseconds: 2000),
+    // Breathing controller – 4 s cycle, loops forever
+    _breatheCtrl = AnimationController(
       vsync: this,
-    )..addStatusListener((status) {
-        if (status == AnimationStatus.completed) {
-          _mainController?.repeat(reverse: true);
-        }
-      });
+      duration: const Duration(milliseconds: 4000),
+    )..repeat(reverse: true);
 
-    // Initialize animations
-    _fadeInAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
-      CurvedAnimation(
-        parent: _mainController!,
-        curve: const Interval(0.0, 0.5, curve: Curves.easeOut),
-      ),
+    _breatheScale = Tween<double>(begin: 0.88, end: 1.12).animate(
+      CurvedAnimation(parent: _breatheCtrl, curve: Curves.easeInOut),
+    );
+    _breatheOpacity = Tween<double>(begin: 0.55, end: 0.85).animate(
+      CurvedAnimation(parent: _breatheCtrl, curve: Curves.easeInOut),
     );
 
-    _scaleAnimation = Tween<double>(begin: 0.9, end: 1.0).animate(
+    // Aurora colour shift – 6 s cycle
+    _auroraCtrl = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 6000),
+    )..repeat(reverse: true);
+
+    // Particles – 5 s cycle, loops
+    _particleCtrl = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 5000),
+    )..repeat();
+
+    // Petal sway – 3 s cycle
+    _petalCtrl = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 3000),
+    )..repeat(reverse: true);
+
+    // Reveal (title) – 2.5 s, plays once
+    _revealCtrl = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 2500),
+    );
+    _titleFade = Tween<double>(begin: 0.0, end: 1.0).animate(
       CurvedAnimation(
-        parent: _mainController!,
-        curve: const Interval(0.0, 0.7, curve: Curves.easeInOut),
+        parent: _revealCtrl,
+        curve: const Interval(0.0, 0.6, curve: Curves.easeOut),
       ),
     );
-
-    _logoScaleAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
-      CurvedAnimation(
-        parent: _mainController!,
-        curve: Curves.elasticOut,
-      ),
-    );
-
-    _backgroundGradientAnimation = ColorTween(
-      begin: const Color(0xFF1A1A2E),
-      end: const Color(0xFF16213E),
-    ).animate(_mainController!);
-
-    _textColorAnimation = ColorTween(
-      begin: Colors.white.withOpacity(0.0),
-      end: Colors.white.withOpacity(1.0),
-    ).animate(
-      CurvedAnimation(
-        parent: _mainController!,
-        curve: const Interval(0.3, 0.8, curve: Curves.easeIn),
-      ),
-    );
-
-    _slideAnimation = Tween<Offset>(
-      begin: const Offset(0, 0.3),
+    _titleSlide = Tween<Offset>(
+      begin: const Offset(0, 0.25),
       end: Offset.zero,
     ).animate(
       CurvedAnimation(
-        parent: _mainController!,
-        curve: Curves.easeOut,
+        parent: _revealCtrl,
+        curve: const Interval(0.0, 0.7, curve: Curves.easeOutCubic),
+      ),
+    );
+    _taglineFade = Tween<double>(begin: 0.0, end: 1.0).animate(
+      CurvedAnimation(
+        parent: _revealCtrl,
+        curve: const Interval(0.5, 1.0, curve: Curves.easeIn),
       ),
     );
 
-    // Start animations
-    _mainController!.forward();
+    // Progress bar controller – driven manually, shown via AnimatedBuilder
+    _progressCtrl = AnimationController(vsync: this);
 
-    // Mark as initialized
-    setState(() {
-      _isInitialized = true;
+    // Generate particles
+    _particles = List.generate(
+      28,
+      (i) => _Particle(
+        x: _rng.nextDouble(),
+        baseY: _rng.nextDouble(),
+        size: 2.5 + _rng.nextDouble() * 4.5,
+        speed: 0.4 + _rng.nextDouble() * 0.6,
+        phase: _rng.nextDouble(),
+        hue: 80 + _rng.nextDouble() * 120, // green to cyan range
+      ),
+    );
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!_disposed && mounted) {
+        setState(() => _isInitialized = true);
+        _revealCtrl.forward();
+        _startLoadingSequence();
+        _startProgressTimer();
+        _initializeApp().timeout(
+          const Duration(seconds: 6),
+          onTimeout: () {
+            if (!_disposed && mounted) _navigateToNextScreen();
+          },
+        );
+      }
     });
-
-    // Start loading sequence
-    _startLoadingSequence();
-    _startProgressTimer();
-
-    // Initialize app
-    _initializeApp();
   }
 
+  // ── Loading helpers ───────────────────────────────────────────────────────
   void _startLoadingSequence() {
-    int messageIndex = 0;
-    _messageTimer = Timer.periodic(const Duration(milliseconds: 1500), (timer) {
-      if (messageIndex < _loadingMessages.length && !_disposed && mounted) {
-        setState(() {
-          _loadingMessage = _loadingMessages[messageIndex];
-        });
-        messageIndex++;
+    int idx = 0;
+    _messageTimer = Timer.periodic(const Duration(milliseconds: 1400), (t) {
+      if (idx < _messages.length && !_disposed && mounted) {
+        setState(() => _loadingMessage = _messages[idx++]);
       } else {
-        timer.cancel();
+        t.cancel();
       }
     });
-
-    // Show welcome text with delay
-    Future.delayed(const Duration(milliseconds: 800), () {
-      if (!_disposed && mounted) {
-        setState(() => _showWelcomeText = true);
-      }
-    });
-
-    // Show progress text with delay
-    Future.delayed(const Duration(milliseconds: 1200), () {
-      if (!_disposed && mounted) {
-        setState(() => _showProgressText = true);
-      }
+    Future.delayed(const Duration(milliseconds: 900), () {
+      if (!_disposed && mounted) setState(() => _showTagline = true);
     });
   }
 
   void _startProgressTimer() {
-    _progressTimer = Timer.periodic(const Duration(milliseconds: 60), (timer) {
+    _progressTimer = Timer.periodic(const Duration(milliseconds: 55), (t) {
       if (_loadingProgress < 90 && !_disposed && mounted) {
         setState(() {
-          _loadingProgress += 3;
-          if (_loadingProgress > 90) _loadingProgress = 90;
+          _loadingProgress = (_loadingProgress + 2).clamp(0, 90);
+          _progressCtrl.value = _loadingProgress / 100;
         });
       } else {
-        timer.cancel();
+        t.cancel();
       }
     });
   }
 
   Future<void> _initializeApp() async {
     try {
-      // Keep splash snappy; don't hold the user on logo.
-      await Future.delayed(const Duration(milliseconds: 200));
-
-      // Initialize storage
-      await LocalStorageService.init();
-
-      // Load user data
+      await Future.delayed(const Duration(milliseconds: 1200));
       await _loadUserData();
-
-      // Complete loading
       if (!_disposed && mounted) {
         setState(() {
-          _isLoadingComplete = true;
           _loadingProgress = 100;
-          _loadingMessage = "Garden ready!";
+          _loadingMessage = 'PRANVERSE is ready…';
         });
+        _progressCtrl.value = 1.0;
       }
-
-      // Wait for final animations
-      await Future.delayed(const Duration(milliseconds: 150));
-
-      // Navigate to next screen
+      await Future.delayed(const Duration(milliseconds: 400));
       _navigateToNextScreen();
     } catch (e) {
       _handleError(e);
@@ -204,41 +204,30 @@ class _SplashScreenState extends State<SplashScreen>
   }
 
   Future<void> _loadUserData() async {
+    if (!mounted || _disposed) return;
     try {
-      final userProvider = context.read<UserProvider>();
-      await userProvider.loadUser();
-    } catch (e) {
-      // Create default user if loading fails
-      final userProvider = context.read<UserProvider>();
-      await userProvider.createDefaultUser();
+      await context.read<UserProvider>().loadUser();
+    } catch (_) {
+      try {
+        await context.read<UserProvider>().createDefaultUser();
+      } catch (_) {}
     }
   }
 
   void _navigateToNextScreen() {
     if (!_disposed && mounted) {
-      if (mounted && !_disposed) {
-        context.go('/main');
-      }
+      final auth = context.read<AuthProvider>();
+      context.go(auth.currentUserId == null ? '/auth' : '/main');
     }
   }
 
   void _handleError(dynamic error) {
-    if (kDebugMode) {
-      debugPrint('Splash screen error: $error');
-    }
-
+    if (kDebugMode) debugPrint('Splash error: $error');
     if (!_disposed && mounted) {
-      setState(() {
-        _loadingMessage = "Oops! Something went wrong";
-        _isLoadingComplete = true;
-      });
+      setState(() => _loadingMessage = 'Something stirred in the garden…');
     }
-
-    // Show error dialog after delay
-    Future.delayed(const Duration(milliseconds: 1500), () {
-      if (mounted && !_disposed) {
-        _showErrorDialog();
-      }
+    Future.delayed(const Duration(milliseconds: 1200), () {
+      if (mounted && !_disposed) _showErrorDialog();
     });
   }
 
@@ -246,711 +235,938 @@ class _SplashScreenState extends State<SplashScreen>
     showDialog(
       context: context,
       barrierDismissible: false,
-      barrierColor: Colors.black.withOpacity(0.9),
-      builder: (context) => Dialog(
-        backgroundColor: Colors.transparent,
-        child: _buildErrorDialogContent(),
+      barrierColor: Colors.black.withOpacity(0.85),
+      builder: (_) => _ErrorDialog(
+        onRetry: () {
+          Navigator.of(context).pop();
+          setState(() {
+            _loadingProgress = 0;
+            _progressCtrl.value = 0;
+          });
+          _startProgressTimer();
+          _initializeApp();
+        },
+        onContinue: () {
+          Navigator.of(context).pop();
+          if (!_disposed && mounted) context.go('/main');
+        },
       ),
     );
-  }
-
-  Widget _buildErrorDialogContent() {
-    return Container(
-      width: 320,
-      padding: const EdgeInsets.all(30),
-      decoration: BoxDecoration(
-        gradient: const LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [Color(0xFF1E3A8A), Color(0xFF1E40AF)],
-        ),
-        borderRadius: BorderRadius.circular(25),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.4),
-            blurRadius: 30,
-            spreadRadius: 5,
-          ),
-        ],
-      ),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          // Error icon
-          Container(
-            width: 80,
-            height: 80,
-            decoration: BoxDecoration(
-              color: const Color(0xFFD32F2F).withOpacity(0.2),
-              shape: BoxShape.circle,
-              border: Border.all(color: const Color(0xFFD32F2F), width: 2),
-            ),
-            child: const Icon(
-              Icons.error_outline,
-              size: 40,
-              color: Color(0xFFD32F2F),
-            ),
-          ),
-
-          const SizedBox(height: 20),
-
-          const Text(
-            'Connection Issue',
-            style: TextStyle(
-              fontSize: 24,
-              fontWeight: FontWeight.w800,
-              color: Colors.white,
-              letterSpacing: 1,
-            ),
-          ),
-
-          const SizedBox(height: 10),
-
-          Text(
-            'Unable to connect to garden services.\nWe\'ll continue in offline mode.',
-            textAlign: TextAlign.center,
-            style: TextStyle(
-              fontSize: 15,
-              color: Colors.white.withOpacity(0.9),
-              height: 1.5,
-            ),
-          ),
-
-          const SizedBox(height: 25),
-
-          Row(
-            children: [
-              // Retry button
-              Expanded(
-                child: ElevatedButton(
-                  onPressed: () {
-                    Navigator.of(context).pop();
-                    _retryInitialization();
-                  },
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFF3B82F6),
-                    padding: const EdgeInsets.symmetric(vertical: 16),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(15),
-                    ),
-                    elevation: 5,
-                  ),
-                  child: const Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Icon(Icons.refresh, size: 20),
-                      SizedBox(width: 8),
-                      Text(
-                        'Retry',
-                        style: TextStyle(fontSize: 16),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-
-              const SizedBox(width: 12),
-
-              // Continue button
-              Expanded(
-                child: ElevatedButton(
-                  onPressed: () {
-                    Navigator.of(context).pop();
-                    if (mounted && !_disposed) {
-                      context.go('/main');
-                    }
-                  },
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.white.withOpacity(0.1),
-                    padding: const EdgeInsets.symmetric(vertical: 16),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(15),
-                      side: BorderSide(color: Colors.white.withOpacity(0.3)),
-                    ),
-                  ),
-                  child: const Text(
-                    'Continue',
-                    style: TextStyle(
-                      fontSize: 16,
-                      color: Colors.white,
-                    ),
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
-
-  void _retryInitialization() {
-    if (!_disposed && mounted) {
-      setState(() {
-        _isLoadingComplete = false;
-        _loadingProgress = 0;
-        _loadingMessage = "Retrying...";
-      });
-
-      _startProgressTimer();
-      _initializeApp();
-    }
   }
 
   @override
   void dispose() {
     _disposed = true;
-    _mainController?.dispose();
+    _breatheCtrl.dispose();
+    _auroraCtrl.dispose();
+    _particleCtrl.dispose();
+    _revealCtrl.dispose();
+    _petalCtrl.dispose();
+    _progressCtrl.dispose();
     _progressTimer?.cancel();
     _messageTimer?.cancel();
     super.dispose();
   }
 
+  // ── BUILD ─────────────────────────────────────────────────────────────────
   @override
   Widget build(BuildContext context) {
-    final size = MediaQuery.of(context).size;
-    final isMobile = ResponsiveHelper.isMobile(context);
-    final isDesktop = ResponsiveHelper.isDesktop(context);
-
-    // Show loading until animations are initialized
     if (!_isInitialized) {
-      return Scaffold(
-        backgroundColor: const Color(0xFF1A1A2E),
-        body: Center(
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              const Text(
-                'Preparing garden...',
-                style: TextStyle(
-                  color: Colors.white,
-                  fontSize: 18,
-                  fontWeight: FontWeight.w600,
-                  letterSpacing: 0.6,
-                ),
-              ),
-            ],
-          ),
-        ),
+      return const Scaffold(
+        backgroundColor: Color(0xFF050D14),
+        body: SizedBox.expand(),
       );
     }
 
+    final size = MediaQuery.of(context).size;
+
     return Scaffold(
-      backgroundColor: const Color(0xFF1A1A2E),
-      body: AnimatedBuilder(
-        animation: _mainController!,
-        builder: (context, child) {
-          return Stack(
-            children: [
-              // Background gradient with modern colors
-              Positioned.fill(
-                child: Container(
-                  decoration: BoxDecoration(
-                    gradient: LinearGradient(
-                      begin: Alignment.topLeft,
-                      end: Alignment.bottomRight,
-                      colors: [
-                        const Color(0xFF1A1A2E),
-                        const Color(0xFF16213E),
-                        const Color(0xFF0F3460),
-                      ],
-                    ),
-                  ),
+      backgroundColor: const Color(0xFF050D14),
+      body: Stack(
+        children: [
+          // ── Layer 1: Deep night-sky gradient ─────────────────────────────
+          Positioned.fill(child: _NightSkyBackground(ctrl: _auroraCtrl)),
+
+          // ── Layer 2: Aurora glow blobs ───────────────────────────────────
+          Positioned.fill(child: _AuroraLayer(ctrl: _auroraCtrl, size: size)),
+
+          // ── Layer 3: Garden silhouette (painted) ─────────────────────────
+          Positioned(
+            bottom: 0,
+            left: 0,
+            right: 0,
+            child: AnimatedBuilder(
+              animation: _breatheCtrl,
+              builder: (_, __) => CustomPaint(
+                size: Size(size.width, size.height * 0.42),
+                painter: _GardenPainter(progress: _breatheCtrl.value),
+              ),
+            ),
+          ),
+
+          // ── Layer 4: Rising fireflies / pollen ───────────────────────────
+          Positioned.fill(
+            child: AnimatedBuilder(
+              animation: _particleCtrl,
+              builder: (_, __) => CustomPaint(
+                painter: _ParticlePainter(
+                  particles: _particles,
+                  progress: _particleCtrl.value,
+                  size: size,
                 ),
               ),
+            ),
+          ),
 
-              // Decorative gradient circles
-              Positioned(
-                top: -size.height * 0.2,
-                right: -size.width * 0.2,
-                child: Container(
-                  width: size.width * 0.6,
-                  height: size.width * 0.6,
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    gradient: RadialGradient(
-                      colors: [
-                        const Color(0xFF9D4EDD).withOpacity(0.3),
-                        Colors.transparent,
-                      ],
-                    ),
-                  ),
-                ),
-              ),
+          // ── Layer 5: Central breathing orb ───────────────────────────────
+          Center(
+            child: _BreathingOrb(
+              scaleAnim: _breatheScale,
+              opacityAnim: _breatheOpacity,
+            ),
+          ),
 
-              Positioned(
-                bottom: -size.height * 0.2,
-                left: -size.width * 0.2,
-                child: Container(
-                  width: size.width * 0.5,
-                  height: size.width * 0.5,
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    gradient: RadialGradient(
-                      colors: [
-                        const Color(0xFF00B4D8).withOpacity(0.2),
-                        Colors.transparent,
-                      ],
-                    ),
-                  ),
-                ),
-              ),
-
-              // Main content with glassmorphism
-              Center(
-                child: Opacity(
-                  opacity: _fadeInAnimation?.value ?? 1.0,
-                  child: Transform.scale(
-                    scale: _scaleAnimation?.value ?? 1.0,
-                    child: GlassContainer(
-                      width: isDesktop
-                          ? ResponsiveHelper.getMaxContentWidth(context)
-                          : size.width * 0.95,
-                      height: isDesktop ? size.height * 0.7 : size.height * 0.8,
-                      padding: EdgeInsets.symmetric(
-                        horizontal: ResponsiveHelper.getResponsivePadding(
-                            context,
-                            mobilePadding: 24),
-                        vertical: ResponsiveHelper.getResponsivePadding(context,
-                            mobilePadding: 40),
+          // ── Layer 6: PRANVERSE wordmark ───────────────────────────────────
+          Center(
+            child: AnimatedBuilder(
+              animation: _revealCtrl,
+              builder: (_, __) => Opacity(
+                opacity: _titleFade.value,
+                child: SlideTransition(
+                  position: _titleSlide,
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      // Main title
+                      ShaderMask(
+                        shaderCallback: (bounds) => const LinearGradient(
+                          colors: [
+                            Color(0xFFB8FFD6),
+                            Color(0xFF7DFFCE),
+                            Color(0xFF38FFB3),
+                            Color(0xFF00E5A0),
+                          ],
+                          begin: Alignment.topLeft,
+                          end: Alignment.bottomRight,
+                        ).createShader(bounds),
+                        child: const Text(
+                          'PRANVERSE',
+                          style: TextStyle(
+                            fontSize: 56,
+                            fontWeight: FontWeight.w900,
+                            color: Colors.white,
+                            letterSpacing: 10,
+                            height: 1.0,
+                          ),
+                        ),
                       ),
-                      borderRadius: BorderRadius.circular(
-                          ResponsiveHelper.getResponsiveBorderRadius(context,
-                              mobileRadius: 32)),
-                      blur: 20,
-                      opacity: 0.15,
-                      gradient: LinearGradient(
-                        colors: [
-                          const Color(0xFF9D4EDD).withOpacity(0.3),
-                          const Color(0xFF00B4D8).withOpacity(0.2),
+                      const SizedBox(height: 6),
+                      // Decorative divider
+                      Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          _AuraDivider(ctrl: _breatheCtrl),
+                          const SizedBox(width: 10),
+                          const Icon(Icons.spa,
+                              color: Color(0xFF7DFFCE), size: 18),
+                          const SizedBox(width: 10),
+                          _AuraDivider(ctrl: _breatheCtrl),
                         ],
-                        begin: Alignment.topLeft,
-                        end: Alignment.bottomRight,
                       ),
-                      child: SingleChildScrollView(
-                        child: Column(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          crossAxisAlignment: CrossAxisAlignment.center,
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            // Centered Icon Display - Prominent
-                            Transform.scale(
-                              scale: _logoScaleAnimation?.value ?? 0.0,
-                              child: Container(
-                                width: ResponsiveHelper
-                                    .getResponsiveContainerWidth(context,
-                                        mobileWidth: 200,
-                                        tabletWidth: 240,
-                                        desktopWidth: 280),
-                                height: ResponsiveHelper
-                                    .getResponsiveContainerHeight(context,
-                                        mobileHeight: 200,
-                                        tabletHeight: 240,
-                                        desktopHeight: 280),
-                                decoration: BoxDecoration(
-                                  shape: BoxShape.circle,
-                                  gradient: LinearGradient(
-                                    colors: [
-                                      const Color(0xFF9D4EDD).withOpacity(0.4),
-                                      const Color(0xFF00B4D8).withOpacity(0.3),
-                                    ],
-                                    begin: Alignment.topLeft,
-                                    end: Alignment.bottomRight,
-                                  ),
-                                  boxShadow: [
-                                    BoxShadow(
-                                      color: const Color(0xFF9D4EDD)
-                                          .withOpacity(0.3),
-                                      blurRadius: 30,
-                                      spreadRadius: 5,
-                                    ),
-                                    BoxShadow(
-                                      color: const Color(0xFF00B4D8)
-                                          .withOpacity(0.2),
-                                      blurRadius: 20,
-                                      spreadRadius: 3,
-                                    ),
-                                  ],
-                                ),
-                                child: Padding(
-                                  padding: const EdgeInsets.all(20),
-                                  child: Image.asset(
-                                    'assets/images/mindful_garden_icon.png',
-                                    fit: BoxFit.contain,
-                                    errorBuilder: (_, __, ___) => Container(
-                                      decoration: const BoxDecoration(
-                                        shape: BoxShape.circle,
-                                        gradient: LinearGradient(
-                                          begin: Alignment.topLeft,
-                                          end: Alignment.bottomRight,
-                                          colors: [
-                                            Color(0xFF4CAF50),
-                                            Color(0xFF2E7D32),
-                                          ],
-                                        ),
-                                      ),
-                                      child: Icon(
-                                        Icons.spa,
-                                        size: 100,
-                                        color: Colors.white.withOpacity(0.9),
-                                      ),
-                                    ),
-                                  ),
-                                ),
-                              ),
-                            ),
+                      const SizedBox(height: 14),
+                      // Tagline
+                      Opacity(
+                        opacity: _showTagline ? _taglineFade.value : 0.0,
+                        child: const Text(
+                          'B R E A T H E  ·  G R O W  ·  T R A N S C E N D',
+                          style: TextStyle(
+                            fontSize: 11,
+                            fontWeight: FontWeight.w400,
+                            color: Color(0xFF9EE8C8),
+                            letterSpacing: 3.5,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          ),
 
-                            SizedBox(
-                                height: ResponsiveHelper.getResponsiveSpacing(
-                                    context,
-                                    mobileSpacing: 40)),
+          // ── Layer 7: Floating lotus petals ───────────────────────────────
+          Positioned.fill(
+            child: AnimatedBuilder(
+              animation: _petalCtrl,
+              builder: (_, __) => CustomPaint(
+                painter: _PetalPainter(
+                  sway: _petalCtrl.value,
+                  size: size,
+                ),
+              ),
+            ),
+          ),
 
-                            // App name
-                            SlideTransition(
-                              position: _slideAnimation ??
-                                  AlwaysStoppedAnimation(Offset.zero),
-                              child: Text(
-                                'MINDFULNESS\nGARDEN',
-                                textAlign: TextAlign.center,
-                                style: TextStyle(
-                                  fontSize:
-                                      ResponsiveHelper.getResponsiveFontSize(
-                                          context,
-                                          mobileSize: 36,
-                                          tabletSize: 42,
-                                          desktopSize: 48),
-                                  fontWeight: FontWeight.w900,
-                                  color: Colors.white,
-                                  letterSpacing: 3,
-                                  height: 1.2,
-                                  shadows: [
-                                    Shadow(
-                                      color: const Color(0xFF9D4EDD)
-                                          .withOpacity(0.5),
-                                      blurRadius: 20,
-                                      offset: const Offset(0, 2),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                            ),
+          // ── Layer 8: Bottom loading panel ─────────────────────────────────
+          Positioned(
+            bottom: 0,
+            left: 0,
+            right: 0,
+            child: _LoadingPanel(
+              message: _loadingMessage,
+              progress: _loadingProgress / 100,
+              progressCtrl: _progressCtrl,
+              isComplete: _loadingProgress >= 100,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
 
-                            SizedBox(
-                                height: ResponsiveHelper.getResponsiveSpacing(
-                                    context,
-                                    mobileSpacing: 24)),
+// ─────────────────────────────────────────────────────────────────────────────
+// NIGHT SKY BACKGROUND
+// ─────────────────────────────────────────────────────────────────────────────
+class _NightSkyBackground extends StatelessWidget {
+  final AnimationController ctrl;
+  const _NightSkyBackground({required this.ctrl});
 
-                            // Tagline
-                            AnimatedOpacity(
-                              opacity: _showWelcomeText ? 1.0 : 0.0,
-                              duration: const Duration(milliseconds: 800),
-                              curve: Curves.easeOut,
-                              child: Column(
-                                children: [
-                                  Text(
-                                    'Playful Garden Journey',
-                                    style: TextStyle(
-                                      fontSize: ResponsiveHelper
-                                          .getResponsiveFontSize(context,
-                                              mobileSize: 18,
-                                              tabletSize: 20,
-                                              desktopSize: 24),
-                                      color: _textColorAnimation?.value ??
-                                          Colors.white,
-                                      fontStyle: FontStyle.italic,
-                                      fontWeight: FontWeight.w300,
-                                      letterSpacing: 1.5,
-                                    ),
-                                  ),
-                                  SizedBox(
-                                      height:
-                                          ResponsiveHelper.getResponsiveSpacing(
-                                              context,
-                                              mobileSpacing: 8)),
-                                  Text(
-                                    'Grow calm adventures with every step',
-                                    style: TextStyle(
-                                      fontSize: ResponsiveHelper
-                                          .getResponsiveFontSize(context,
-                                              mobileSize: 14,
-                                              tabletSize: 16,
-                                              desktopSize: 18),
-                                      color: Colors.white.withOpacity(0.8),
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
+  @override
+  Widget build(BuildContext context) {
+    return AnimatedBuilder(
+      animation: ctrl,
+      builder: (_, __) => Container(
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+            colors: [
+              Color.lerp(
+                const Color(0xFF020810),
+                const Color(0xFF040E1C),
+                ctrl.value,
+              )!,
+              Color.lerp(
+                const Color(0xFF061220),
+                const Color(0xFF082040),
+                ctrl.value,
+              )!,
+              Color.lerp(
+                const Color(0xFF0A2010),
+                const Color(0xFF0D2E18),
+                ctrl.value,
+              )!,
+              const Color(0xFF041008),
+            ],
+            stops: const [0.0, 0.35, 0.72, 1.0],
+          ),
+        ),
+      ),
+    );
+  }
+}
 
-                            SizedBox(
-                                height: ResponsiveHelper.getResponsiveSpacing(
-                                    context,
-                                    mobileSpacing: 48)),
+// ─────────────────────────────────────────────────────────────────────────────
+// AURORA GLOW LAYER
+// ─────────────────────────────────────────────────────────────────────────────
+class _AuroraLayer extends StatelessWidget {
+  final AnimationController ctrl;
+  final Size size;
+  const _AuroraLayer({required this.ctrl, required this.size});
 
-                            // Loading section
-                            AnimatedOpacity(
-                              opacity: _showProgressText ? 1.0 : 0.0,
-                              duration: const Duration(milliseconds: 800),
-                              child: GlassContainer(
-                                width: ResponsiveHelper
-                                    .getResponsiveContainerWidth(context,
-                                        mobileWidth: 280,
-                                        tabletWidth: 320,
-                                        desktopWidth: 360),
-                                padding: EdgeInsets.all(
-                                  ResponsiveHelper.getResponsivePadding(context,
-                                      mobilePadding: 20),
-                                ),
-                                borderRadius: BorderRadius.circular(
-                                    ResponsiveHelper.getResponsiveBorderRadius(
-                                        context,
-                                        mobileRadius: 20)),
-                                blur: 15,
-                                opacity: 0.1,
-                                gradient: LinearGradient(
-                                  colors: [
-                                    const Color(0xFF9D4EDD).withOpacity(0.2),
-                                    const Color(0xFF00B4D8).withOpacity(0.1),
-                                  ],
-                                ),
-                                child: Column(
-                                  children: [
-                                    // Loading message
-                                    Text(
-                                      _loadingMessage,
-                                      style: TextStyle(
-                                        fontSize: ResponsiveHelper
-                                            .getResponsiveFontSize(context,
-                                                mobileSize: 14,
-                                                tabletSize: 16,
-                                                desktopSize: 18),
-                                        color: Colors.white.withOpacity(0.9),
-                                        fontStyle: FontStyle.italic,
-                                      ),
-                                    ),
+  @override
+  Widget build(BuildContext context) {
+    return AnimatedBuilder(
+      animation: ctrl,
+      builder: (_, __) => Stack(
+        children: [
+          // Top-right aurora blob
+          Positioned(
+            top: -size.height * 0.15,
+            right: -size.width * 0.15,
+            child: Container(
+              width: size.width * 0.75,
+              height: size.width * 0.75,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                gradient: RadialGradient(
+                  colors: [
+                    Color.lerp(
+                      const Color(0xFF00FF88).withOpacity(0.18),
+                      const Color(0xFF00D4FF).withOpacity(0.22),
+                      ctrl.value,
+                    )!,
+                    Colors.transparent,
+                  ],
+                ),
+              ),
+            ),
+          ),
+          // Left aurora blob
+          Positioned(
+            top: size.height * 0.25,
+            left: -size.width * 0.25,
+            child: Container(
+              width: size.width * 0.65,
+              height: size.width * 0.65,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                gradient: RadialGradient(
+                  colors: [
+                    Color.lerp(
+                      const Color(0xFF39FF14).withOpacity(0.12),
+                      const Color(0xFF00FF9F).withOpacity(0.16),
+                      ctrl.value,
+                    )!,
+                    Colors.transparent,
+                  ],
+                ),
+              ),
+            ),
+          ),
+          // Centre deep-glow
+          Center(
+            child: Container(
+              width: size.width * 0.9,
+              height: size.width * 0.9,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                gradient: RadialGradient(
+                  colors: [
+                    Color.lerp(
+                      const Color(0xFF004D2A).withOpacity(0.35),
+                      const Color(0xFF006644).withOpacity(0.45),
+                      ctrl.value,
+                    )!,
+                    Colors.transparent,
+                  ],
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
 
-                                    SizedBox(
-                                        height: ResponsiveHelper
-                                            .getResponsiveSpacing(context,
-                                                mobileSpacing: 20)),
+// ─────────────────────────────────────────────────────────────────────────────
+// BREATHING ORB
+// ─────────────────────────────────────────────────────────────────────────────
+class _BreathingOrb extends StatelessWidget {
+  final Animation<double> scaleAnim;
+  final Animation<double> opacityAnim;
+  const _BreathingOrb({required this.scaleAnim, required this.opacityAnim});
 
-                                    // Progress bar
-                                    Container(
-                                      width: ResponsiveHelper
-                                          .getResponsiveContainerWidth(context,
-                                              mobileWidth: 200,
-                                              tabletWidth: 250,
-                                              desktopWidth: 300),
-                                      height: ResponsiveHelper
-                                          .getResponsiveContainerHeight(context,
-                                              mobileHeight: 6,
-                                              tabletHeight: 7,
-                                              desktopHeight: 8),
-                                      decoration: BoxDecoration(
-                                        color: Colors.white.withOpacity(0.1),
-                                        borderRadius: BorderRadius.circular(3),
-                                      ),
-                                      child: Stack(
-                                        children: [
-                                          // Progress bar
-                                          AnimatedContainer(
-                                            duration: const Duration(
-                                                milliseconds: 200),
-                                            width: ResponsiveHelper
-                                                    .getResponsiveContainerWidth(
-                                                        context,
-                                                        mobileWidth: 200,
-                                                        tabletWidth: 250,
-                                                        desktopWidth: 300) *
-                                                (_loadingProgress / 100),
-                                            decoration: BoxDecoration(
-                                              borderRadius:
-                                                  BorderRadius.circular(3),
-                                              gradient: LinearGradient(
-                                                colors: _isLoadingComplete
-                                                    ? [
-                                                        const Color(0xFF4CAF50),
-                                                        const Color(0xFF2E7D32),
-                                                      ]
-                                                    : [
-                                                        const Color(0xFF9D4EDD),
-                                                        const Color(0xFF00B4D8),
-                                                      ],
-                                              ),
-                                              boxShadow: [
-                                                BoxShadow(
-                                                  color: const Color(0xFF9D4EDD)
-                                                      .withOpacity(0.3),
-                                                  blurRadius: 10,
-                                                  spreadRadius: 2,
-                                                ),
-                                              ],
-                                            ),
-                                          ),
-                                        ],
-                                      ),
-                                    ),
+  @override
+  Widget build(BuildContext context) {
+    return AnimatedBuilder(
+      animation: scaleAnim,
+      builder: (_, __) => Transform.scale(
+        scale: scaleAnim.value,
+        child: Opacity(
+          opacity: opacityAnim.value,
+          child: Container(
+            width: 220,
+            height: 220,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              gradient: RadialGradient(
+                colors: [
+                  const Color(0xFF00FF99).withOpacity(0.22),
+                  const Color(0xFF00CC77).withOpacity(0.14),
+                  const Color(0xFF007744).withOpacity(0.07),
+                  Colors.transparent,
+                ],
+                stops: const [0.0, 0.4, 0.7, 1.0],
+              ),
+              boxShadow: [
+                BoxShadow(
+                  color: const Color(0xFF00FF99).withOpacity(0.25),
+                  blurRadius: 80,
+                  spreadRadius: 20,
+                ),
+                BoxShadow(
+                  color: const Color(0xFF00FFCC).withOpacity(0.18),
+                  blurRadius: 40,
+                  spreadRadius: 5,
+                ),
+              ],
+            ),
+            // Inner ring
+            child: Center(
+              child: Container(
+                width: 100,
+                height: 100,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  border: Border.all(
+                    color: const Color(0xFF7DFFCE).withOpacity(0.35),
+                    width: 1.5,
+                  ),
+                  gradient: RadialGradient(
+                    colors: [
+                      const Color(0xFF00FF99).withOpacity(0.15),
+                      Colors.transparent,
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
 
-                                    SizedBox(
-                                        height: ResponsiveHelper
-                                            .getResponsiveSpacing(context,
-                                                mobileSpacing: 12)),
+// ─────────────────────────────────────────────────────────────────────────────
+// AURORA DIVIDER  (animated width)
+// ─────────────────────────────────────────────────────────────────────────────
+class _AuraDivider extends StatelessWidget {
+  final AnimationController ctrl;
+  const _AuraDivider({required this.ctrl});
 
-                                    // Progress percentage
-                                    Text(
-                                      '$_loadingProgress%',
-                                      style: TextStyle(
-                                        fontSize: ResponsiveHelper
-                                            .getResponsiveFontSize(context,
-                                                mobileSize: 12,
-                                                tabletSize: 14,
-                                                desktopSize: 16),
-                                        color: Colors.white.withOpacity(0.7),
-                                        fontWeight: FontWeight.w600,
-                                      ),
-                                    ),
+  @override
+  Widget build(BuildContext context) {
+    return AnimatedBuilder(
+      animation: ctrl,
+      builder: (_, __) {
+        final w = 36.0 + ctrl.value * 24.0;
+        return Container(
+          width: w,
+          height: 1.2,
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              colors: [
+                Colors.transparent,
+                const Color(0xFF7DFFCE).withOpacity(0.7),
+                Colors.transparent,
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+}
 
-                                    SizedBox(
-                                        height: ResponsiveHelper
-                                            .getResponsiveSpacing(context,
-                                                mobileSpacing: 16)),
+// ─────────────────────────────────────────────────────────────────────────────
+// PARTICLE DATA
+// ─────────────────────────────────────────────────────────────────────────────
+class _Particle {
+  final double x; // 0..1 horizontal position
+  final double baseY; // 0..1 starting Y fraction
+  final double size; // dot radius
+  final double speed; // travel speed multiplier
+  final double phase; // animation offset 0..1
+  final double hue; // HSL hue
 
-                                    // Loading indicator
-                                    Container(
-                                      width: ResponsiveHelper
-                                          .getResponsiveContainerWidth(context,
-                                              mobileWidth: 50,
-                                              tabletWidth: 60,
-                                              desktopWidth: 70),
-                                      height: ResponsiveHelper
-                                          .getResponsiveContainerHeight(context,
-                                              mobileHeight: 50,
-                                              tabletHeight: 60,
-                                              desktopHeight: 70),
-                                      decoration: BoxDecoration(
-                                        shape: BoxShape.circle,
-                                        gradient: LinearGradient(
-                                          colors: [
-                                            Colors.white.withOpacity(0.1),
-                                            Colors.white.withOpacity(0.05),
-                                          ],
-                                        ),
-                                        border: Border.all(
-                                          color: Colors.white.withOpacity(0.2),
-                                          width: 2,
-                                        ),
-                                      ),
-                                      child: Stack(
-                                        alignment: Alignment.center,
-                                        children: [
-                                          // Animated checkmark or spinner
-                                          AnimatedSwitcher(
-                                            duration: const Duration(
-                                                milliseconds: 500),
-                                            child: _isLoadingComplete
-                                                ? Icon(
-                                                    Icons.check_circle,
-                                                    color:
-                                                        const Color(0xFF4CAF50),
-                                                    size: ResponsiveHelper
-                                                        .getResponsiveIconSize(
-                                                            context,
-                                                            mobileSize: 30,
-                                                            tabletSize: 35,
-                                                            desktopSize: 40),
-                                                  )
-                                                : RotationTransition(
-                                                    turns: Tween(
-                                                            begin: 0.0,
-                                                            end: 1.0)
-                                                        .animate(
-                                                            _mainController!),
-                                                    child: Icon(
-                                                      Icons.self_improvement,
-                                                      color: Colors.white
-                                                          .withOpacity(0.9),
-                                                      size: ResponsiveHelper
-                                                          .getResponsiveIconSize(
-                                                              context,
-                                                              mobileSize: 25,
-                                                              tabletSize: 30,
-                                                              desktopSize: 35),
-                                                    ),
-                                                  ),
-                                          ),
-                                        ],
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ),
+  const _Particle({
+    required this.x,
+    required this.baseY,
+    required this.size,
+    required this.speed,
+    required this.phase,
+    required this.hue,
+  });
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// PARTICLE PAINTER  (fireflies rising upward)
+// ─────────────────────────────────────────────────────────────────────────────
+class _ParticlePainter extends CustomPainter {
+  final List<_Particle> particles;
+  final double progress; // 0..1 loop
+  final Size size;
+
+  const _ParticlePainter({
+    required this.particles,
+    required this.progress,
+    required this.size,
+  });
+
+  @override
+  void paint(Canvas canvas, Size canvasSize) {
+    for (final p in particles) {
+      // Each particle has its own phase offset
+      final t = (progress + p.phase) % 1.0;
+      final y = canvasSize.height * (1.0 - t * p.speed * 1.4);
+      // Only draw while within bounds
+      if (y < -p.size || y > canvasSize.height + p.size) continue;
+
+      final x =
+          canvasSize.width * p.x + math.sin(t * math.pi * 2 + p.phase * 6) * 18;
+
+      final opacity = (t < 0.15)
+          ? t / 0.15
+          : (t > 0.75)
+              ? (1.0 - t) / 0.25
+              : 1.0;
+
+      final paint = Paint()
+        ..color = HSLColor.fromAHSL(
+          (opacity * 0.85).clamp(0.0, 1.0),
+          p.hue,
+          0.9,
+          0.75,
+        ).toColor()
+        ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 3.5);
+
+      canvas.drawCircle(Offset(x, y), p.size * 0.6, paint);
+
+      // Small glow ring around brighter particles
+      if (p.size > 5) {
+        final glowPaint = Paint()
+          ..color = HSLColor.fromAHSL(
+            (opacity * 0.25).clamp(0.0, 1.0),
+            p.hue,
+            0.95,
+            0.85,
+          ).toColor()
+          ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 7.0);
+        canvas.drawCircle(Offset(x, y), p.size * 1.4, glowPaint);
+      }
+    }
+  }
+
+  @override
+  bool shouldRepaint(_ParticlePainter old) => old.progress != progress;
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// GARDEN SILHOUETTE PAINTER
+// Draws layered treeline + ground glow at the bottom of the screen
+// ─────────────────────────────────────────────────────────────────────────────
+class _GardenPainter extends CustomPainter {
+  final double progress; // 0..1, driven by breathe controller
+
+  const _GardenPainter({required this.progress});
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final w = size.width;
+    final h = size.height;
+
+    // ── Ground fog ────────────────────────────────────────────────────────
+    final fogPaint = Paint()
+      ..shader = LinearGradient(
+        begin: Alignment.bottomCenter,
+        end: Alignment.topCenter,
+        colors: [
+          const Color(0xFF003322).withOpacity(0.9),
+          const Color(0xFF004433).withOpacity(0.5),
+          Colors.transparent,
+        ],
+        stops: const [0.0, 0.4, 1.0],
+      ).createShader(Rect.fromLTWH(0, 0, w, h));
+    canvas.drawRect(Rect.fromLTWH(0, 0, w, h), fogPaint);
+
+    // ── Back tree layer (darkest) ─────────────────────────────────────────
+    _drawTreeLayer(
+      canvas,
+      size,
+      baseY: h * 0.72,
+      treeHeight: h * 0.52,
+      color: const Color(0xFF001A0E),
+      count: 9,
+      widthMult: 1.0,
+      yOffset: math.sin(progress * math.pi) * 3,
+    );
+
+    // ── Mid tree layer ────────────────────────────────────────────────────
+    _drawTreeLayer(
+      canvas,
+      size,
+      baseY: h * 0.82,
+      treeHeight: h * 0.42,
+      color: const Color(0xFF002B16),
+      count: 11,
+      widthMult: 0.85,
+      yOffset: math.sin(progress * math.pi + 0.5) * 5,
+    );
+
+    // ── Front tree layer (lightest silhouette) ────────────────────────────
+    _drawTreeLayer(
+      canvas,
+      size,
+      baseY: h * 0.94,
+      treeHeight: h * 0.36,
+      color: const Color(0xFF003D1E),
+      count: 14,
+      widthMult: 0.7,
+      yOffset: math.sin(progress * math.pi + 1.0) * 7,
+    );
+
+    // ── Ground glow strip ─────────────────────────────────────────────────
+    final groundGlow = Paint()
+      ..shader = LinearGradient(
+        begin: Alignment.topCenter,
+        end: Alignment.bottomCenter,
+        colors: [
+          Colors.transparent,
+          const Color(0xFF00FF88).withOpacity(0.06 + progress * 0.04),
+          const Color(0xFF00FF88).withOpacity(0.12 + progress * 0.06),
+        ],
+      ).createShader(Rect.fromLTWH(0, h * 0.85, w, h * 0.15));
+    canvas.drawRect(Rect.fromLTWH(0, h * 0.85, w, h * 0.15), groundGlow);
+  }
+
+  void _drawTreeLayer(
+    Canvas canvas,
+    Size size, {
+    required double baseY,
+    required double treeHeight,
+    required Color color,
+    required int count,
+    required double widthMult,
+    required double yOffset,
+  }) {
+    final paint = Paint()..color = color;
+    final w = size.width;
+    final spacing = w / count;
+
+    for (int i = 0; i < count; i++) {
+      final cx = spacing * i + spacing * 0.5 + (i % 3 - 1) * spacing * 0.2;
+      final top = baseY - treeHeight * (0.7 + (i % 5) * 0.08) + yOffset;
+      final halfW = spacing * widthMult * 0.48;
+
+      final path = Path()
+        ..moveTo(cx, top)
+        ..lineTo(cx - halfW, baseY + yOffset)
+        ..lineTo(cx + halfW, baseY + yOffset)
+        ..close();
+
+      // Second tier of triangle (layered pine look)
+      final midY = top + treeHeight * 0.3;
+      final pathMid = Path()
+        ..moveTo(cx, top + treeHeight * 0.15)
+        ..lineTo(cx - halfW * 1.2, midY + treeHeight * 0.3 + yOffset)
+        ..lineTo(cx + halfW * 1.2, midY + treeHeight * 0.3 + yOffset)
+        ..close();
+
+      canvas.drawPath(pathMid, paint);
+      canvas.drawPath(path, paint);
+    }
+  }
+
+  @override
+  bool shouldRepaint(_GardenPainter old) => old.progress != progress;
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// LOTUS PETAL PAINTER  (gently drifting)
+// ─────────────────────────────────────────────────────────────────────────────
+class _PetalPainter extends CustomPainter {
+  final double sway; // 0..1
+  final Size size;
+
+  const _PetalPainter({required this.sway, required this.size});
+
+  static const _petalData = [
+    (0.12, 0.55, 0.0),
+    (0.28, 0.38, 0.3),
+    (0.68, 0.44, 0.6),
+    (0.82, 0.30, 0.1),
+    (0.50, 0.62, 0.8),
+    (0.92, 0.55, 0.5),
+    (0.07, 0.72, 0.9),
+    (0.44, 0.22, 0.4),
+  ];
+
+  @override
+  void paint(Canvas canvas, Size canvasSize) {
+    for (final (px, py, phase) in _petalData) {
+      final angle = (sway + phase) * math.pi * 0.4 - math.pi * 0.2;
+      final x = canvasSize.width * px + math.sin(angle) * 12;
+      final y = canvasSize.height * py + math.cos((sway + phase) * math.pi) * 8;
+
+      final opacity = 0.12 + 0.10 * math.sin((sway + phase) * math.pi);
+      _drawPetal(canvas, Offset(x, y), angle, opacity);
+    }
+  }
+
+  void _drawPetal(Canvas canvas, Offset center, double angle, double opacity) {
+    final paint = Paint()
+      ..color = const Color(0xFF7DFFCE).withOpacity(opacity)
+      ..style = PaintingStyle.fill;
+
+    canvas.save();
+    canvas.translate(center.dx, center.dy);
+    canvas.rotate(angle);
+
+    final path = Path()
+      ..moveTo(0, 0)
+      ..cubicTo(-10, -18, -6, -34, 0, -38)
+      ..cubicTo(6, -34, 10, -18, 0, 0);
+
+    canvas.drawPath(path, paint);
+
+    // Vein
+    final veinPaint = Paint()
+      ..color = const Color(0xFFB8FFE8).withOpacity(opacity * 0.6)
+      ..strokeWidth = 0.8
+      ..style = PaintingStyle.stroke;
+    canvas.drawLine(const Offset(0, 0), const Offset(0, -36), veinPaint);
+
+    canvas.restore();
+  }
+
+  @override
+  bool shouldRepaint(_PetalPainter old) => old.sway != sway;
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// LOADING PANEL
+// ─────────────────────────────────────────────────────────────────────────────
+class _LoadingPanel extends StatelessWidget {
+  final String message;
+  final double progress; // 0..1
+  final AnimationController progressCtrl;
+  final bool isComplete;
+
+  const _LoadingPanel({
+    required this.message,
+    required this.progress,
+    required this.progressCtrl,
+    required this.isComplete,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.fromLTRB(32, 28, 32, 48),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topCenter,
+          end: Alignment.bottomCenter,
+          colors: [
+            Colors.transparent,
+            const Color(0xFF020D08).withOpacity(0.85),
+            const Color(0xFF010A06),
+          ],
+        ),
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          // Message
+          AnimatedSwitcher(
+            duration: const Duration(milliseconds: 600),
+            transitionBuilder: (child, anim) => FadeTransition(
+              opacity: anim,
+              child: child,
+            ),
+            child: Text(
+              message,
+              key: ValueKey(message),
+              style: TextStyle(
+                fontSize: 13,
+                fontStyle: FontStyle.italic,
+                color: const Color(0xFF9EFFD0).withOpacity(0.75),
+                letterSpacing: 1.8,
+              ),
+            ),
+          ),
+          const SizedBox(height: 20),
+          // Progress bar track
+          Stack(
+            children: [
+              // Track
+              Container(
+                height: 3,
+                decoration: BoxDecoration(
+                  color: const Color(0xFF00FF88).withOpacity(0.12),
+                  borderRadius: BorderRadius.circular(4),
+                ),
+              ),
+              // Fill
+              AnimatedBuilder(
+                animation: progressCtrl,
+                builder: (_, __) => FractionallySizedBox(
+                  widthFactor: progress.clamp(0.0, 1.0),
+                  child: Container(
+                    height: 3,
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(4),
+                      gradient: const LinearGradient(
+                        colors: [
+                          Color(0xFF00FF88),
+                          Color(0xFF00FFCC),
+                          Color(0xFF7DFFCE),
+                        ],
+                      ),
+                      boxShadow: [
+                        BoxShadow(
+                          color: const Color(0xFF00FF88).withOpacity(0.6),
+                          blurRadius: 8,
+                          spreadRadius: 1,
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+              // Glowing tip dot
+              AnimatedBuilder(
+                animation: progressCtrl,
+                builder: (_, __) {
+                  return FractionallySizedBox(
+                    widthFactor: progress.clamp(0.0, 1.0),
+                    child: Align(
+                      alignment: Alignment.centerRight,
+                      child: Container(
+                        width: 8,
+                        height: 8,
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          color: const Color(0xFFB8FFE8),
+                          boxShadow: [
+                            BoxShadow(
+                              color: const Color(0xFF00FF99).withOpacity(0.9),
+                              blurRadius: 12,
+                              spreadRadius: 2,
                             ),
                           ],
                         ),
                       ),
                     ),
-                  ),
-                ),
-              ),
-
-              // Bottom info
-              Positioned(
-                bottom: 30,
-                left: 0,
-                right: 0,
-                child: Column(
-                  children: [
-                    // Loading dots
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: List.generate(3, (index) {
-                        final active =
-                            (_mainController?.value ?? 0) > (index + 1) / 3;
-                        return AnimatedContainer(
-                          duration: const Duration(milliseconds: 300),
-                          margin: const EdgeInsets.symmetric(horizontal: 4),
-                          width: active ? 12 : 8,
-                          height: 8,
-                          decoration: BoxDecoration(
-                            color: active
-                                ? const Color(0xFF4CAF50)
-                                : Colors.white.withOpacity(0.3),
-                            borderRadius: BorderRadius.circular(4),
-                          ),
-                        );
-                      }),
-                    ),
-
-                    const SizedBox(height: 20),
-
-                    // Version info
-                    Column(
-                      children: [
-                        Text(
-                          'Version 1.0.0',
-                          style: TextStyle(
-                            fontSize: 10,
-                            color: Colors.white.withOpacity(0.4),
-                            letterSpacing: 1.2,
-                            fontWeight: FontWeight.w300,
-                          ),
-                        ),
-                        const SizedBox(height: 2),
-                        Text(
-                          '© 2024 Mindfulness Garden',
-                          style: TextStyle(
-                            fontSize: 9,
-                            color: Colors.white.withOpacity(0.3),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ],
-                ),
+                  );
+                },
               ),
             ],
-          );
-        },
+          ),
+          const SizedBox(height: 12),
+          // Percentage
+          AnimatedBuilder(
+            animation: progressCtrl,
+            builder: (_, __) => Text(
+              '${(progress * 100).toInt()}%',
+              style: TextStyle(
+                fontSize: 11,
+                color: const Color(0xFF7DFFCE).withOpacity(0.55),
+                letterSpacing: 2,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// ERROR DIALOG
+// ─────────────────────────────────────────────────────────────────────────────
+class _ErrorDialog extends StatelessWidget {
+  final VoidCallback onRetry;
+  final VoidCallback onContinue;
+
+  const _ErrorDialog({required this.onRetry, required this.onContinue});
+
+  @override
+  Widget build(BuildContext context) {
+    return Dialog(
+      backgroundColor: Colors.transparent,
+      child: Container(
+        width: 320,
+        padding: const EdgeInsets.all(30),
+        decoration: BoxDecoration(
+          gradient: const LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [Color(0xFF051A10), Color(0xFF0A2E1A)],
+          ),
+          borderRadius: BorderRadius.circular(24),
+          border: Border.all(
+            color: const Color(0xFF00FF88).withOpacity(0.2),
+            width: 1.0,
+          ),
+          boxShadow: [
+            BoxShadow(
+              color: const Color(0xFF00FF88).withOpacity(0.15),
+              blurRadius: 40,
+              spreadRadius: 5,
+            ),
+          ],
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              width: 72,
+              height: 72,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                border: Border.all(
+                  color: const Color(0xFF00FF88).withOpacity(0.4),
+                  width: 1.5,
+                ),
+                color: const Color(0xFF00FF88).withOpacity(0.08),
+              ),
+              child: const Icon(Icons.wifi_off_rounded,
+                  size: 34, color: Color(0xFF7DFFCE)),
+            ),
+            const SizedBox(height: 20),
+            const Text(
+              'Garden Unreachable',
+              style: TextStyle(
+                fontSize: 20,
+                fontWeight: FontWeight.w700,
+                color: Colors.white,
+                letterSpacing: 0.5,
+              ),
+            ),
+            const SizedBox(height: 10),
+            Text(
+              'We\'ll continue in offline mode.\nYour garden still awaits.',
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                fontSize: 14,
+                color: Colors.white.withOpacity(0.7),
+                height: 1.6,
+              ),
+            ),
+            const SizedBox(height: 28),
+            Row(
+              children: [
+                Expanded(
+                  child: OutlinedButton.icon(
+                    onPressed: onRetry,
+                    icon: const Icon(Icons.refresh, size: 18),
+                    label: const Text('Retry'),
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: const Color(0xFF7DFFCE),
+                      side:
+                          const BorderSide(color: Color(0xFF00FF88), width: 1),
+                      padding: const EdgeInsets.symmetric(vertical: 14),
+                      shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(14)),
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: ElevatedButton(
+                    onPressed: onContinue,
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFF00CC66),
+                      foregroundColor: const Color(0xFF001A0D),
+                      padding: const EdgeInsets.symmetric(vertical: 14),
+                      elevation: 0,
+                      shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(14)),
+                    ),
+                    child: const Text('Enter',
+                        style: TextStyle(fontWeight: FontWeight.w700)),
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
       ),
     );
   }

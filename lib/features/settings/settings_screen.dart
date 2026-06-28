@@ -1,197 +1,435 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:provider/provider.dart' as provider;
 import 'package:go_router/go_router.dart';
+import 'package:provider/provider.dart';
+import 'package:pranaverse/core/localization/app_copy.dart';
 import 'package:pranaverse/core/providers/app_settings_provider.dart';
-import 'package:pranaverse/core/themes/app_theme.dart';
 import 'package:pranaverse/core/services/voice_service.dart';
+import 'package:pranaverse/core/themes/app_theme.dart';
+import 'package:pranaverse/core/widgets/character/teacher_avatar.dart';
 import 'package:pranaverse/core/widgets/character/teacher_personality.dart';
 import 'package:pranaverse/l10n/app_localizations.dart';
-import 'package:pranaverse/presentation/providers/user_provider.dart' as user_prov;
+import 'package:pranaverse/presentation/providers/user_provider.dart'
+    as user_prov;
 
-class SettingsScreen extends ConsumerWidget {
+class SettingsScreen extends ConsumerStatefulWidget {
   const SettingsScreen({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<SettingsScreen> createState() => _SettingsScreenState();
+}
+
+class _SettingsScreenState extends ConsumerState<SettingsScreen> {
+  bool _notificationsEnabled = true;
+  bool _autoPlaySounds = true;
+  bool _vibrationEnabled = true;
+  double _volumeLevel = 0.7;
+  TimeOfDay _dailyReminder = const TimeOfDay(hour: 9, minute: 0);
+
+  @override
+  Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
     final appSettings = context.watch<AppSettingsProvider>();
     final teacher = ref.watch(teacherPreferenceProvider);
     final userProvider = context.watch<user_prov.UserProvider>();
-    
-    final bool _notificationsEnabled = true;
-    bool _autoPlaySounds = true;
-    bool _vibrationEnabled = true;
-    double _volumeLevel = 0.7;
-    
-    final AppLanguage _selectedLanguage = appSettings.language;
-    final AppUiTheme _selectedUiTheme = appSettings.uiTheme;
-    final bool _darkModeEnabled = appSettings.themeMode == ThemeMode.dark;
-    final bool _voiceEnabled = appSettings.voiceEnabled;
-    final VoicePersonality _voicePersonality = appSettings.voicePersonality;
-
-    final List<AppLanguage> _languages = [
+    final colors = Theme.of(context).colorScheme;
+    final languages = [
       AppLanguage.english,
       AppLanguage.hindi,
       AppLanguage.bengali,
     ];
-
-    final theme = Theme.of(context);
-    final primaryColor = theme.colorScheme.primary;
-    final onSurfaceColor = theme.colorScheme.onSurface;
+    final languageItems = {
+      for (final language in languages)
+        AppCopy.languageName(appSettings.language, language): language,
+    };
 
     return Scaffold(
-      appBar: AppBar(
-        title: Text(l10n.settings),
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back),
-          onPressed: () =>
-              context.canPop() ? context.pop() : context.go('/main'),
+      backgroundColor: colors.background,
+      body: Container(
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [
+              colors.background,
+              Color.alphaBlend(
+                  colors.primary.withOpacity(0.15), colors.surface),
+              Color.alphaBlend(
+                  const Color(0xFF4CD97B).withOpacity(0.09), colors.background),
+            ],
+          ),
+        ),
+        child: SafeArea(
+          child: Center(
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 720),
+              child: CustomScrollView(
+                slivers: [
+                  SliverToBoxAdapter(
+                    child: Padding(
+                      padding: const EdgeInsets.fromLTRB(20, 12, 20, 8),
+                      child: _buildHeader(context, l10n),
+                    ),
+                  ),
+                  SliverPadding(
+                    padding: const EdgeInsets.fromLTRB(20, 12, 20, 28),
+                    sliver: SliverList(
+                      delegate: SliverChildListDelegate.fixed([
+                        _buildProfileSection(context, userProvider, l10n),
+                        const SizedBox(height: 28),
+                        _buildSectionTitle(
+                            context, l10n.uiTheme, Icons.palette_outlined),
+                        const SizedBox(height: 12),
+                        _buildUiThemePicker(
+                            context, appSettings.uiTheme, appSettings),
+                        const SizedBox(height: 28),
+                        _buildSectionTitle(context, l10n.personality,
+                            Icons.psychology_alt_outlined),
+                        const SizedBox(height: 12),
+                        _buildTeacherPicker(context, teacher),
+                        const SizedBox(height: 12),
+                        _buildTeacherStudioButton(context),
+                        const SizedBox(height: 28),
+                        _buildSectionTitle(context, l10n.aiTutorVoice,
+                            Icons.record_voice_over_outlined),
+                        const SizedBox(height: 12),
+                        _buildVoiceSection(
+                          context,
+                          appSettings.voiceEnabled,
+                        ),
+                        const SizedBox(height: 28),
+                        _buildSectionTitle(
+                            context, l10n.general, Icons.tune_rounded),
+                        const SizedBox(height: 12),
+                        _buildSettingDropdown(
+                          context,
+                          title: l10n.language,
+                          icon: Icons.language_rounded,
+                          value: AppCopy.languageName(
+                              appSettings.language, appSettings.language),
+                          items: languageItems.keys.toList(),
+                          onChanged: (value) {
+                            if (value == null) return;
+                            final selected =
+                                languageItems[value] ?? AppLanguage.english;
+                            context
+                                .read<AppSettingsProvider>()
+                                .setLanguage(selected);
+                          },
+                        ),
+                        _buildSettingTime(
+                          context,
+                          title: l10n.dailyReminder,
+                          subtitle: l10n.dailyReminderSubtitle,
+                          icon: Icons.notifications_active_outlined,
+                          time: _dailyReminder,
+                        ),
+                        _buildSettingSwitch(
+                          context,
+                          title: l10n.autoPlaySounds,
+                          subtitle: l10n.autoPlaySoundsSubtitle,
+                          icon: Icons.music_note_outlined,
+                          value: _autoPlaySounds,
+                          onChanged: (value) =>
+                              setState(() => _autoPlaySounds = value),
+                        ),
+                        _buildSettingSwitch(
+                          context,
+                          title: l10n.vibration,
+                          subtitle: l10n.vibrationSubtitle,
+                          icon: Icons.vibration_rounded,
+                          value: _vibrationEnabled,
+                          onChanged: (value) =>
+                              setState(() => _vibrationEnabled = value),
+                        ),
+                        _buildSettingSwitch(
+                          context,
+                          title: AppCopy.of(context, 'Notifications'),
+                          subtitle: AppCopy.of(
+                              context, 'Daily reminders and garden streaks'),
+                          icon: Icons.notifications_none_rounded,
+                          value: _notificationsEnabled,
+                          onChanged: (value) =>
+                              setState(() => _notificationsEnabled = value),
+                        ),
+                        _buildSettingSlider(
+                          context,
+                          title: l10n.volumeLevel,
+                          icon: Icons.volume_up_outlined,
+                          value: _volumeLevel,
+                          onChanged: (value) =>
+                              setState(() => _volumeLevel = value),
+                        ),
+                        const SizedBox(height: 28),
+                        _buildSectionTitle(
+                            context, l10n.data, Icons.storage_outlined),
+                        const SizedBox(height: 12),
+                        _buildSettingButton(
+                          context,
+                          title: l10n.exportData,
+                          subtitle: l10n.exportDataSubtitle,
+                          icon: Icons.file_download_outlined,
+                          onTap: () => _exportData(context),
+                        ),
+                        _buildSettingButton(
+                          context,
+                          title: l10n.clearData,
+                          subtitle: l10n.clearDataSubtitle,
+                          icon: Icons.delete_sweep_outlined,
+                          danger: true,
+                          onTap: () => _showClearDataDialog(context),
+                        ),
+                        const SizedBox(height: 28),
+                        _buildSectionTitle(
+                            context, l10n.about, Icons.info_outline_rounded),
+                        const SizedBox(height: 12),
+                        _buildSettingButton(
+                          context,
+                          title: l10n.privacyPolicy,
+                          subtitle: l10n.privacyPolicySubtitle,
+                          icon: Icons.privacy_tip_outlined,
+                          onTap: () => _openPrivacyPolicy(context),
+                        ),
+                        _buildSettingButton(
+                          context,
+                          title: l10n.termsOfService,
+                          subtitle: l10n.termsOfServiceSubtitle,
+                          icon: Icons.description_outlined,
+                          onTap: () => _openTerms(context),
+                        ),
+                        _buildSettingButton(
+                          context,
+                          title: l10n.rateApp,
+                          subtitle: l10n.rateAppSubtitle,
+                          icon: Icons.star_border_rounded,
+                          onTap: () => _rateApp(context),
+                        ),
+                        _buildSettingButton(
+                          context,
+                          title: l10n.appVersion,
+                          subtitle: 'v1.0.0',
+                          icon: Icons.verified_outlined,
+                          onTap: () {},
+                        ),
+                        const SizedBox(height: 20),
+                        _buildSignOutButton(context, l10n),
+                      ]),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
         ),
       ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(20),
+    );
+  }
+
+  Widget _buildHeader(BuildContext context, AppLocalizations l10n) {
+    return Row(
+      children: [
+        _roundIconButton(
+          context,
+          icon: Icons.arrow_back_rounded,
+          onTap: () => context.canPop() ? context.pop() : context.go('/main'),
+        ),
+        const SizedBox(width: 14),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                l10n.settings,
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 22,
+                  fontWeight: FontWeight.w800,
+                ),
+              ),
+              const SizedBox(height: 2),
+              Text(
+                AppCopy.of(context, 'Personalize your garden'),
+                style: TextStyle(
+                  color: Colors.white.withOpacity(0.68),
+                  fontSize: 13,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+            ],
+          ),
+        ),
+        _roundIconButton(
+          context,
+          icon: Icons.restart_alt_rounded,
+          onTap: () => context.read<AppSettingsProvider>().resetToDefaults(),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildProfileSection(
+    BuildContext context,
+    user_prov.UserProvider userProvider,
+    AppLocalizations l10n,
+  ) {
+    final colors = Theme.of(context).colorScheme;
+    final user = userProvider.user;
+
+    return _settingsCard(
+      context,
+      padding: const EdgeInsets.all(18),
+      child: Row(
+        children: [
+          Container(
+            width: 64,
+            height: 64,
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                colors: [colors.primary, const Color(0xFF4CD97B)],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+              ),
+              shape: BoxShape.circle,
+              boxShadow: [
+                BoxShadow(
+                  color: colors.primary.withOpacity(0.28),
+                  blurRadius: 22,
+                  offset: const Offset(0, 10),
+                ),
+              ],
+            ),
+            child:
+                const Icon(Icons.person_rounded, color: Colors.white, size: 32),
+          ),
+          const SizedBox(width: 16),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  user?.name ?? l10n.myProfile,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontWeight: FontWeight.w800,
+                    fontSize: 17,
+                  ),
+                ),
+                const SizedBox(height: 5),
+                Text(
+                  (user?.email ?? '').isEmpty
+                      ? AppCopy.of(context, 'Local garden profile')
+                      : user!.email,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    color: Colors.white.withOpacity(0.68),
+                    fontSize: 13,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          _roundIconButton(
+            context,
+            icon: Icons.edit_rounded,
+            onTap: () => context.push('/profile'),
+            compact: true,
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildUiThemePicker(
+    BuildContext context,
+    AppUiTheme selectedUiTheme,
+    AppSettingsProvider settings,
+  ) {
+    final width = MediaQuery.of(context).size.width;
+    final crossAxisCount = width >= 560 ? 3 : 2;
+
+    return GridView.builder(
+      shrinkWrap: true,
+      physics: const NeverScrollableScrollPhysics(),
+      itemCount: AppUiTheme.values.length,
+      gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+        crossAxisCount: crossAxisCount,
+        crossAxisSpacing: 12,
+        mainAxisSpacing: 12,
+        childAspectRatio: 1.45,
+      ),
+      itemBuilder: (_, i) {
+        final theme = AppUiTheme.values[i];
+        final data = appUiThemes[theme]!;
+        final selected = selectedUiTheme == theme;
+        return _themeTile(context, theme, data, selected, settings);
+      },
+    );
+  }
+
+  Widget _themeTile(
+    BuildContext context,
+    AppUiTheme theme,
+    AppUiThemeData data,
+    bool selected,
+    AppSettingsProvider settings,
+  ) {
+    final accent = data.primary;
+
+    return InkWell(
+      borderRadius: BorderRadius.circular(18),
+      onTap: () {
+        settings.setUiTheme(theme);
+        VoiceService().speak(
+          AppCopy.tr(
+            settings.language,
+            'themeSelectedVoice',
+            vars: {'theme': AppCopy.tr(settings.language, data.name)},
+          ),
+        );
+      },
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 180),
+        padding: const EdgeInsets.all(14),
+        decoration: BoxDecoration(
+          color: Colors.white.withOpacity(selected ? 0.13 : 0.08),
+          borderRadius: BorderRadius.circular(18),
+          border: Border.all(
+            color: selected ? accent : Colors.white.withOpacity(0.14),
+            width: selected ? 1.8 : 1,
+          ),
+        ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Profile Section
-            _buildProfileSection(context, primaryColor, onSurfaceColor, userProvider, l10n),
-            const SizedBox(height: 32),
-
-            // UI Theme Section
-            _buildSectionTitle(context, l10n.uiTheme, onSurfaceColor),
-            _buildUiThemePicker(context, _selectedUiTheme),
-            const SizedBox(height: 24),
-
-            // Teacher Selection Section
-            _buildSectionTitle(context, l10n.personality, onSurfaceColor),
-            _buildTeacherPicker(context, ref, teacher),
-            const SizedBox(height: 24),
-
-            // Voice / AI Tutor Section
-            _buildSectionTitle(context, l10n.aiTutorVoice, onSurfaceColor),
-            _buildVoiceSection(context, _voiceEnabled, _voicePersonality),
-            const SizedBox(height: 24),
-
-            // General Settings
-            _buildSectionTitle(context, l10n.general, onSurfaceColor),
-            _buildSettingDropdown(
-              context,
-              ref,
-              title: l10n.language,
-              value: _selectedLanguage.displayName,
-              items: _languages.map((l) => l.displayName).toList(),
-              onChanged: (value) {
-                if (value != null) {
-                  final selected = _languages.firstWhere(
-                    (lang) => lang.displayName == value,
-                    orElse: () => AppLanguage.english,
-                  );
-                  context.read<AppSettingsProvider>().setLanguage(selected);
-                }
-              },
-            ),
-            _buildSettingTime(
-              context,
-              title: l10n.dailyReminder,
-              subtitle: l10n.dailyReminderSubtitle,
-              time: const TimeOfDay(hour: 9, minute: 0),
-              primaryColor: primaryColor,
-            ),
-
-            const SizedBox(height: 24),
-
-            // Audio Settings
-            _buildSectionTitle(context, l10n.audio, onSurfaceColor),
-            _buildSettingSwitch(
-              context,
-              title: l10n.autoPlaySounds,
-              subtitle: l10n.autoPlaySoundsSubtitle,
-              value: _autoPlaySounds,
-              onChanged: (value) {},
-            ),
-            _buildSettingSwitch(
-              context,
-              title: l10n.vibration,
-              subtitle: l10n.vibrationSubtitle,
-              value: _vibrationEnabled,
-              onChanged: (value) {},
-            ),
-            _buildSettingSlider(
-              context,
-              title: l10n.volumeLevel,
-              value: _volumeLevel,
-              onChanged: (value) {},
-              primaryColor: primaryColor,
-            ),
-
-            const SizedBox(height: 24),
-
-            // Data Section
-            _buildSectionTitle(context, l10n.data, onSurfaceColor),
-            _buildSettingButton(
-              context,
-              title: l10n.exportData,
-              subtitle: l10n.exportDataSubtitle,
-              onTap: () => _exportData(context),
-            ),
-            _buildSettingButton(
-              context,
-              title: l10n.clearData,
-              subtitle: l10n.clearDataSubtitle,
-              onTap: () => _showClearDataDialog(context),
-            ),
-
-            const SizedBox(height: 24),
-
-            // About Section
-            _buildSectionTitle(context, l10n.about, onSurfaceColor),
-            _buildSettingButton(
-              context,
-              title: l10n.privacyPolicy,
-              subtitle: l10n.privacyPolicySubtitle,
-              onTap: () => _openPrivacyPolicy(context),
-            ),
-            _buildSettingButton(
-              context,
-              title: l10n.termsOfService,
-              subtitle: l10n.termsOfServiceSubtitle,
-              onTap: () => _openTerms(context),
-            ),
-            _buildSettingButton(
-              context,
-              title: l10n.rateApp,
-              subtitle: l10n.rateAppSubtitle,
-              onTap: () => _rateApp(context),
-            ),
-            _buildSettingButton(
-              context,
-              title: l10n.appVersion,
-              subtitle: 'v1.0.0',
-              onTap: () {},
-            ),
-
-            const SizedBox(height: 40),
-
-            // Sign Out Button
-            SizedBox(
-              width: double.infinity,
-              child: OutlinedButton(
-                onPressed: () => _signOut(context),
-                style: OutlinedButton.styleFrom(
-                  padding: const EdgeInsets.symmetric(vertical: 16),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(15),
+            Row(
+              children: [
+                Container(
+                  width: 34,
+                  height: 34,
+                  decoration: BoxDecoration(
+                    color: accent.withOpacity(0.22),
+                    borderRadius: BorderRadius.circular(12),
                   ),
-                  side: BorderSide(color: Colors.red.withAlpha(76)),
+                  child: Icon(_themeIcon(theme), color: Colors.white, size: 19),
                 ),
-                child: Text(
-                  l10n.signOut,
-                  style: TextStyle(
-                    color: Colors.red.withAlpha(200),
-                    fontWeight: FontWeight.w600,
-                  ),
+                const Spacer(),
+                Icon(
+                  selected ? Icons.check_circle_rounded : Icons.circle_outlined,
+                  color: selected ? accent : Colors.white38,
+                  size: 18,
                 ),
+              ],
+            ),
+            const Spacer(),
+            Text(
+              AppCopy.tr(settings.language, data.name),
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+              style: const TextStyle(
+                color: Colors.white,
+                fontSize: 13,
+                fontWeight: FontWeight.w800,
               ),
             ),
           ],
@@ -200,347 +438,107 @@ class SettingsScreen extends ConsumerWidget {
     );
   }
 
-  Widget _buildTeacherPicker(BuildContext context, WidgetRef ref, TeacherPersonality teacher) {
+  Widget _buildTeacherPicker(BuildContext context, TeacherPersonality teacher) {
     return SizedBox(
-      height: 72,
-      child: ListView.separated(
+      height: 108,
+      child: ListView(
         scrollDirection: Axis.horizontal,
-        itemCount: TeacherPersonality.values.length,
-        separatorBuilder: (_, __) => const SizedBox(width: 10),
-        itemBuilder: (_, i) {
-          final personality = TeacherPersonality.values[i];
+        children: TeacherPersonality.values.map((personality) {
           final appearance = TeacherAppearance.personalities[personality]!;
           final selected = personality == teacher;
-          return GestureDetector(
-            onTap: () async {
-              await ref.read(teacherPreferenceProvider.notifier).setTeacher(personality);
-            },
-            child: AnimatedContainer(
-              duration: const Duration(milliseconds: 200),
-              width: 72,
-              decoration: BoxDecoration(
-                color: selected
-                    ? appearance.auraPrimary.withAlpha(60)
-                    : Colors.white.withAlpha(10),
-                borderRadius: BorderRadius.circular(16),
-                border: Border.all(
-                  color: selected ? appearance.auraPrimary : Colors.white.withAlpha(30),
-                  width: selected ? 2 : 1,
-                ),
-              ),
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Icon(
-                    _getTeacherIcon(personality),
-                    color: selected ? appearance.auraPrimary : Colors.white70,
-                    size: 28,
-                  ),
-                  const SizedBox(height: 6),
-                  Text(
-                    appearance.name,
-                    style: TextStyle(
-                      color: selected ? Colors.white : Colors.white60,
-                      fontSize: 10,
-                      fontWeight: selected ? FontWeight.w700 : FontWeight.normal,
-                    ),
-                  ),
-                ],
-              ),
+          return Padding(
+            padding: EdgeInsets.only(
+              right: personality == TeacherPersonality.values.last ? 0 : 10,
             ),
-          );
-        },
-      ),
-    );
-  }
-
-  IconData _getTeacherIcon(TeacherPersonality personality) {
-    switch (personality) {
-      case TeacherPersonality.buddha:
-        return Icons.self_improvement;
-      case TeacherPersonality.zeno:
-        return Icons.person;
-      case TeacherPersonality.monk:
-        return Icons.accessibility;
-    }
-  }
-
-  Widget _buildUiThemePicker(BuildContext context, AppUiTheme selectedUiTheme) {
-    final l10n = AppLocalizations.of(context)!;
-    return SizedBox(
-      height: 110,
-      child: ListView.separated(
-        scrollDirection: Axis.horizontal,
-        itemCount: AppUiTheme.values.length,
-        separatorBuilder: (_, __) => const SizedBox(width: 10),
-        itemBuilder: (_, i) {
-          final theme = AppUiTheme.values[i];
-          final data = appUiThemes[theme]!;
-          final selected = selectedUiTheme == theme;
-          return GestureDetector(
-            onTap: () {
-              context.read<AppSettingsProvider>().setUiTheme(theme);
-              VoiceService().speak('${data.name} ${l10n.themeSelected}');
-            },
-            child: AnimatedContainer(
-              duration: const Duration(milliseconds: 220),
-              width: 90,
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                  colors: data.gradientColors,
+            child: InkWell(
+              borderRadius: BorderRadius.circular(18),
+              onTap: () async {
+                await ref
+                    .read(teacherPreferenceProvider.notifier)
+                    .setTeacher(personality);
+              },
+              child: AnimatedContainer(
+                duration: const Duration(milliseconds: 180),
+                width: 96,
+                padding: const EdgeInsets.all(10),
+                decoration: BoxDecoration(
+                  color: selected
+                      ? appearance.auraPrimary.withOpacity(0.16)
+                      : Colors.white.withOpacity(0.07),
+                  borderRadius: BorderRadius.circular(18),
+                  border: Border.all(
+                    color: selected
+                        ? appearance.auraPrimary
+                        : Colors.white.withOpacity(0.14),
+                    width: selected ? 1.8 : 1,
+                  ),
                 ),
-                borderRadius: BorderRadius.circular(16),
-                border: Border.all(
-                  color: selected ? data.primary : Colors.white.withAlpha(30),
-                  width: selected ? 2.5 : 1,
-                ),
-                boxShadow: selected
-                    ? [
-                        BoxShadow(
-                            color: data.primary.withAlpha(80),
-                            blurRadius: 12,
-                            spreadRadius: 2)
-                      ]
-                    : [],
-              ),
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Text(data.emoji, style: const TextStyle(fontSize: 28)),
-                  const SizedBox(height: 6),
-                  Text(data.name,
-                      textAlign: TextAlign.center,
+                child: Column(
+                  children: [
+                    Expanded(
+                      child: TeacherAvatar(
+                        teacher: personality,
+                        selected: selected,
+                        background: false,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      AppCopy.of(context, appearance.name),
+                      overflow: TextOverflow.ellipsis,
                       style: TextStyle(
                         color: selected ? Colors.white : Colors.white70,
-                        fontSize: 10,
+                        fontSize: 12,
                         fontWeight:
-                            selected ? FontWeight.w700 : FontWeight.normal,
-                      )),
-                  if (selected)
-                    Container(
-                      margin: const EdgeInsets.only(top: 4),
-                      width: 6,
-                      height: 6,
-                      decoration: BoxDecoration(
-                        color: data.primary,
-                        shape: BoxShape.circle,
+                            selected ? FontWeight.w800 : FontWeight.w600,
                       ),
                     ),
-                ],
+                  ],
+                ),
               ),
             ),
           );
-        },
+        }).toList(),
       ),
     );
   }
 
-  Widget _buildVoiceSection(BuildContext context, bool voiceEnabled, VoicePersonality voicePersonality) {
+  Widget _buildTeacherStudioButton(BuildContext context) {
+    final colors = Theme.of(context).colorScheme;
+    return OutlinedButton.icon(
+      onPressed: () => context.push('/teachers'),
+      icon: const Icon(Icons.auto_awesome_rounded, size: 18),
+      label: Text(AppCopy.of(context, 'Open Teacher Studio')),
+      style: OutlinedButton.styleFrom(
+        foregroundColor: Colors.white,
+        side: BorderSide(color: colors.secondary.withOpacity(0.55)),
+        backgroundColor: colors.secondary.withOpacity(0.08),
+      ),
+    );
+  }
+
+  Widget _buildVoiceSection(
+    BuildContext context,
+    bool voiceEnabled,
+  ) {
     final l10n = AppLocalizations.of(context)!;
-    return Column(
-      children: [
-        _buildSettingSwitch(
-          context,
-          title: l10n.aiTutorVoice,
-          subtitle: l10n.buddhaGuide,
-          value: voiceEnabled,
-          onChanged: (v) {
-            context.read<AppSettingsProvider>().setVoiceEnabled(v);
-          },
-        ),
-        const SizedBox(height: 8),
-        Container(
-          padding: const EdgeInsets.all(14),
-          decoration: BoxDecoration(
-            color: Theme.of(context).colorScheme.surface,
-            borderRadius: BorderRadius.circular(15),
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(l10n.personality,
-                  style: Theme.of(context)
-                      .textTheme
-                      .bodyLarge
-                      ?.copyWith(fontWeight: FontWeight.w600)),
-              const SizedBox(height: 10),
-              Row(
-                children: VoicePersonality.values.map((p) {
-                  final selected = voicePersonality == p;
-                  final label = p.name[0].toUpperCase() + p.name.substring(1);
-                  final emoji = p == VoicePersonality.buddha
-                      ? '🧘'
-                      : p == VoicePersonality.zeno
-                          ? '🤖'
-                          : '🙏';
-                  return Expanded(
-                    child: GestureDetector(
-                      onTap: () {
-                        context.read<AppSettingsProvider>().setVoicePersonality(p);
-                        VoiceService().speak(p == VoicePersonality.buddha
-                            ? l10n.iAmBuddha
-                            : p == VoicePersonality.zeno
-                                ? l10n.iAmZeno
-                                : l10n.begin);
-                      },
-                      child: AnimatedContainer(
-                        duration: const Duration(milliseconds: 200),
-                        margin: const EdgeInsets.symmetric(horizontal: 4),
-                        padding: const EdgeInsets.symmetric(vertical: 10),
-                        decoration: BoxDecoration(
-                          color: selected
-                              ? Theme.of(context)
-                                  .colorScheme
-                                  .primary
-                                  .withAlpha(40)
-                              : Colors.transparent,
-                          borderRadius: BorderRadius.circular(12),
-                          border: Border.all(
-                            color: selected
-                                ? Theme.of(context).colorScheme.primary
-                                : Colors.white.withAlpha(30),
-                          ),
-                        ),
-                        child: Column(
-                          children: [
-                            Text(emoji, style: const TextStyle(fontSize: 22)),
-                            const SizedBox(height: 4),
-                            Text(label,
-                                style: TextStyle(
-                                  color:
-                                      selected ? Colors.white : Colors.white60,
-                                  fontSize: 11,
-                                  fontWeight: selected
-                                      ? FontWeight.w700
-                                      : FontWeight.normal,
-                                )),
-                          ],
-                        ),
-                      ),
-                    ),
-                  );
-                }).toList(),
-              ),
-            ],
-          ),
-        ),
-      ],
+    return _buildSettingSwitch(
+      context,
+      title: l10n.aiTutorVoice,
+      subtitle: l10n.buddhaGuide,
+      icon: Icons.spatial_audio_off_outlined,
+      value: voiceEnabled,
+      onChanged: (value) {
+        context.read<AppSettingsProvider>().setVoiceEnabled(value);
+      },
     );
   }
-
-  Widget _buildProfileSection(BuildContext context, Color primaryColor, Color textColor, user_prov.UserProvider userProvider, AppLocalizations l10n) {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Theme.of(context).colorScheme.surface,
-        borderRadius: BorderRadius.circular(20),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withAlpha(12),
-            blurRadius: 20,
-            offset: const Offset(0, 10),
-          ),
-        ],
-      ),
-      child: Row(
-        children: [
-          Container(
-            width: 60,
-            height: 60,
-            decoration: BoxDecoration(
-              color: primaryColor,
-              shape: BoxShape.circle,
-            ),
-            child: const Icon(Icons.person, color: Colors.white, size: 30),
-          ),
-          const SizedBox(width: 16),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  userProvider.user?.name ?? l10n.myProfile,
-                  style: Theme.of(context).textTheme.titleMedium,
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  userProvider.user?.email ?? '',
-                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                        color: textColor.withAlpha(150),
-                      ),
-                ),
-              ],
-            ),
-          ),
-          IconButton(onPressed: () {}, icon: const Icon(Icons.edit)),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildSectionTitle(BuildContext context, String title, Color textColor) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 16),
-      child: Text(
-        title,
-        style: Theme.of(
-          context,
-        ).textTheme.titleMedium?.copyWith(color: textColor.withAlpha(150)),
-      ),
-    );
-  }
-
-  Widget _buildSettingCard(
-    BuildContext context, {
-    required String title,
-    required String subtitle,
-    required Widget trailing,
-  }) {
-    return Container(
-      margin: const EdgeInsets.only(bottom: 12),
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Theme.of(context).colorScheme.surface,
-        borderRadius: BorderRadius.circular(15),
-      ),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  title,
-                  style: Theme.of(
-                    context,
-                  ).textTheme.bodyLarge?.copyWith(fontWeight: FontWeight.w600),
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  subtitle,
-                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                        color: Theme.of(
-                          context,
-                        ).colorScheme.onSurface.withAlpha(150),
-                      ),
-                ),
-              ],
-            ),
-          ),
-          trailing,
-        ],
-      ),
-    );
-  }
-
 
   Widget _buildSettingSwitch(
     BuildContext context, {
     required String title,
     required String subtitle,
+    required IconData icon,
     required bool value,
     required ValueChanged<bool> onChanged,
   }) {
@@ -548,18 +546,19 @@ class SettingsScreen extends ConsumerWidget {
       context,
       title: title,
       subtitle: subtitle,
+      icon: icon,
       trailing: Switch(
         value: value,
         onChanged: onChanged,
-        activeThumbColor: Theme.of(context).colorScheme.primary,
+        activeThumbColor: Theme.of(context).colorScheme.secondary,
       ),
     );
   }
 
   Widget _buildSettingDropdown(
-    BuildContext context,
-    WidgetRef ref, {
+    BuildContext context, {
     required String title,
+    required IconData icon,
     required String value,
     required List<String> items,
     required ValueChanged<String?> onChanged,
@@ -567,10 +566,14 @@ class SettingsScreen extends ConsumerWidget {
     return _buildSettingCard(
       context,
       title: title,
-      subtitle: '',
+      subtitle: value,
+      icon: icon,
       trailing: DropdownButtonHideUnderline(
         child: DropdownButton<String>(
           value: value,
+          dropdownColor: Theme.of(context).colorScheme.surface,
+          iconEnabledColor: Colors.white70,
+          style: const TextStyle(color: Colors.white, fontSize: 13),
           items: items.map((item) {
             return DropdownMenuItem(value: item, child: Text(item));
           }).toList(),
@@ -584,13 +587,18 @@ class SettingsScreen extends ConsumerWidget {
     BuildContext context, {
     required String title,
     required String subtitle,
+    required IconData icon,
     required TimeOfDay time,
-    required Color primaryColor,
   }) {
+    final colors = Theme.of(context).colorScheme;
+    final value =
+        '${time.hour.toString().padLeft(2, '0')}:${time.minute.toString().padLeft(2, '0')}';
+
     return _buildSettingCard(
       context,
       title: title,
       subtitle: subtitle,
+      icon: icon,
       trailing: TextButton(
         onPressed: () async {
           final newTime = await showTimePicker(
@@ -598,13 +606,10 @@ class SettingsScreen extends ConsumerWidget {
             initialTime: time,
           );
           if (newTime != null) {
-            // Handle time selection
+            setState(() => _dailyReminder = newTime);
           }
         },
-        child: Text(
-          '${time.hour.toString().padLeft(2, '0')}:${time.minute.toString().padLeft(2, '0')}',
-          style: TextStyle(color: primaryColor),
-        ),
+        child: Text(value, style: TextStyle(color: colors.secondary)),
       ),
     );
   }
@@ -612,36 +617,50 @@ class SettingsScreen extends ConsumerWidget {
   Widget _buildSettingSlider(
     BuildContext context, {
     required String title,
+    required IconData icon,
     required double value,
     required ValueChanged<double> onChanged,
-    required Color primaryColor,
   }) {
-    return Container(
+    final colors = Theme.of(context).colorScheme;
+    return _settingsCard(
+      context,
       margin: const EdgeInsets.only(bottom: 12),
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Theme.of(context).colorScheme.surface,
-        borderRadius: BorderRadius.circular(15),
-      ),
+      padding: const EdgeInsets.fromLTRB(16, 14, 16, 10),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            title,
-            style: Theme.of(
-              context,
-            ).textTheme.bodyLarge?.copyWith(fontWeight: FontWeight.w600),
+          Row(
+            children: [
+              _settingIcon(context, icon),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Text(
+                  title,
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontWeight: FontWeight.w700,
+                    fontSize: 15,
+                  ),
+                ),
+              ),
+              Text(
+                '${(value * 100).round()}%',
+                style: TextStyle(
+                  color: Colors.white.withOpacity(0.70),
+                  fontWeight: FontWeight.w700,
+                  fontSize: 12,
+                ),
+              ),
+            ],
           ),
-          const SizedBox(height: 12),
           Slider(
             value: value,
             onChanged: onChanged,
             min: 0,
             max: 1,
             divisions: 10,
-            label: '${(value * 100).toInt()}%',
-            activeColor: primaryColor,
-            inactiveColor: Colors.grey.withAlpha(76),
+            activeColor: colors.secondary,
+            inactiveColor: Colors.white.withOpacity(0.18),
           ),
         ],
       ),
@@ -652,31 +671,187 @@ class SettingsScreen extends ConsumerWidget {
     BuildContext context, {
     required String title,
     required String subtitle,
+    required IconData icon,
     required VoidCallback onTap,
+    bool danger = false,
   }) {
-    return Container(
-      margin: const EdgeInsets.only(bottom: 12),
-      decoration: BoxDecoration(
-        color: Theme.of(context).colorScheme.surface,
-        borderRadius: BorderRadius.circular(15),
-      ),
-      child: ListTile(
-        title: Text(
-          title,
-          style: Theme.of(
-            context,
-          ).textTheme.bodyLarge?.copyWith(fontWeight: FontWeight.w600),
-        ),
-        subtitle: Text(
-          subtitle,
-          style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                color: Theme.of(context).colorScheme.onSurface.withAlpha(150),
-              ),
-        ),
-        trailing: const Icon(Icons.chevron_right),
-        onTap: onTap,
+    final color = danger ? Theme.of(context).colorScheme.error : Colors.white;
+    return InkWell(
+      borderRadius: BorderRadius.circular(18),
+      onTap: onTap,
+      child: _buildSettingCard(
+        context,
+        title: title,
+        subtitle: subtitle,
+        icon: icon,
+        iconColor: danger ? Theme.of(context).colorScheme.error : null,
+        trailing:
+            Icon(Icons.chevron_right_rounded, color: color.withOpacity(0.70)),
       ),
     );
+  }
+
+  Widget _buildSignOutButton(BuildContext context, AppLocalizations l10n) {
+    return SizedBox(
+      width: double.infinity,
+      child: OutlinedButton.icon(
+        onPressed: () => _signOut(context),
+        icon: const Icon(Icons.logout_rounded, size: 18),
+        label: Text(l10n.signOut),
+        style: OutlinedButton.styleFrom(
+          foregroundColor: const Color(0xFFFF8A80),
+          side: BorderSide(color: const Color(0xFFFF8A80).withOpacity(0.55)),
+          backgroundColor: const Color(0xFFFF8A80).withOpacity(0.07),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildSettingCard(
+    BuildContext context, {
+    required String title,
+    required String subtitle,
+    required IconData icon,
+    required Widget trailing,
+    Color? iconColor,
+  }) {
+    return _settingsCard(
+      context,
+      margin: const EdgeInsets.only(bottom: 12),
+      padding: const EdgeInsets.all(16),
+      child: Row(
+        children: [
+          _settingIcon(context, icon, iconColor: iconColor),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  title,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontWeight: FontWeight.w700,
+                    fontSize: 15,
+                  ),
+                ),
+                if (subtitle.isNotEmpty) ...[
+                  const SizedBox(height: 4),
+                  Text(
+                    subtitle,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      color: Colors.white.withOpacity(0.66),
+                      fontSize: 12,
+                      height: 1.25,
+                    ),
+                  ),
+                ],
+              ],
+            ),
+          ),
+          const SizedBox(width: 12),
+          trailing,
+        ],
+      ),
+    );
+  }
+
+  Widget _settingsCard(
+    BuildContext context, {
+    required Widget child,
+    EdgeInsetsGeometry? padding,
+    EdgeInsetsGeometry? margin,
+  }) {
+    return Container(
+      margin: margin,
+      padding: padding ?? const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white.withOpacity(0.08),
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: Colors.white.withOpacity(0.13)),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.12),
+            blurRadius: 18,
+            offset: const Offset(0, 10),
+          ),
+        ],
+      ),
+      child: child,
+    );
+  }
+
+  Widget _settingIcon(BuildContext context, IconData icon, {Color? iconColor}) {
+    final colors = Theme.of(context).colorScheme;
+    return Container(
+      width: 38,
+      height: 38,
+      decoration: BoxDecoration(
+        color: (iconColor ?? colors.secondary).withOpacity(0.16),
+        borderRadius: BorderRadius.circular(13),
+      ),
+      child: Icon(icon, color: iconColor ?? colors.secondary, size: 20),
+    );
+  }
+
+  Widget _buildSectionTitle(BuildContext context, String title, IconData icon) {
+    return Row(
+      children: [
+        Icon(icon, size: 18, color: Theme.of(context).colorScheme.secondary),
+        const SizedBox(width: 8),
+        Text(
+          title,
+          style: TextStyle(
+            color: Colors.white.withOpacity(0.82),
+            fontSize: 16,
+            fontWeight: FontWeight.w800,
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _roundIconButton(
+    BuildContext context, {
+    required IconData icon,
+    required VoidCallback onTap,
+    bool compact = false,
+  }) {
+    final size = compact ? 42.0 : 44.0;
+    return InkWell(
+      borderRadius: BorderRadius.circular(size / 2),
+      onTap: onTap,
+      child: Container(
+        width: size,
+        height: size,
+        decoration: BoxDecoration(
+          color: Colors.white.withOpacity(0.08),
+          shape: BoxShape.circle,
+          border: Border.all(color: Colors.white.withOpacity(0.16)),
+        ),
+        child: Icon(icon, color: Colors.white, size: compact ? 19 : 21),
+      ),
+    );
+  }
+
+  IconData _themeIcon(AppUiTheme theme) {
+    switch (theme) {
+      case AppUiTheme.gardenSerenity:
+        return Icons.spa_rounded;
+      case AppUiTheme.skyCalm:
+        return Icons.cloud_outlined;
+      case AppUiTheme.sunriseGlow:
+        return Icons.wb_sunny_outlined;
+      case AppUiTheme.roseHarmony:
+        return Icons.favorite_border_rounded;
+      case AppUiTheme.lavenderDream:
+        return Icons.auto_awesome_rounded;
+      case AppUiTheme.midnightZen:
+        return Icons.nightlight_round;
+    }
   }
 
   Future<void> _exportData(BuildContext context) async {
@@ -719,7 +894,6 @@ class SettingsScreen extends ConsumerWidget {
 
   void _openPrivacyPolicy(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
-    // TODO: Open privacy policy
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(content: Text(l10n.privacyPolicySoon)),
     );
@@ -727,7 +901,6 @@ class SettingsScreen extends ConsumerWidget {
 
   void _openTerms(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
-    // TODO: Open terms of service
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(content: Text(l10n.termsSoon)),
     );
@@ -735,7 +908,6 @@ class SettingsScreen extends ConsumerWidget {
 
   void _rateApp(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
-    // TODO: Open app store rating
     ScaffoldMessenger.of(
       context,
     ).showSnackBar(SnackBar(content: Text(l10n.ratingSoon)));
@@ -756,12 +928,12 @@ class SettingsScreen extends ConsumerWidget {
           TextButton(
             onPressed: () {
               Navigator.of(context).pop();
-              // TODO: Implement sign out logic
               ScaffoldMessenger.of(context).showSnackBar(
                 SnackBar(content: Text(l10n.signedOut)),
               );
             },
-            child: Text(l10n.signOut, style: const TextStyle(color: Colors.red)),
+            child:
+                Text(l10n.signOut, style: const TextStyle(color: Colors.red)),
           ),
         ],
       ),
