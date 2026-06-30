@@ -5,8 +5,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
 import 'package:pranaverse/core/services/ad_service.dart';
-import 'package:pranaverse/core/services/audio_service.dart';
 import 'package:pranaverse/core/services/auto_theme_service.dart';
+import 'package:pranaverse/core/services/sound_service.dart';
+import 'package:pranaverse/services/audio_constants.dart';
 import 'package:pranaverse/data/local_storage/local_storage_service.dart';
 
 // ─── ENUMS ───────────────────────────────────────────────────────────────────
@@ -483,7 +484,7 @@ const _plantData = {
     'emoji': ['🌰', '🌱', '🌿', '🌲', '🌳', '🌴'],
     'cost': 15,
     'baseReward': 60,
-    'tip': 'Slow grower but high reward.',
+    'tip': 'Tree care matters: water regularly and harvest only at full growth for bigger rewards and more O₂.',
   },
   PlantType.bush: {
     'name': 'Bush',
@@ -642,7 +643,7 @@ class GardenScreen extends StatefulWidget {
 
 class _GardenScreenState extends State<GardenScreen>
     with TickerProviderStateMixin {
-  final _audio = AudioService();
+  final _sound = SoundService();
   final _adService = AdService();
   final _rng = Random();
 
@@ -1591,16 +1592,16 @@ class _GardenScreenState extends State<GardenScreen>
 
   void _startAudio() async {
     try {
-      await _audio.setVolume(0.3);
-      // Map seasons to the new music files from assets/music/
+      await SoundService().setBgVolume(0.3);
+      // Map seasons to music assets defined in AudioConstants
       final sound = switch (_season) {
-        Season.spring => 'music/spring',
-        Season.summer => 'music/summer',
-        Season.monsoon => 'music/rainny', // Using rainny.mp3 for monsoon
-        Season.autumn => 'music/spring', // Fallback to spring for autumn
-        Season.winter || Season.snowfall => 'music/winter',
+        Season.spring => AudioConstants.musicSpring,
+        Season.summer => AudioConstants.musicSummer,
+        Season.monsoon => AudioConstants.musicRainy,
+        Season.autumn => AudioConstants.musicSpring,
+        Season.winter || Season.snowfall => AudioConstants.musicWinter,
       };
-      await _audio.playSound(sound, loop: true);
+      await SoundService().playAmbientTrack(sound);
     } catch (_) {
       // Audio files may not exist in all builds — fail silently
     }
@@ -1850,6 +1851,7 @@ class _GardenScreenState extends State<GardenScreen>
       m.mood = 'happy';
     });
     HapticFeedback.lightImpact();
+    SoundService().playMeditationBell();
     // Reset mood after 3 seconds
     Future.delayed(const Duration(seconds: 3), () {
       if (mounted) setState(() => m.mood = 'calm');
@@ -1922,6 +1924,7 @@ class _GardenScreenState extends State<GardenScreen>
         );
       }
     });
+    SoundService().playPlant();
     _progressQuest(QuestType.plantSeeds);
     _saveData();
   }
@@ -1959,6 +1962,7 @@ class _GardenScreenState extends State<GardenScreen>
         );
       }
     });
+    SoundService().playSelection();
     _progressQuest(QuestType.waterPlants);
   }
 
@@ -1983,6 +1987,7 @@ class _GardenScreenState extends State<GardenScreen>
       );
       _combo.increment();
     });
+    SoundService().playHappy();
   }
 
   void _doHarvest(GardenTile t, Offset tap, Size size) {
@@ -2044,11 +2049,13 @@ class _GardenScreenState extends State<GardenScreen>
       _combo.increment();
       HapticFeedback.mediumImpact();
     });
+    SoundService().playHarvest();
     _progressQuest(QuestType.harvestPlants);
     _progressQuest(
       QuestType.earnCoins,
       coinReward,
     ); // track actual coins earned
+    SoundService().playSelection();
     _saveData();
   }
 
@@ -2065,6 +2072,7 @@ class _GardenScreenState extends State<GardenScreen>
       _selectedTile = null;
       _recalcBeauty();
     });
+    SoundService().playSelection();
     _saveData();
   }
 
@@ -2139,7 +2147,7 @@ class _GardenScreenState extends State<GardenScreen>
     _o2Timer?.cancel();
     _adTimer?.cancel();
     _growBoostTimer?.cancel();
-    _audio.stopSound();
+    SoundService().stopBg();
     super.dispose();
   }
 
@@ -2293,12 +2301,13 @@ class _GardenScreenState extends State<GardenScreen>
           if (_showQuests) _buildQuestsPanel(size),
           if (_showStats) _buildStatsPanel(size),
 
-          // Camera controls
-          Positioned(
-            right: 12,
-            bottom: 210 + MediaQuery.of(context).padding.bottom,
-            child: _buildCameraControls(),
-          ),
+          // Camera controls — visible only when a right-side panel is active
+          if (_showShop || _showAchievements || _showQuests || _showStats)
+            Positioned(
+              right: 12,
+              bottom: 210 + MediaQuery.of(context).padding.bottom,
+              child: _buildCameraControls(),
+            ),
 
           // Right side action buttons
           Positioned(
@@ -2869,7 +2878,7 @@ class _GardenScreenState extends State<GardenScreen>
                     _showWeatherInfo = false;
                     _visitedSeasons.add(s);
                   });
-                  _audio.stopSound();
+                  SoundService().stopBg();
                   _startAudio();
                   _checkAchievements();
                 },
@@ -2986,6 +2995,7 @@ class _GardenScreenState extends State<GardenScreen>
                 ],
               ),
             ),
+            // (Helper text removed per design)
             // Plant type picker — all 12 types
             SizedBox(
               height: 64,
@@ -2999,10 +3009,13 @@ class _GardenScreenState extends State<GardenScreen>
                   final cost = data['cost'] as int;
                   final canAfford = _coins >= cost;
                   return GestureDetector(
-                    onTap: () => setState(() {
+                    onTap: () {
+                    SoundService().playButtonClick();
+                    setState(() {
                       _selectedPlantType = t;
                       _activeTool = GardenTool.plant;
-                    }),
+                    });
+                  },
                     child: AnimatedContainer(
                       duration: const Duration(milliseconds: 180),
                       margin: const EdgeInsets.only(right: 8),
@@ -3109,7 +3122,10 @@ class _GardenScreenState extends State<GardenScreen>
   Widget _toolBtn(GardenTool tool, String icon, String label) {
     final active = _activeTool == tool;
     return GestureDetector(
-      onTap: () => setState(() => _activeTool = tool),
+      onTap: () {
+        SoundService().playButtonClick();
+        setState(() => _activeTool = tool);
+      },
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 180),
         padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
