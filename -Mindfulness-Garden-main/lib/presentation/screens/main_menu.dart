@@ -9,6 +9,7 @@ import 'package:pranaverse/core/widgets/character/teacher_personality.dart';
 import 'package:pranaverse/presentation/providers/user_provider.dart';
 import 'package:pranaverse/core/services/ad_service.dart';
 import 'package:pranaverse/core/services/sound_service.dart';
+import 'package:pranaverse/services/audio_constants.dart';
 import 'package:pranaverse/core/services/voice_service.dart';
 import 'package:pranaverse/data/local_storage/local_storage_service.dart';
 import 'package:pranaverse/core/utils/responsive_helper.dart';
@@ -144,13 +145,8 @@ class _MainMenuContentState extends State<_MainMenuContent>
     WidgetsBinding.instance.addPostFrameCallback((_) {
       context.read<UserProvider>().loadUser();
       VoiceService().initialize();
-      // Start garden bg music
-      final hour = DateTime.now().hour;
-      if (hour >= 6 && hour < 20) {
-        SoundService().playGardenDay();
-      } else {
-        SoundService().playGardenNight();
-      }
+      // Play home ambient / music track (fire-and-forget)
+      SoundService().playAmbientTrack(AudioConstants.musicStressRelief);
     });
   }
 
