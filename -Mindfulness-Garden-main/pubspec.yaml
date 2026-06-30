@@ -1,0 +1,152 @@
+name: pranaverse
+description: Yoga, breathing exercises, healing frequencies and meditation journeys
+version: 1.0.0+1
+publish_to: 'none'
+
+environment:
+  sdk: ">=3.4.0 <4.0.0"
+
+dependencies:
+  flutter:
+    sdk: flutter
+  # shared_analytics:
+  #   path: ../../shared-services/shared_analytics
+  flutter_localizations:
+    sdk: flutter
+
+  # CORE
+  flutter_riverpod: ^2.4.9
+  riverpod_annotation: ^2.3.3
+  provider: ^6.1.2
+  go_router: ^17.1.0
+  get_it: ^9.2.0
+  equatable: ^2.0.5
+  uuid: ^4.5.0
+  just_audio: ^0.9.46
+  auto_route: ^7.9.2
+  flame: ^1.16.0
+  cached_network_image: ^3.3.1
+
+  # UI
+  cupertino_icons: ^1.0.8
+  flutter_animate: ^4.5.2
+  lottie: ^3.1.3
+  rive: ^0.13.0
+  shimmer: ^3.0.0
+  confetti: ^0.8.0
+  flutter_svg: ^2.0.10
+  animations: ^2.0.11
+  smooth_page_indicator: ^2.0.1
+  badges: ^3.1.2
+  fl_chart: ^1.1.1
+
+  # STORAGE
+  hive: ^2.2.3
+  hive_flutter: ^1.1.0
+  path_provider: ^2.1.4
+  sqflite: ^2.3.3+1
+
+  # NETWORK
+  dio: ^5.7.0
+  logger: ^2.4.0
+  http: ^1.2.2
+  # universe_backend_sdk:
+  #   path: ../../../shared_packages/universe_backend_sdk
+
+  # FIREBASE SUITE
+  firebase_core: ^3.14.0
+  firebase_auth: ^5.5.4
+  cloud_firestore: ^5.6.9
+  firebase_analytics: ^11.4.6
+  firebase_crashlytics: ^4.3.5
+  firebase_messaging: ^15.2.6
+  firebase_remote_config: ^5.4.6
+  firebase_storage: ^12.4.6
+
+  # GOOGLE SIGN-IN
+  google_sign_in: ^6.2.2
+
+  # ADS
+  google_mobile_ads: ^5.3.1
+
+  # AUDIO
+  audioplayers: ^6.1.0
+  flutter_sound: ^9.30.0
+  flutter_audio_capture: ^1.1.11
+  flutter_tts: ^4.0.2
+
+  # VIDEO
+  video_player: ^2.9.1
+  chewie: ^1.8.5
+
+  # SUBSCRIPTIONS
+  purchases_flutter: ^9.12.2
+
+  # WELLNESS
+  sensors_plus: ^7.0.0
+  pedometer: ^4.1.1
+  health: ^13.1.4
+
+  # UTILITIES
+  permission_handler: ^12.0.1
+  intl: ^0.20.2
+  url_launcher: ^6.3.0
+  share_plus: ^12.0.1
+  package_info_plus: ^9.0.0
+  device_info_plus: ^12.3.0
+  connectivity_plus: ^6.1.5
+  flutter_local_notifications: ^17.2.3
+  geolocator: ^12.0.0
+
+  vector_math: ^2.1.4
+  simple_animations: ^5.1.0
+  shared_preferences: ^2.2.2
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^6.0.0
+  flutter_launcher_icons: ^0.14.3
+
+  auto_route_generator: ^7.3.2
+  build_runner: ^2.4.13
+  hive_generator: ^2.0.1
+
+  integration_test:
+    sdk: flutter
+
+flutter:
+  uses-material-design: true
+  generate: true
+
+  assets:
+    # - assets/icon.png  # Temporarily commented - file missing
+    - assets/images/
+    - assets/sounds/
+    - assets/music/
+    - assets/binaural/
+    - assets/meditation/
+    - assets/animations/
+    # Video assets temporarily disabled for local test (add real files in assets/videos/ to enable)
+
+  fonts:
+    - family: Inter
+      fonts:
+        - asset: assets/fonts/Inter-Regular.ttf
+        - asset: assets/fonts/Inter-Medium.ttf
+          weight: 500
+        - asset: assets/fonts/Inter-SemiBold.ttf
+          weight: 600
+        - asset: assets/fonts/Inter-Bold.ttf
+          weight: 700
+        - asset: assets/fonts/Inter-ExtraBold.ttf
+          weight: 800
+
+flutter_launcher_icons:
+  android: true
+  ios: true
+  image_path: "assets/images/logo.png"
+  min_sdk_android: 21
+  adaptive_icon_background: "#1a5a28"
+  adaptive_icon_foreground: "assets/images/logo.png"
+

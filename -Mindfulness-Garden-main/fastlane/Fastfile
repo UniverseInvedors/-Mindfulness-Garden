@@ -1,0 +1,151 @@
+# Fastfile for PranaVerse: Healing Frequencies
+# Automated build and deployment workflow for Google Play Store
+
+default_platform(:android)
+
+platform :android do
+  # Before all lanes
+  before_all do
+    ENV["FASTLANE_XCODEBUILD_SETTINGS_TIMEOUT"] = "120"
+  end
+
+  # Build and upload to Internal Testing
+  desc "Build and upload to Internal Testing track"
+  lane :internal do
+    build_aab
+    upload_to_play_store(
+      track: 'internal',
+      aab: '../build/app/outputs/bundle/release/app-release.aab',
+      skip_upload_metadata: true,
+      skip_upload_images: true,
+      skip_upload_screenshots: true
+    )
+  end
+
+  # Build and upload to Closed Testing
+  desc "Build and upload to Closed Testing track"
+  lane :closed_beta do
+    build_aab
+    upload_to_play_store(
+      track: 'internal',
+      aab: '../build/app/outputs/bundle/release/app-release.aab',
+      skip_upload_metadata: true,
+      skip_upload_images: true,
+      skip_upload_screenshots: true
+    )
+  end
+
+  # Build and upload to Open Testing
+  desc "Build and upload to Open Testing track"
+  lane :open_beta do
+    build_aab
+    upload_to_play_store(
+      track: 'open',
+      aab: '../build/app/outputs/bundle/release/app-release.aab',
+      skip_upload_metadata: true,
+      skip_upload_images: true,
+      skip_upload_screenshots: true
+    )
+  end
+
+  # Build and upload to Production
+  desc "Build and upload to Production track"
+  lane :production do
+    ensure_git_branch(branch: 'main')
+    ensure_git_status_clean
+    
+    build_aab
+    
+    upload_to_play_store(
+      track: 'production',
+      aab: '../build/app/outputs/bundle/release/app-release.aab',
+      skip_upload_metadata: true,
+      skip_upload_images: true,
+      skip_upload_screenshots: true,
+      release_status: 'completed',
+      rollout: '0.1' # 10% rollout initially
+    )
+  end
+
+  # Build Android App Bundle
+  private_lane :build_aab do
+    gradle(
+      task: 'bundle',
+      build_type: 'Release',
+      project_dir: 'android/'
+    )
+  end
+
+  # Increment version code
+  desc "Increment version code in pubspec.yaml"
+  lane :bump_version do
+    version_bump_podspec(
+      version_number: ask(message: "Enter new version number (e.g., 1.0.1): ")
+    )
+  end
+
+  # Run tests
+  desc "Run Flutter tests"
+  lane :test do
+    sh("flutter", "test")
+  end
+
+  # Run code analysis
+  desc "Run Flutter analyze"
+  lane :analyze do
+    sh("flutter", "analyze")
+  end
+
+  # Clean build artifacts
+  desc "Clean build artifacts"
+  lane :clean do
+    sh("flutter", "clean")
+    gradle(task: 'clean', project_dir: 'android/')
+  end
+
+  # Complete release workflow
+  desc "Complete release workflow: clean, test, analyze, build"
+  lane :release do
+    clean
+    test
+    analyze
+    build_aab
+  end
+
+  # Upload metadata to Play Store
+  desc "Upload store listing metadata to Play Store"
+  lane :upload_metadata do
+    upload_to_play_store(
+      skip_upload_apk: true,
+      skip_upload_aab: true,
+      skip_upload_changelogs: false
+    )
+  end
+
+  # Upload screenshots to Play Store
+  desc "Upload screenshots to Play Store"
+  lane :upload_screenshots do
+    upload_to_play_store(
+      skip_upload_apk: true,
+      skip_upload_aab: true,
+      skip_upload_metadata: true,
+      skip_upload_changelogs: true
+    )
+  end
+
+  # Sync screenshots to all language folders
+  desc "Sync screenshots to all language folders"
+  lane :sync_screenshots do
+    # Copy English screenshots to other locales
+    # Add more locales as needed
+  end
+
+  # Error handling
+  error do |lane, exception|
+    UI.error("Error in lane #{lane}: #{exception.message}")
+  end
+end
+
+platform :ios do
+  # iOS lanes can be added here if needed in the future
+end

@@ -1,0 +1,8 @@
+# Appfile for PranaVerse: Healing Frequencies
+# Configuration for Google Play Store deployment
+
+json_key_file("./fastlane/service-account.json") # Path to the json secret file
+package_name("com.universeinvedors.pranaverse") # e.g. com.pranaVerse.app
+
+# For more information about the Appfile, see:
+#     https://docs.fastlane.tools/advanced/#appfile
