@@ -5,6 +5,8 @@ import 'package:pranaverse/presentation/providers/user_provider.dart';
 import 'package:pranaverse/presentation/providers/auth_provider.dart';
 import 'package:pranaverse/core/localization/app_copy.dart';
 import 'package:pranaverse/core/providers/app_settings_provider.dart';
+import 'package:pranaverse/core/services/sound_service.dart';
+import 'package:pranaverse/core/themes/app_theme.dart';
 import 'package:pranaverse/core/services/voice_service.dart';
 import 'package:pranaverse/core/services/ai_service.dart';
 // import 'package:pranaverse/services/backend_integration_service.dart';
@@ -120,6 +122,34 @@ class _ProfileScreenState extends State<ProfileScreen>
     _tabCtrl = TabController(length: 4, vsync: this);
     _load();
     _checkAuthStatus();
+    // Start theme-based ambient music for this screen
+    WidgetsBinding.instance.addPostFrameCallback((_) => _startThemeAudio());
+  }
+
+  /// Plays the ambient track that matches the current UI theme.
+  void _startThemeAudio() {
+    if (!mounted) return;
+    final theme = context.read<AppSettingsProvider>().uiTheme;
+    final track = _trackForTheme(theme);
+    SoundService().playAmbientTrack(track);
+  }
+
+  /// Maps each UI theme to its most fitting ambient audio track.
+  String _trackForTheme(AppUiTheme theme) {
+    switch (theme) {
+      case AppUiTheme.gardenSerenity:
+        return 'assets/music/stress_relief.mp3'; // Lush, gentle garden vibe
+      case AppUiTheme.skyCalm:
+        return 'assets/music/morning_meditation.mp3'; // Open, airy ocean sky
+      case AppUiTheme.sunriseGlow:
+        return 'assets/music/energy_boost.mp3'; // Warm sunrise energy
+      case AppUiTheme.roseHarmony:
+        return 'assets/music/stress_relief.mp3'; // Soft, harmonic calm
+      case AppUiTheme.lavenderDream:
+        return 'assets/music/deep_sleep.mp3'; // Cosmic, dreamy night
+      case AppUiTheme.midnightZen:
+        return 'assets/music/deep_sleep.mp3'; // Deep midnight calm
+    }
   }
 
   void _load() {
@@ -300,6 +330,7 @@ class _ProfileScreenState extends State<ProfileScreen>
     _firstNameCtrl.dispose();
     _lastNameCtrl.dispose();
     _tabCtrl.dispose();
+    // Do NOT call stopBg() here — home screen owns the audio lifecycle.
     super.dispose();
   }
 
@@ -969,181 +1000,105 @@ class _ProfileScreenState extends State<ProfileScreen>
 
   // --- PREMIUM TAB -----------------------------------------------------------
 
+  // --- PREMIUM TAB -----------------------------------------------------------
+  // Redirects to the dedicated SubscriptionScreen so there is only one
+  // premium/paywall UI in the app.
+
   Widget _buildPremiumTab() {
-    return SingleChildScrollView(
-      padding: EdgeInsets.all(
-        ResponsiveHelper.getResponsivePadding(context, mobilePadding: 20),
-      ),
-      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-        // Premium header
-        GlassCard(
-          padding: EdgeInsets.all(
-            ResponsiveHelper.getResponsivePadding(context, mobilePadding: 24),
-          ),
-          borderRadius: BorderRadius.circular(
-              ResponsiveHelper.getResponsiveBorderRadius(context,
-                  mobileRadius: 24)),
-          blur: 20,
-          opacity: 0.1,
-          gradient: LinearGradient(
-            colors: [
-              const Color(0xFFFFD700).withOpacity(0.2),
-              const Color(0xFFFFA500).withOpacity(0.1),
-            ],
-          ),
-          child:
-              Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-            Row(children: [
-              Container(
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  gradient: const LinearGradient(
-                      colors: [Color(0xFFFFD700), Color(0xFFFFA500)]),
-                  borderRadius: BorderRadius.circular(12),
+    return Center(
+      child: SingleChildScrollView(
+        padding: EdgeInsets.all(
+          ResponsiveHelper.getResponsivePadding(context, mobilePadding: 32),
+        ),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            // Gold crown icon
+            Container(
+              padding: const EdgeInsets.all(20),
+              decoration: BoxDecoration(
+                gradient: const LinearGradient(
+                  colors: [Color(0xFFFFD700), Color(0xFFFFA500)],
                 ),
-                child: Icon(Icons.workspace_premium,
-                    color: Theme.of(context).colorScheme.onPrimary, size: 28),
+                shape: BoxShape.circle,
+                boxShadow: [
+                  BoxShadow(
+                    color: const Color(0xFFFFD700).withOpacity(0.35),
+                    blurRadius: 24,
+                    spreadRadius: 4,
+                  ),
+                ],
               ),
-              SizedBox(
-                  width: ResponsiveHelper.getResponsiveSpacing(context,
-                      mobileSpacing: 16)),
-              Expanded(
-                child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(AppCopy.of(context, 'Premium Features'),
-                          style: TextStyle(
-                            color: Theme.of(context).colorScheme.onPrimary,
-                            fontWeight: FontWeight.w800,
-                            fontSize: ResponsiveHelper.getResponsiveFontSize(
-                                context,
-                                mobileSize: 22,
-                                tabletSize: 24,
-                                desktopSize: 26),
-                          )),
-                      Text(
-                          _isAuthenticated
-                              ? AppCopy.of(context, 'You are logged in')
-                              : AppCopy.of(context,
-                                  'Sign in to unlock premium features'),
-                          style: TextStyle(
-                            color: Theme.of(context)
-                                .colorScheme
-                                .onPrimary
-                                .withOpacity(0.75),
-                            fontSize: ResponsiveHelper.getResponsiveFontSize(
-                                context,
-                                mobileSize: 14,
-                                tabletSize: 15,
-                                desktopSize: 16),
-                          )),
-                    ]),
+              child: Icon(
+                Icons.workspace_premium_rounded,
+                color: colors.onPrimary,
+                size: 48,
               ),
-            ]),
-          ]),
-        ),
-        SizedBox(
-            height: ResponsiveHelper.getResponsiveSpacing(context,
-                mobileSpacing: 24)),
-
-        // Premium features list
-        _buildPremiumFeature(Icons.self_improvement_rounded,
-            'Advanced Meditations', 'Access to 500+ guided sessions'),
-        _buildPremiumFeature(Icons.graphic_eq_rounded, 'Premium Audio',
-            'High-quality binaural beats and music'),
-        _buildPremiumFeature(Icons.insights_rounded, 'Detailed Analytics',
-            'Track your mindfulness journey'),
-        _buildPremiumFeature(Icons.local_florist_rounded, 'Exclusive Plants',
-            'Unlock rare garden plants'),
-        _buildPremiumFeature(Icons.emoji_events_rounded, 'Achievements',
-            'Earn badges and compete on leaderboards'),
-        _buildPremiumFeature(Icons.groups_rounded, 'Community',
-            'Join groups and share experiences'),
-
-        SizedBox(
-            height: ResponsiveHelper.getResponsiveSpacing(context,
-                mobileSpacing: 24)),
-
-        // Logout button if authenticated
-        if (_isAuthenticated)
-          SizedBox(
-            width: double.infinity,
-            child: ElevatedButton(
-              onPressed: _handleLogout,
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.red.withOpacity(0.8),
-                padding: const EdgeInsets.symmetric(vertical: 16),
-                shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(14)),
-              ),
-              child: Text(AppCopy.of(context, 'Sign Out'),
-                  style: TextStyle(
-                      color: Theme.of(context).colorScheme.onPrimary,
-                      fontWeight: FontWeight.w700,
-                      fontSize: 16)),
             ),
-          ),
-      ]),
-    );
-  }
+            const SizedBox(height: 24),
 
-  Widget _buildPremiumFeature(IconData icon, String title, String description) {
-    return GlassCard(
-      margin: EdgeInsets.only(
-          bottom: ResponsiveHelper.getResponsiveSpacing(context,
-              mobileSpacing: 12)),
-      padding: EdgeInsets.all(
-        ResponsiveHelper.getResponsivePadding(context, mobilePadding: 16),
-      ),
-      borderRadius: BorderRadius.circular(
-          ResponsiveHelper.getResponsiveBorderRadius(context,
-              mobileRadius: 16)),
-      blur: 15,
-      opacity: 0.12,
-      borderColor: Theme.of(context).colorScheme.onSurface.withOpacity(0.14),
-      child: Row(children: [
-        Container(
-          width: 44,
-          height: 44,
-          decoration: BoxDecoration(
-            color: const Color(0xFFFFC857).withOpacity(0.18),
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(
-                color:
-                    Theme.of(context).colorScheme.onSurface.withOpacity(0.10)),
-          ),
-          child: Icon(icon, color: const Color(0xFFFFD166), size: 22),
-        ),
-        SizedBox(
-            width: ResponsiveHelper.getResponsiveSpacing(context,
-                mobileSpacing: 16)),
-        Expanded(
-          child:
-              Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-            Text(AppCopy.of(context, title),
-                style: TextStyle(
-                  color: colors.onSurface,
-                  fontWeight: FontWeight.w700,
-                  fontSize: ResponsiveHelper.getResponsiveFontSize(context,
-                      mobileSize: 16, tabletSize: 17, desktopSize: 18),
-                )),
+            // Headline
+            Text(
+              AppCopy.of(context, 'Unlock Premium'),
+              style: TextStyle(
+                color: colors.onSurface,
+                fontWeight: FontWeight.w800,
+                fontSize: ResponsiveHelper.getResponsiveFontSize(
+                  context,
+                  mobileSize: 26,
+                  tabletSize: 30,
+                  desktopSize: 34,
+                ),
+              ),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 10),
+            Text(
+              AppCopy.of(context,
+                  '500+ meditations, binaural beats, exclusive plants and more.'),
+              style: TextStyle(
+                color: colors.onSurface.withOpacity(0.65),
+                fontSize: ResponsiveHelper.getResponsiveFontSize(
+                  context,
+                  mobileSize: 15,
+                  tabletSize: 16,
+                  desktopSize: 17,
+                ),
+              ),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 36),
+
+            // CTA button → opens SubscriptionScreen
             SizedBox(
-                height: ResponsiveHelper.getResponsiveSpacing(context,
-                    mobileSpacing: 4)),
-            Text(AppCopy.of(context, description),
-                style: TextStyle(
-                  color: colors.onSurface.withOpacity(0.6),
-                  fontSize: ResponsiveHelper.getResponsiveFontSize(context,
-                      mobileSize: 13, tabletSize: 14, desktopSize: 15),
-                )),
-          ]),
+              width: double.infinity,
+              child: ElevatedButton.icon(
+                onPressed: () {
+                  SoundService().playButtonClick();
+                  context.push('/subscription');
+                },
+                icon: const Icon(Icons.star_rounded),
+                label: Text(
+                  AppCopy.of(context, 'View Premium Plans'),
+                  style: const TextStyle(
+                    fontWeight: FontWeight.w700,
+                    fontSize: 17,
+                  ),
+                ),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFFFFD700),
+                  foregroundColor: const Color(0xFF1a0a00),
+                  padding: const EdgeInsets.symmetric(vertical: 18),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(16),
+                  ),
+                  elevation: 0,
+                ),
+              ),
+            ),
+          ],
         ),
-        Icon(_isAuthenticated ? Icons.check_circle_rounded : Icons.lock_outline,
-            color: _isAuthenticated
-                ? Colors.greenAccent
-                : Theme.of(context).colorScheme.onSurface.withOpacity(0.54),
-            size: 20),
-      ]),
+      ),
     );
   }
 

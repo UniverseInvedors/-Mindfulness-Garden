@@ -18,6 +18,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
+import 'package:pranaverse/core/mixins/theme_audio_mixin.dart';
 import 'package:pranaverse/presentation/providers/subscription_provider.dart';
 
 // ────────────────────────────────────────────────────────────────────────────
@@ -87,7 +88,7 @@ class SubscriptionScreen extends StatefulWidget {
 }
 
 class _SubscriptionScreenState extends State<SubscriptionScreen>
-    with TickerProviderStateMixin {
+    with TickerProviderStateMixin, ThemeAudioMixin {
   // ── Static data ────────────────────────────────────────────────────────────
 
   static const _plans = [
@@ -150,6 +151,7 @@ class _SubscriptionScreenState extends State<SubscriptionScreen>
   @override
   void initState() {
     super.initState();
+    startThemeAudio();
 
     _entryCtrl = AnimationController(
         vsync: this, duration: const Duration(milliseconds: 750))
@@ -183,6 +185,7 @@ class _SubscriptionScreenState extends State<SubscriptionScreen>
 
   @override
   void dispose() {
+    stopThemeAudio();
     _entryCtrl.dispose();
     _leafCtrl.dispose();
     _pulseCtrl.dispose();

@@ -44,6 +44,7 @@ class AppRouter {
     navigatorKey: rootNavigatorKey,
     initialLocation: '/splash',
     debugLogDiagnostics: kDebugMode,
+    observers: [mainMenuRouteObserver],
     routes: [
       // Analytics screen temporarily disabled
       // GoRoute(

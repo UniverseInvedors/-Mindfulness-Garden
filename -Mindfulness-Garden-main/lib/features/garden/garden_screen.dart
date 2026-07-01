@@ -484,7 +484,8 @@ const _plantData = {
     'emoji': ['🌰', '🌱', '🌿', '🌲', '🌳', '🌴'],
     'cost': 15,
     'baseReward': 60,
-    'tip': 'Tree care matters: water regularly and harvest only at full growth for bigger rewards and more O₂.',
+    'tip':
+        'Tree care matters: water regularly and harvest only at full growth for bigger rewards and more O₂.',
   },
   PlantType.bush: {
     'name': 'Bush',
@@ -2147,7 +2148,9 @@ class _GardenScreenState extends State<GardenScreen>
     _o2Timer?.cancel();
     _adTimer?.cancel();
     _growBoostTimer?.cancel();
-    SoundService().stopBg();
+    // Do NOT call stopBg() here — the home screen owns the audio lifecycle.
+    // Stopping here kills home music when the user pops back.
+    // The home screen's didPopNext() will restart its own track.
     super.dispose();
   }
 
@@ -3010,12 +3013,12 @@ class _GardenScreenState extends State<GardenScreen>
                   final canAfford = _coins >= cost;
                   return GestureDetector(
                     onTap: () {
-                    SoundService().playButtonClick();
-                    setState(() {
-                      _selectedPlantType = t;
-                      _activeTool = GardenTool.plant;
-                    });
-                  },
+                      SoundService().playButtonClick();
+                      setState(() {
+                        _selectedPlantType = t;
+                        _activeTool = GardenTool.plant;
+                      });
+                    },
                     child: AnimatedContainer(
                       duration: const Duration(milliseconds: 180),
                       margin: const EdgeInsets.only(right: 8),

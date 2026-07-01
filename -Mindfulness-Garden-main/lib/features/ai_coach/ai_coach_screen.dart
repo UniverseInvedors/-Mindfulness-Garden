@@ -1,6 +1,7 @@
 // ignore_for_file: deprecated_member_use
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:pranaverse/core/mixins/theme_audio_mixin.dart';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // AiCoachScreen — personalised AI wellness coach powered by Zeno
@@ -13,9 +14,16 @@ class AiCoachScreen extends StatefulWidget {
   State<AiCoachScreen> createState() => _AiCoachScreenState();
 }
 
-class _AiCoachScreenState extends State<AiCoachScreen> {
+class _AiCoachScreenState extends State<AiCoachScreen> with ThemeAudioMixin {
   final _ctrl = TextEditingController();
   final _scrollCtrl = ScrollController();
+
+  @override
+  void initState() {
+    super.initState();
+    startThemeAudio();
+  }
+
   final List<_Msg> _messages = [
     const _Msg(
       text:
@@ -89,6 +97,7 @@ class _AiCoachScreenState extends State<AiCoachScreen> {
 
   @override
   void dispose() {
+    stopThemeAudio();
     _ctrl.dispose();
     _scrollCtrl.dispose();
     super.dispose();

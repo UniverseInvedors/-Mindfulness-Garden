@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import 'package:go_router/go_router.dart';
 import 'package:pranaverse/presentation/providers/achievement_provider.dart';
 import 'package:pranaverse/data/models/achievement_model.dart';
+import 'package:pranaverse/core/mixins/theme_audio_mixin.dart';
 
 class AchievementsScreen extends StatefulWidget {
   const AchievementsScreen({super.key});
@@ -11,7 +12,20 @@ class AchievementsScreen extends StatefulWidget {
   State<AchievementsScreen> createState() => _AchievementsScreenState();
 }
 
-class _AchievementsScreenState extends State<AchievementsScreen> {
+class _AchievementsScreenState extends State<AchievementsScreen>
+    with ThemeAudioMixin {
+  @override
+  void initState() {
+    super.initState();
+    startThemeAudio();
+  }
+
+  @override
+  void dispose() {
+    stopThemeAudio();
+    super.dispose();
+  }
+
   @override
   Widget build(BuildContext context) {
     final achievementProvider = context.watch<AchievementProvider>();
@@ -22,7 +36,8 @@ class _AchievementsScreenState extends State<AchievementsScreen> {
         backgroundColor: const Color(0xFF1a1a2e),
         leading: IconButton(
           icon: const Icon(Icons.arrow_back, color: Colors.white),
-          onPressed: () => context.canPop() ? context.pop() : context.go('/main'),
+          onPressed: () =>
+              context.canPop() ? context.pop() : context.go('/main'),
         ),
       ),
       body: Container(

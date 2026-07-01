@@ -36,36 +36,24 @@ enum SceneEnvironment {
 /// Time of day — affects sky gradient, sun/moon position, creature activity.
 enum SceneTimeOfDay { dawn, morning, afternoon, dusk, night }
 
-/// Get theme-based background image - changes with app theme
-/// Returns null for cosmic (keep procedural) or breathing screens
-String? _getThemeBackgroundImage(bool isDarkTheme) {
-  // Use season images based on theme
-  // Dark theme = night/winter vibes
-  // Light theme = day/spring vibes
-  if (isDarkTheme) {
-    return 'assets/images/winter.jpeg'; // Winter/night scene
-  } else {
-    return 'assets/images/spring.jpeg'; // Spring/day scene
-  }
-}
-
-// Keep old function for reference but not used in build
+// Maps each SceneEnvironment to its background photo asset.
+// Returns null for cosmic so the procedural starfield remains visible.
 String? _getBackgroundImagePath(SceneEnvironment env) {
   switch (env) {
     case SceneEnvironment.forest:
-      return 'assets/images/spring.jpeg';
+      return 'assets/images/spring.jpeg'; // Garden Serenity
     case SceneEnvironment.ocean:
-      return 'assets/images/summer.jpeg';
+      return 'assets/images/summer.jpeg'; // Sky Calm
     case SceneEnvironment.mountain:
-      return 'assets/images/winter.jpeg';
+      return 'assets/images/default.png'; // Midnight Zen
     case SceneEnvironment.desert:
-      return 'assets/images/summer.jpeg';
+      return 'assets/images/summer.jpeg'; // Sunrise Glow (warm/bright)
     case SceneEnvironment.zenTemple:
-      return 'assets/images/autumn.jpeg';
+      return 'assets/images/autumn.jpeg'; // Rose Harmony
     case SceneEnvironment.garden:
-      return 'assets/images/moonsoon.jpeg';
+      return 'assets/images/moonsoon.jpeg'; // Lavender Dream / monsoon
     case SceneEnvironment.cosmic:
-      return null; // Keep cosmic procedural
+      return null; // Keep cosmic procedural — no background image
   }
 }
 
@@ -557,24 +545,24 @@ class _MeditationSceneWidgetState extends State<MeditationSceneWidget>
 
   @override
   Widget build(BuildContext context) {
-    // Get theme-based background (not environment-based)
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    final bgImagePath = _getThemeBackgroundImage(isDark);
+    // Background image driven by the current scene environment so that
+    // changing the UI theme (which updates environment via themePreferenceProvider)
+    // also changes the background photo instantly.
+    final bgImagePath = _getBackgroundImagePath(widget.environment);
 
     return RepaintBoundary(
       child: SizedBox(
         height: widget.height,
         child: Stack(
           children: [
-            // Full background image layer - theme-based
+            // Full background image layer — environment-based
             if (bgImagePath != null)
               Positioned.fill(
                 child: Image.asset(
                   bgImagePath,
-                  fit: BoxFit.cover, // Full coverage
+                  fit: BoxFit.cover,
                   errorBuilder: (context, error, stackTrace) =>
                       const SizedBox(),
-                  // Full opacity - no transparency
                 ),
               ),
             // Animated scene overlay
@@ -869,55 +857,8 @@ class _ScenePainter extends CustomPainter {
     );
   }
 
-  void _drawTree(
-    Canvas canvas,
-    Size size,
-    double xFrac,
-    double heightFrac,
-    double widthFrac,
-    Paint paint,
-  ) {
-    final x = size.width * xFrac;
-    final groundY = size.height * 0.63;
-    final h = size.height * heightFrac;
-    final w = size.width * widthFrac;
-    // Trunk
-    final trunkPaint = Paint()..color = const Color(0xFF3d1f00).withAlpha(160);
-    canvas.drawRect(
-      Rect.fromLTWH(x - w * 0.1, groundY - h * 0.3, w * 0.2, h * 0.3),
-      trunkPaint,
-    );
-    // Canopy — triangle
-    final path = Path()
-      ..moveTo(x, groundY - h)
-      ..lineTo(x - w / 2, groundY - h * 0.3)
-      ..lineTo(x + w / 2, groundY - h * 0.3)
-      ..close();
-    canvas.drawPath(path, paint);
-    // Second tier
-    final path2 = Path()
-      ..moveTo(x, groundY - h * 0.75)
-      ..lineTo(x - w * 0.6, groundY - h * 0.2)
-      ..lineTo(x + w * 0.6, groundY - h * 0.2)
-      ..close();
-    canvas.drawPath(path2, paint);
-  }
-
   void _drawOceanBg(Canvas canvas, Size size) {
-    // Distant ocean horizon
-    final waterPaint = Paint()
-      ..shader = LinearGradient(
-        begin: Alignment.topCenter,
-        end: Alignment.bottomCenter,
-        colors: [const Color(0xFF0077b6), const Color(0xFF023e8a)],
-      ).createShader(
-        Rect.fromLTWH(0, size.height * 0.45, size.width, size.height * 0.2),
-      );
-    canvas.drawRect(
-      Rect.fromLTWH(0, size.height * 0.45, size.width, size.height * 0.2),
-      waterPaint,
-    );
-    // Wave lines
+    // Animated wave lines — these move so they are fine to keep.
     final wavePaint = Paint()
       ..color = Colors.white.withAlpha(40)
       ..strokeWidth = 1.5
@@ -937,60 +878,24 @@ class _ScenePainter extends CustomPainter {
   }
 
   void _drawMountainBg(Canvas canvas, Size size) {
-    final mPaint = Paint()..color = const Color(0xFF1a3a5c).withAlpha(200);
-    final mPaint2 = Paint()..color = const Color(0xFF2d6a9f).withAlpha(160);
-    // Far mountains
-    _drawMountainShape(canvas, size, 0.2, 0.35, 0.5, mPaint);
-    _drawMountainShape(canvas, size, 0.6, 0.30, 0.45, mPaint);
-    // Near mountains
-    _drawMountainShape(canvas, size, 0.05, 0.28, 0.38, mPaint2);
-    _drawMountainShape(canvas, size, 0.75, 0.32, 0.42, mPaint2);
-    // Snow caps
-    final snowPaint = Paint()..color = Colors.white.withAlpha(200);
-    _drawSnowCap(canvas, size, 0.2, 0.35, snowPaint);
-    _drawSnowCap(canvas, size, 0.6, 0.30, snowPaint);
-  }
-
-  void _drawMountainShape(
-    Canvas canvas,
-    Size size,
-    double xFrac,
-    double heightFrac,
-    double widthFrac,
-    Paint paint,
-  ) {
-    final x = size.width * xFrac;
-    final groundY = size.height * 0.63;
-    final h = size.height * heightFrac;
-    final w = size.width * widthFrac;
-    final path = Path()
-      ..moveTo(x, groundY - h)
-      ..lineTo(x - w / 2, groundY)
-      ..lineTo(x + w / 2, groundY)
-      ..close();
-    canvas.drawPath(path, paint);
-  }
-
-  void _drawSnowCap(
-    Canvas canvas,
-    Size size,
-    double xFrac,
-    double heightFrac,
-    Paint paint,
-  ) {
-    final x = size.width * xFrac;
-    final groundY = size.height * 0.63;
-    final h = size.height * heightFrac;
-    final path = Path()
-      ..moveTo(x, groundY - h)
-      ..lineTo(x - size.width * 0.04, groundY - h * 0.82)
-      ..lineTo(x + size.width * 0.04, groundY - h * 0.82)
-      ..close();
-    canvas.drawPath(path, paint);
+    // Static mountain shapes removed — background image provides the scenery.
+    // Only a subtle atmospheric mist layer is kept.
+    final mistPaint = Paint()
+      ..shader = LinearGradient(
+        begin: Alignment.topCenter,
+        end: Alignment.bottomCenter,
+        colors: [Colors.transparent, const Color(0xFF4cc9f0).withAlpha(18)],
+      ).createShader(
+        Rect.fromLTWH(0, size.height * 0.40, size.width, size.height * 0.25),
+      );
+    canvas.drawRect(
+      Rect.fromLTWH(0, size.height * 0.40, size.width, size.height * 0.25),
+      mistPaint,
+    );
   }
 
   void _drawCosmicBg(Canvas canvas, Size size) {
-    // Nebula clouds
+    // Animated nebula clouds — these pulse and breathe so they count as dynamic.
     final nebulaPaint = Paint()..style = PaintingStyle.fill;
     final nebulaColors = [
       const Color(0xFF9d4edd).withAlpha(40),
@@ -1012,155 +917,36 @@ class _ScenePainter extends CustomPainter {
       );
     }
     nebulaPaint.maskFilter = null;
-    // Distant planets
-    final planetPaint = Paint()
-      ..shader = RadialGradient(
-        colors: [const Color(0xFF9d4edd), const Color(0xFF3a0ca3)],
-      ).createShader(
-        Rect.fromCircle(
-          center: Offset(size.width * 0.82, size.height * 0.12),
-          radius: 22,
-        ),
-      );
-    canvas.drawCircle(
-      Offset(size.width * 0.82, size.height * 0.12),
-      22,
-      planetPaint,
-    );
-    // Planet ring
-    final ringPaint = Paint()
-      ..color = const Color(0xFF9d4edd).withAlpha(120)
-      ..strokeWidth = 3
-      ..style = PaintingStyle.stroke;
-    canvas.drawOval(
-      Rect.fromCenter(
-        center: Offset(size.width * 0.82, size.height * 0.12),
-        width: 52,
-        height: 14,
-      ),
-      ringPaint,
-    );
+    // Static planet removed — no static assets above background.
   }
 
   void _drawDesertBg(Canvas canvas, Size size) {
-    // Sand dunes
-    final dunePaint = Paint()
-      ..shader = LinearGradient(
-        begin: Alignment.topCenter,
-        end: Alignment.bottomCenter,
-        colors: [const Color(0xFFe9c46a), const Color(0xFFf4a261)],
-      ).createShader(
-        Rect.fromLTWH(0, size.height * 0.4, size.width, size.height * 0.25),
-      );
-    final dunePath = Path();
-    dunePath.moveTo(0, size.height * 0.63);
-    dunePath.quadraticBezierTo(
-      size.width * 0.25,
-      size.height * 0.42,
-      size.width * 0.5,
-      size.height * 0.55,
-    );
-    dunePath.quadraticBezierTo(
-      size.width * 0.75,
-      size.height * 0.68,
-      size.width,
-      size.height * 0.50,
-    );
-    dunePath.lineTo(size.width, size.height * 0.63);
-    dunePath.close();
-    canvas.drawPath(dunePath, dunePaint);
-    // Cactus silhouettes
-    final cactusPaint = Paint()..color = const Color(0xFF2d6a4f).withAlpha(180);
-    _drawCactus(canvas, size, 0.12, cactusPaint);
-    _drawCactus(canvas, size, 0.88, cactusPaint);
-  }
-
-  void _drawCactus(Canvas canvas, Size size, double xFrac, Paint paint) {
-    final x = size.width * xFrac;
-    final groundY = size.height * 0.63;
-    // Main trunk
-    canvas.drawRRect(
-      RRect.fromRectAndRadius(
-        Rect.fromLTWH(x - 6, groundY - 70, 12, 70),
-        const Radius.circular(6),
-      ),
-      paint,
-    );
-    // Left arm
-    canvas.drawRRect(
-      RRect.fromRectAndRadius(
-        Rect.fromLTWH(x - 26, groundY - 55, 22, 8),
-        const Radius.circular(4),
-      ),
-      paint,
-    );
-    canvas.drawRRect(
-      RRect.fromRectAndRadius(
-        Rect.fromLTWH(x - 30, groundY - 75, 8, 22),
-        const Radius.circular(4),
-      ),
-      paint,
-    );
-    // Right arm
-    canvas.drawRRect(
-      RRect.fromRectAndRadius(
-        Rect.fromLTWH(x + 4, groundY - 48, 22, 8),
-        const Radius.circular(4),
-      ),
-      paint,
-    );
-    canvas.drawRRect(
-      RRect.fromRectAndRadius(
-        Rect.fromLTWH(x + 22, groundY - 68, 8, 22),
-        const Radius.circular(4),
-      ),
-      paint,
-    );
-  }
-
-  void _drawTempleBg(Canvas canvas, Size size) {
-    // Temple pillars
-    final pillarPaint = Paint()
+    // Static sand dunes and cacti removed — background image provides the scenery.
+    // Only a warm atmospheric haze layer is kept.
+    final hazePaint = Paint()
       ..shader = LinearGradient(
         begin: Alignment.topCenter,
         end: Alignment.bottomCenter,
         colors: [
-          const Color(0xFFe9c46a).withAlpha(200),
-          const Color(0xFFa07850).withAlpha(180),
+          Colors.transparent,
+          const Color(0xFFf4a261).withAlpha(15),
         ],
-      ).createShader(Rect.fromLTWH(0, 0, 1, size.height));
-    final groundY = size.height * 0.63;
-    final pillarXs = [0.08, 0.22, 0.78, 0.92];
-    for (final xFrac in pillarXs) {
-      final x = size.width * xFrac;
-      canvas.drawRRect(
-        RRect.fromRectAndRadius(
-          Rect.fromLTWH(x - 10, groundY - 120, 20, 120),
-          const Radius.circular(4),
-        ),
-        pillarPaint,
+      ).createShader(
+        Rect.fromLTWH(0, size.height * 0.40, size.width, size.height * 0.25),
       );
-      // Capital
-      canvas.drawRRect(
-        RRect.fromRectAndRadius(
-          Rect.fromLTWH(x - 14, groundY - 128, 28, 12),
-          const Radius.circular(3),
-        ),
-        pillarPaint,
-      );
-    }
-    // Roof beam
-    canvas.drawRRect(
-      RRect.fromRectAndRadius(
-        Rect.fromLTWH(size.width * 0.06, groundY - 136, size.width * 0.88, 14),
-        const Radius.circular(4),
-      ),
-      pillarPaint,
+    canvas.drawRect(
+      Rect.fromLTWH(0, size.height * 0.40, size.width, size.height * 0.25),
+      hazePaint,
     );
-    // Hanging lanterns
+  }
+
+  void _drawTempleBg(Canvas canvas, Size size) {
+    // Static pillars and roof removed — background image provides the scenery.
+    // Keep only the animated hanging lanterns as they sway dynamically.
     final lanternPaint = Paint()
       ..color = const Color(0xFFf77f00).withAlpha(200)
       ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 6);
+    final groundY = size.height * 0.63;
     final lanternXs = [0.3, 0.5, 0.7];
     for (final xFrac in lanternXs) {
       final lx = size.width * xFrac;
@@ -1170,31 +956,20 @@ class _ScenePainter extends CustomPainter {
   }
 
   void _drawGardenBg(Canvas canvas, Size size) {
-    // Flower bushes in background
-    final flowerColors = [
-      const Color(0xFFf72585),
-      const Color(0xFFffb700),
-      const Color(0xFF9d4edd),
-      const Color(0xFF38b000),
-    ];
-    final positions = [0.05, 0.18, 0.75, 0.90];
-    for (int i = 0; i < positions.length; i++) {
-      final x = size.width * positions[i];
-      final groundY = size.height * 0.63;
-      final bushPaint = Paint()..color = const Color(0xFF2d6a4f).withAlpha(200);
-      canvas.drawCircle(Offset(x, groundY - 25), 22, bushPaint);
-      // Flowers on bush
-      final fPaint = Paint()
-        ..color = flowerColors[i % flowerColors.length].withAlpha(220);
-      for (int j = 0; j < 5; j++) {
-        final angle = j * pi * 2 / 5 + envT * pi * 0.5;
-        canvas.drawCircle(
-          Offset(x + cos(angle) * 14, groundY - 25 + sin(angle) * 10),
-          5,
-          fPaint,
-        );
-      }
-    }
+    // Static flower bushes removed — background image provides the scenery.
+    // Only a subtle green atmospheric tint is kept for depth.
+    final mistPaint = Paint()
+      ..shader = LinearGradient(
+        begin: Alignment.topCenter,
+        end: Alignment.bottomCenter,
+        colors: [Colors.transparent, const Color(0xFF38b000).withAlpha(12)],
+      ).createShader(
+        Rect.fromLTWH(0, size.height * 0.45, size.width, size.height * 0.20),
+      );
+    canvas.drawRect(
+      Rect.fromLTWH(0, size.height * 0.45, size.width, size.height * 0.20),
+      mistPaint,
+    );
   }
 
   // ── Midground (near trees, rocks, water edge) ─────────────────────────────
@@ -1202,46 +977,10 @@ class _ScenePainter extends CustomPainter {
     final groundY = size.height * 0.63;
     switch (environment) {
       case SceneEnvironment.forest:
-        // Skip trees - background image has complete scenery
-        // Only keep grass tufts for subtle foreground detail
+        // Animated swaying grass tufts — dynamic, keep.
         _drawGrassTufts(canvas, size, groundY);
         break;
-      case SceneEnvironment.ocean:
-        // Coral / rocks at water edge
-        final rockPaint = Paint()
-          ..color = const Color(0xFF4a4e69).withAlpha(200);
-        canvas.drawOval(
-          Rect.fromCenter(
-            center: Offset(size.width * 0.15, groundY - 8),
-            width: 50,
-            height: 22,
-          ),
-          rockPaint,
-        );
-        canvas.drawOval(
-          Rect.fromCenter(
-            center: Offset(size.width * 0.85, groundY - 6),
-            width: 40,
-            height: 18,
-          ),
-          rockPaint,
-        );
-        break;
-      case SceneEnvironment.zenTemple:
-        // Stone path
-        final stonePaint = Paint()
-          ..color = const Color(0xFF6b705c).withAlpha(180);
-        for (int i = 0; i < 5; i++) {
-          canvas.drawOval(
-            Rect.fromCenter(
-              center: Offset(size.width / 2, groundY - 5 + i * 18.0),
-              width: 30 - i * 3.0,
-              height: 12,
-            ),
-            stonePaint,
-          );
-        }
-        break;
+      // Static rocks and stone paths removed — no static assets above the bg.
       default:
         break;
     }

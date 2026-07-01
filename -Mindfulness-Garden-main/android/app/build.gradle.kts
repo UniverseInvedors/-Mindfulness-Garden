@@ -9,14 +9,6 @@ plugins {
     id("com.google.firebase.crashlytics")        // Crashlytics
 }
 
-// Load keystore properties
-val keystorePropertiesFile = rootProject.file("key.properties")
-val keystoreProperties = Properties()
-val hasReleaseKeystore = keystorePropertiesFile.exists()
-if (hasReleaseKeystore) {
-    keystoreProperties.load(FileInputStream(keystorePropertiesFile))
-}
-
 android {
     namespace = "com.universeinvedors.pranaverse"
     compileSdk = 36
@@ -42,12 +34,10 @@ android {
 
     signingConfigs {
         create("release") {
-            if (hasReleaseKeystore) {
-                keyAlias = keystoreProperties.getProperty("keyAlias")
-                keyPassword = keystoreProperties.getProperty("keyPassword")
-                storeFile = file(keystoreProperties.getProperty("storeFile"))
-                storePassword = keystoreProperties.getProperty("storePassword")
-            }
+            keyAlias = "pranaverse"
+            keyPassword = "Pranaverse2024!"
+            storeFile = file("release-keystore.jks")
+            storePassword = "Pranaverse2024!"
         }
     }
 
@@ -59,8 +49,8 @@ android {
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
             )
-            // Use debug signing for now - will update with production keystore after Google Play setup
-            signingConfig = signingConfigs.getByName("debug")
+            // Use production keystore for Play Store release
+            signingConfig = signingConfigs.getByName("release")
         }
     }
 }

@@ -2,6 +2,7 @@
 import 'package:flutter/material.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:go_router/go_router.dart';
+import 'package:pranaverse/core/mixins/theme_audio_mixin.dart';
 
 enum SleepQuality { excellent, good, fair, poor }
 
@@ -12,7 +13,8 @@ class SleepTrackingScreen extends StatefulWidget {
   State<SleepTrackingScreen> createState() => _SleepTrackingScreenState();
 }
 
-class _SleepTrackingScreenState extends State<SleepTrackingScreen> {
+class _SleepTrackingScreenState extends State<SleepTrackingScreen>
+    with ThemeAudioMixin {
   bool _isTracking = false;
   DateTime? _sleepStartTime;
   SleepQuality _sleepQuality = SleepQuality.good;
@@ -22,8 +24,15 @@ class _SleepTrackingScreenState extends State<SleepTrackingScreen> {
   @override
   void initState() {
     super.initState();
+    startThemeAudio();
     _requestPermissions();
     _loadSleepData();
+  }
+
+  @override
+  void dispose() {
+    stopThemeAudio();
+    super.dispose();
   }
 
   Future<void> _requestPermissions() async {
@@ -310,10 +319,7 @@ class _SleepTrackingScreenState extends State<SleepTrackingScreen> {
             ),
           ),
           const SizedBox(height: 12),
-          ..._sleepHistory
-              .take(3)
-              .map((entry) => _buildHistoryItem(entry))
-              ,
+          ..._sleepHistory.take(3).map((entry) => _buildHistoryItem(entry)),
         ],
       ),
     );
@@ -412,7 +418,8 @@ class _SleepTrackingScreenState extends State<SleepTrackingScreen> {
         backgroundColor: const Color(0xFF0f3460),
         leading: IconButton(
           icon: const Icon(Icons.arrow_back, color: Colors.white),
-          onPressed: () => context.canPop() ? context.pop() : context.go('/main'),
+          onPressed: () =>
+              context.canPop() ? context.pop() : context.go('/main'),
         ),
         actions: [
           IconButton(

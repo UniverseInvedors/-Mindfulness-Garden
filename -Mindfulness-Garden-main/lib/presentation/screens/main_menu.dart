@@ -41,8 +41,14 @@ class _MainMenuContent extends StatefulWidget {
   State<_MainMenuContent> createState() => _MainMenuContentState();
 }
 
+/// A global [RouteObserver] wired into go_router so that [RouteAware] widgets
+/// can react when a route is popped back into view.
+final RouteObserver<ModalRoute<void>> mainMenuRouteObserver =
+    RouteObserver<ModalRoute<void>>();
+
 class _MainMenuContentState extends State<_MainMenuContent>
-    with TickerProviderStateMixin {
+    with TickerProviderStateMixin, WidgetsBindingObserver
+    implements RouteAware {
   late AnimationController _ambientCtrl;
   int _tapCount = 0;
   int _selectedNav = 0;
@@ -147,14 +153,66 @@ class _MainMenuContentState extends State<_MainMenuContent>
       VoiceService().initialize();
       // Play home ambient / music track (fire-and-forget)
       SoundService().playAmbientTrack(AudioConstants.musicStressRelief);
+      // Subscribe to route observer so we catch pop-back events.
+      final modalRoute = ModalRoute.of(context);
+      if (modalRoute != null) {
+        mainMenuRouteObserver.subscribe(this, modalRoute);
+      }
     });
+    // Register as a WidgetsBindingObserver so we can restart music when the
+    // app comes back to foreground (belt-and-suspenders alongside RouteAware).
+    WidgetsBinding.instance.addObserver(this);
   }
 
   @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+  }
+
+  /// Called every time this route is resumed (e.g. after popping back from Garden).
+  void _onResumed() {
+    // Reset footer tab to Home (index 0) whenever this screen comes back to focus.
+    if (_selectedNav != 0) {
+      setState(() => _selectedNav = 0);
+    }
+    // Restart home background music if it is no longer playing.
+    SoundService().playAmbientTrack(AudioConstants.musicStressRelief);
+  }
+
+  // ── RouteAware ─────────────────────────────────────────────────────────────
+
+  /// Fired when the current route was popped and this route came back into view.
+  @override
+  void didPopNext() => _onResumed();
+
+  /// Fired when this route was first pushed onto the navigator.
+  @override
+  void didPush() {}
+
+  /// Fired when this route was popped off the navigator.
+  @override
+  void didPop() {}
+
+  /// Fired when a new route was pushed on top of this one.
+  @override
+  void didPushNext() {}
+
+  @override
   void dispose() {
+    mainMenuRouteObserver.unsubscribe(this);
+    WidgetsBinding.instance.removeObserver(this);
     _ambientCtrl.dispose();
     SoundService().stopBg();
     super.dispose();
+  }
+
+  /// Called when the app lifecycle state changes (foreground/background).
+  /// Restarts home music when the app comes back to the foreground.
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) {
+      _onResumed();
+    }
   }
 
   // ── Navigation ──────────────────────────────────────────────────────────────
@@ -372,7 +430,10 @@ class _MainMenuContentState extends State<_MainMenuContent>
   }
 
   Widget _glassIconBtn(IconData icon, VoidCallback onTap) => GestureDetector(
-        onTap: onTap,
+        onTap: () {
+          SoundService().playButtonClick();
+          onTap();
+        },
         child: Container(
           width: 38,
           height: 38,
@@ -422,7 +483,10 @@ class _MainMenuContentState extends State<_MainMenuContent>
               children: [
                 // Avatar
                 GestureDetector(
-                  onTap: () => context.push('/profile'),
+                  onTap: () {
+                    SoundService().playButtonClick();
+                    context.push('/profile');
+                  },
                   child: Container(
                     width: ResponsiveHelper.getResponsiveContainerWidth(context,
                         mobileWidth: 56, tabletWidth: 64, desktopWidth: 72),
@@ -589,6 +653,7 @@ class _MainMenuContentState extends State<_MainMenuContent>
       ),
       child: GestureDetector(
         onTap: () {
+          SoundService().playButtonClick();
           VoiceService().speakBreathingIntro();
           _navigate('/breathing/zeno');
         },
@@ -776,7 +841,10 @@ class _MainMenuContentState extends State<_MainMenuContent>
 
   Widget _buildFeatureCard(_FeatureItem item) {
     return GestureDetector(
-      onTap: () => _navigate(item.route),
+      onTap: () {
+        SoundService().playButtonClick();
+        _navigate(item.route);
+      },
       child: Container(
         width: ResponsiveHelper.getResponsiveContainerWidth(context,
             mobileWidth: 110, tabletWidth: 130, desktopWidth: 150),
@@ -888,6 +956,7 @@ class _MainMenuContentState extends State<_MainMenuContent>
                 child: GestureDetector(
                   behavior: HitTestBehavior.opaque,
                   onTap: () {
+                    SoundService().playButtonClick();
                     setState(() => _selectedNav = i);
                     if (i != 0) context.push(routes[i]);
                   },

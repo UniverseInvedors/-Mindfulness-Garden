@@ -2,6 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:provider/provider.dart';
+import 'package:pranaverse/core/providers/app_settings_provider.dart';
+import 'package:pranaverse/core/services/sound_service.dart';
+import 'package:pranaverse/core/themes/app_theme.dart';
 import 'package:pranaverse/data/local_storage/local_storage_service.dart';
 import 'package:pranaverse/data/models/session_model.dart';
 import 'package:pranaverse/data/models/mood_model.dart';
@@ -55,12 +58,38 @@ class _ProgressScreenState extends State<ProgressScreen>
     _tabController = TabController(length: 3, vsync: this);
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _loadData();
+      _startThemeAudio();
       // Listen for session provider changes so progress updates live
       try {
         final sessionProv = context.read<SessionProvider>();
         sessionProv.addListener(_onSessionChange);
       } catch (_) {}
     });
+  }
+
+  /// Plays the ambient track that matches the current UI theme.
+  void _startThemeAudio() {
+    if (!mounted) return;
+    final theme = context.read<AppSettingsProvider>().uiTheme;
+    SoundService().playAmbientTrack(_trackForTheme(theme));
+  }
+
+  /// Maps each UI theme to its most fitting ambient audio track.
+  String _trackForTheme(AppUiTheme theme) {
+    switch (theme) {
+      case AppUiTheme.gardenSerenity:
+        return 'assets/music/stress_relief.mp3';
+      case AppUiTheme.skyCalm:
+        return 'assets/music/morning_meditation.mp3';
+      case AppUiTheme.sunriseGlow:
+        return 'assets/music/energy_boost.mp3';
+      case AppUiTheme.roseHarmony:
+        return 'assets/music/stress_relief.mp3';
+      case AppUiTheme.lavenderDream:
+        return 'assets/music/deep_sleep.mp3';
+      case AppUiTheme.midnightZen:
+        return 'assets/music/deep_sleep.mp3';
+    }
   }
 
   @override
@@ -70,6 +99,7 @@ class _ProgressScreenState extends State<ProgressScreen>
       sessionProv.removeListener(_onSessionChange);
     } catch (_) {}
     _tabController.dispose();
+    SoundService().stopBg();
     super.dispose();
   }
 

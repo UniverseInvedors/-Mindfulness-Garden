@@ -20,6 +20,7 @@ import 'package:pranaverse/core/providers/app_settings_provider.dart';
 import 'package:provider/provider.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:pranaverse/core/services/ad_service.dart';
+import 'package:pranaverse/core/mixins/theme_audio_mixin.dart';
 
 class DashboardScreen extends StatefulWidget {
   const DashboardScreen({super.key});
@@ -29,7 +30,7 @@ class DashboardScreen extends StatefulWidget {
 }
 
 class _DashboardScreenState extends State<DashboardScreen>
-    with SingleTickerProviderStateMixin {
+    with SingleTickerProviderStateMixin, ThemeAudioMixin {
   late final AnimationController _controller = AnimationController(
     vsync: this,
     duration: const Duration(seconds: 10),
@@ -38,6 +39,7 @@ class _DashboardScreenState extends State<DashboardScreen>
   @override
   void initState() {
     super.initState();
+    startThemeAudio();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
       context.read<UserProvider>().loadUser();
@@ -49,6 +51,7 @@ class _DashboardScreenState extends State<DashboardScreen>
 
   @override
   void dispose() {
+    stopThemeAudio();
     _controller.dispose();
     super.dispose();
   }

@@ -9,6 +9,7 @@ import 'package:pranaverse/core/services/voice_service.dart';
 import 'package:pranaverse/core/themes/app_theme.dart';
 import 'package:pranaverse/core/widgets/character/teacher_avatar.dart';
 import 'package:pranaverse/core/widgets/character/teacher_personality.dart';
+import 'package:pranaverse/core/widgets/meditation_scene_widget.dart';
 import 'package:pranaverse/l10n/app_localizations.dart';
 import 'package:pranaverse/presentation/providers/user_provider.dart'
     as user_prov;
@@ -487,6 +488,12 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
       borderRadius: BorderRadius.circular(18),
       onTap: () {
         settings.setUiTheme(theme);
+        // Sync the home scene environment & time-of-day to match the chosen theme
+        final sceneTheme = _sceneThemeFor(theme);
+        ref.read(themePreferenceProvider.notifier).setTheme(
+              sceneTheme.$1,
+              sceneTheme.$2,
+            );
         VoiceService().speak(
           AppCopy.tr(
             settings.language,
@@ -958,6 +965,25 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
         child: Icon(icon, color: Colors.white, size: compact ? 19 : 21),
       ),
     );
+  }
+
+  /// Maps each UI theme to a (SceneEnvironment, SceneTimeOfDay) pair so the
+  /// home screen background and weather near the teacher update instantly.
+  (SceneEnvironment, SceneTimeOfDay) _sceneThemeFor(AppUiTheme theme) {
+    switch (theme) {
+      case AppUiTheme.gardenSerenity:
+        return (SceneEnvironment.forest, SceneTimeOfDay.morning);
+      case AppUiTheme.skyCalm:
+        return (SceneEnvironment.ocean, SceneTimeOfDay.afternoon);
+      case AppUiTheme.sunriseGlow:
+        return (SceneEnvironment.desert, SceneTimeOfDay.dawn);
+      case AppUiTheme.roseHarmony:
+        return (SceneEnvironment.zenTemple, SceneTimeOfDay.dusk);
+      case AppUiTheme.lavenderDream:
+        return (SceneEnvironment.cosmic, SceneTimeOfDay.night);
+      case AppUiTheme.midnightZen:
+        return (SceneEnvironment.mountain, SceneTimeOfDay.night);
+    }
   }
 
   IconData _themeIcon(AppUiTheme theme) {

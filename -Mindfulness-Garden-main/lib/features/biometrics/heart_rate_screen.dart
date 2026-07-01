@@ -4,6 +4,7 @@ import 'package:permission_handler/permission_handler.dart';
 import 'package:go_router/go_router.dart';
 import 'dart:math';
 import 'dart:async';
+import 'package:pranaverse/core/mixins/theme_audio_mixin.dart';
 
 class HeartRateScreen extends StatefulWidget {
   const HeartRateScreen({super.key});
@@ -139,7 +140,7 @@ class _HeartRateScreenState extends State<HeartRateScreen> {
         title: const Text('Permission Required'),
         content: const Text(
           'Heart rate monitoring requires sensor permissions. '
-              'Please enable permissions in app settings.',
+          'Please enable permissions in app settings.',
         ),
         actions: [
           TextButton(
@@ -168,7 +169,8 @@ class _HeartRateScreenState extends State<HeartRateScreen> {
         maxChildSize: 0.95,
         minChildSize: 0.4,
         expand: false,
-        builder: (context, scrollController) => _buildHistorySheet(scrollController),
+        builder: (context, scrollController) =>
+            _buildHistorySheet(scrollController),
       ),
     );
   }
@@ -202,7 +204,8 @@ class _HeartRateScreenState extends State<HeartRateScreen> {
             itemCount: _heartRateHistory.length,
             itemBuilder: (context, index) {
               final rate = _heartRateHistory[index];
-              final time = DateTime.now().subtract(Duration(minutes: index * 30));
+              final time =
+                  DateTime.now().subtract(Duration(minutes: index * 30));
               return _buildHistoryItem(rate, time, index);
             },
           ),
@@ -336,7 +339,8 @@ class _HeartRateScreenState extends State<HeartRateScreen> {
         backgroundColor: const Color(0xFF0a0a1a),
         leading: IconButton(
           icon: const Icon(Icons.arrow_back, color: Colors.white),
-          onPressed: () => context.canPop() ? context.pop() : context.go('/main'),
+          onPressed: () =>
+              context.canPop() ? context.pop() : context.go('/main'),
         ),
         actions: [
           IconButton(
@@ -365,7 +369,7 @@ class _HeartRateScreenState extends State<HeartRateScreen> {
             ],
           ),
         ),
-        child: Padding(
+        child: SingleChildScrollView(
           padding: const EdgeInsets.all(20),
           child: Column(
             children: [
@@ -383,6 +387,7 @@ class _HeartRateScreenState extends State<HeartRateScreen> {
 
               // Tips
               _buildHealthTips(),
+              const SizedBox(height: 20),
             ],
           ),
         ),
@@ -467,12 +472,10 @@ class _HeartRateScreenState extends State<HeartRateScreen> {
     final avgRate = _heartRateHistory.isNotEmpty
         ? _heartRateHistory.reduce((a, b) => a + b) ~/ _heartRateHistory.length
         : 0;
-    final minRate = _heartRateHistory.isNotEmpty
-        ? _heartRateHistory.reduce(min)
-        : 0;
-    final maxRate = _heartRateHistory.isNotEmpty
-        ? _heartRateHistory.reduce(max)
-        : 0;
+    final minRate =
+        _heartRateHistory.isNotEmpty ? _heartRateHistory.reduce(min) : 0;
+    final maxRate =
+        _heartRateHistory.isNotEmpty ? _heartRateHistory.reduce(max) : 0;
 
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceAround,
@@ -499,7 +502,8 @@ class _HeartRateScreenState extends State<HeartRateScreen> {
     );
   }
 
-  Widget _buildStatCard(String title, String value, IconData icon, Color color) {
+  Widget _buildStatCard(
+      String title, String value, IconData icon, Color color) {
     return Column(
       children: [
         Container(

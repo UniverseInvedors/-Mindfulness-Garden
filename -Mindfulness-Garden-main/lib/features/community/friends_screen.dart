@@ -1,9 +1,12 @@
 // lib/features/community/friends_screen.dart - COMPLETE VERSION
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:pranaverse/presentation/providers/user_provider.dart';
 import 'package:pranaverse/data/models/user_model.dart';
 import 'package:go_router/go_router.dart';
+import 'package:share_plus/share_plus.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 class FriendsScreen extends StatefulWidget {
   const FriendsScreen({super.key});
@@ -120,7 +123,8 @@ class _FriendsScreenState extends State<FriendsScreen> {
         backgroundColor: const Color(0xFF0a0a1a),
         leading: IconButton(
           icon: const Icon(Icons.arrow_back, color: Colors.white),
-          onPressed: () => context.canPop() ? context.pop() : context.go('/main'),
+          onPressed: () =>
+              context.canPop() ? context.pop() : context.go('/main'),
         ),
         actions: [
           IconButton(
@@ -149,6 +153,11 @@ class _FriendsScreenState extends State<FriendsScreen> {
               child: _buildUserStats(currentUser),
             ),
 
+            // ── Share with Friends ─────────────────────────────────────────
+            SliverToBoxAdapter(
+              child: _buildShareWithFriendsSection(),
+            ),
+
             // Friends section header
             SliverToBoxAdapter(
               child: _buildSectionHeader(
@@ -170,7 +179,7 @@ class _FriendsScreenState extends State<FriendsScreen> {
                   childAspectRatio: 0.8,
                 ),
                 delegate: SliverChildBuilderDelegate(
-                      (context, index) {
+                  (context, index) {
                     final friend = _friends[index];
                     return _buildFriendCard(friend);
                   },
@@ -194,7 +203,7 @@ class _FriendsScreenState extends State<FriendsScreen> {
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
               sliver: SliverList(
                 delegate: SliverChildBuilderDelegate(
-                      (context, index) {
+                  (context, index) {
                     final challenge = _communityChallenges[index];
                     return _buildChallengeCard(challenge);
                   },
@@ -216,7 +225,7 @@ class _FriendsScreenState extends State<FriendsScreen> {
               padding: const EdgeInsets.fromLTRB(16, 8, 16, 32),
               sliver: SliverList(
                 delegate: SliverChildBuilderDelegate(
-                      (context, index) {
+                  (context, index) {
                     final activity = _recentActivities[index];
                     return _buildActivityItem(activity);
                   },
@@ -285,11 +294,14 @@ class _FriendsScreenState extends State<FriendsScreen> {
                 const SizedBox(height: 6),
                 Row(
                   children: [
-                    _buildStatItem(Icons.people, '${_friends.length}', 'Friends'),
+                    _buildStatItem(
+                        Icons.people, '${_friends.length}', 'Friends'),
                     const SizedBox(width: 16),
-                    _buildStatItem(Icons.emoji_events, '${_communityChallenges.length}', 'Challenges'),
+                    _buildStatItem(Icons.emoji_events,
+                        '${_communityChallenges.length}', 'Challenges'),
                     const SizedBox(width: 16),
-                    _buildStatItem(Icons.trending_up, '${user?.currentStreak ?? 0}', 'Streak'),
+                    _buildStatItem(Icons.trending_up,
+                        '${user?.currentStreak ?? 0}', 'Streak'),
                   ],
                 ),
               ],
@@ -637,7 +649,8 @@ class _FriendsScreenState extends State<FriendsScreen> {
           ),
           IconButton(
             onPressed: () => _reactToActivity(activity),
-            icon: const Icon(Icons.favorite_border, size: 20, color: Colors.white70),
+            icon: const Icon(Icons.favorite_border,
+                size: 20, color: Colors.white70),
             padding: EdgeInsets.zero,
             constraints: const BoxConstraints(),
           ),
@@ -645,6 +658,364 @@ class _FriendsScreenState extends State<FriendsScreen> {
       ),
     );
   }
+
+  // ── Share with Friends section ─────────────────────────────────────────────
+
+  static const String _shareText =
+      '🌿 I\'ve been meditating with Mindfulness Garden (PranaVerse) — '
+      'my streak is going strong! Join me and grow your inner peace. '
+      '🧘 Download now: https://pranaverse.app';
+
+  static const String _shareHashtags =
+      '#MindfulnessGarden #Meditation #PranaVerse #Mindfulness #Wellness';
+
+  Widget _buildShareWithFriendsSection() {
+    return Container(
+      margin: const EdgeInsets.fromLTRB(16, 4, 16, 8),
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: [
+            const Color(0xFF00b4d8).withOpacity(0.18),
+            const Color(0xFF9d4edd).withOpacity(0.18),
+          ],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: Colors.white.withOpacity(0.12)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Header
+          Row(
+            children: [
+              Container(
+                width: 38,
+                height: 38,
+                decoration: BoxDecoration(
+                  gradient: const LinearGradient(
+                    colors: [Color(0xFF00b4d8), Color(0xFF9d4edd)],
+                  ),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: const Icon(Icons.share_rounded,
+                    color: Colors.white, size: 20),
+              ),
+              const SizedBox(width: 12),
+              const Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Share with Friends',
+                      style: TextStyle(
+                        fontSize: 17,
+                        fontWeight: FontWeight.w800,
+                        color: Colors.white,
+                      ),
+                    ),
+                    Text(
+                      'Invite friends to your mindfulness journey',
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: Color(0x99FFFFFF),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+
+          const SizedBox(height: 16),
+
+          // Social platform buttons — two rows
+          _buildSocialPlatformRow([
+            _SocialPlatform(
+              name: 'WhatsApp',
+              emoji: '💬',
+              color: const Color(0xFF25D366),
+              onTap: _shareWhatsApp,
+            ),
+            _SocialPlatform(
+              name: 'Facebook',
+              emoji: '📘',
+              color: const Color(0xFF1877F2),
+              onTap: _shareFacebook,
+            ),
+            _SocialPlatform(
+              name: 'Instagram',
+              emoji: '📸',
+              color: const Color(0xFFE1306C),
+              onTap: _shareInstagram,
+            ),
+            _SocialPlatform(
+              name: 'LinkedIn',
+              emoji: '💼',
+              color: const Color(0xFF0A66C2),
+              onTap: _shareLinkedIn,
+            ),
+          ]),
+          const SizedBox(height: 10),
+          _buildSocialPlatformRow([
+            _SocialPlatform(
+              name: 'X / Twitter',
+              emoji: '🐦',
+              color: const Color(0xFF1DA1F2),
+              onTap: _shareTwitter,
+            ),
+            _SocialPlatform(
+              name: 'Telegram',
+              emoji: '✈️',
+              color: const Color(0xFF229ED9),
+              onTap: _shareTelegram,
+            ),
+            _SocialPlatform(
+              name: 'Copy Link',
+              emoji: '🔗',
+              color: const Color(0xFF9d4edd),
+              onTap: _copyInviteLink,
+            ),
+            _SocialPlatform(
+              name: 'More',
+              emoji: '⋯',
+              color: const Color(0xFF555577),
+              onTap: _shareOther,
+            ),
+          ]),
+
+          const SizedBox(height: 14),
+
+          // Invite code card
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+            decoration: BoxDecoration(
+              color: Colors.white.withOpacity(0.07),
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: Colors.white.withOpacity(0.15)),
+            ),
+            child: Row(
+              children: [
+                const Icon(Icons.tag, color: Color(0xFF00b4d8), size: 18),
+                const SizedBox(width: 8),
+                const Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Your invite code',
+                        style:
+                            TextStyle(fontSize: 11, color: Color(0x80FFFFFF)),
+                      ),
+                      Text(
+                        'PRANA-ABCD-1234',
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w800,
+                          color: Colors.white,
+                          letterSpacing: 1.5,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                GestureDetector(
+                  onTap: _copyInviteCode,
+                  child: Container(
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF00b4d8).withOpacity(0.2),
+                      borderRadius: BorderRadius.circular(8),
+                      border: Border.all(
+                          color: const Color(0xFF00b4d8).withOpacity(0.4)),
+                    ),
+                    child: const Text(
+                      'Copy',
+                      style: TextStyle(
+                        color: Color(0xFF00b4d8),
+                        fontSize: 13,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildSocialPlatformRow(List<_SocialPlatform> platforms) {
+    return Row(
+      children: platforms.map((p) {
+        return Expanded(
+          child: GestureDetector(
+            onTap: p.onTap,
+            child: Container(
+              margin: EdgeInsets.only(
+                right: p == platforms.last ? 0 : 8,
+              ),
+              padding: const EdgeInsets.symmetric(vertical: 10),
+              decoration: BoxDecoration(
+                color: p.color.withOpacity(0.15),
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: p.color.withOpacity(0.35)),
+              ),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(p.emoji, style: const TextStyle(fontSize: 20)),
+                  const SizedBox(height: 4),
+                  Text(
+                    p.name,
+                    style: TextStyle(
+                      fontSize: 9,
+                      color: p.color,
+                      fontWeight: FontWeight.w700,
+                    ),
+                    textAlign: TextAlign.center,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ],
+              ),
+            ),
+          ),
+        );
+      }).toList(),
+    );
+  }
+
+  // ── Sharing methods ────────────────────────────────────────────────────────
+
+  Future<void> _shareWhatsApp() async {
+    final text = Uri.encodeComponent(_shareText);
+    final uri = Uri.parse('https://wa.me/?text=$text');
+    if (await canLaunchUrl(uri)) {
+      await launchUrl(uri, mode: LaunchMode.externalApplication);
+    } else {
+      // Fallback to system share
+      await _shareOther();
+    }
+  }
+
+  Future<void> _shareFacebook() async {
+    // Facebook app deep-link for sharing
+    const appLink = 'https://pranaverse.app';
+    final uri = Uri.parse(
+        'https://www.facebook.com/sharer/sharer.php?u=${Uri.encodeComponent(appLink)}');
+    if (await canLaunchUrl(uri)) {
+      await launchUrl(uri, mode: LaunchMode.externalApplication);
+    } else {
+      await _shareOther();
+    }
+  }
+
+  Future<void> _shareInstagram() async {
+    // Instagram doesn't support direct URL sharing; open app then fall back to
+    // system share so users can paste into Stories / DMs manually.
+    final uri = Uri.parse('instagram://app');
+    if (await canLaunchUrl(uri)) {
+      // Show instruction snackbar before opening Instagram
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text(
+                'Opening Instagram — paste your invite link in Stories or a DM!'),
+            backgroundColor: Color(0xFFE1306C),
+            duration: Duration(seconds: 4),
+          ),
+        );
+      }
+      await launchUrl(uri, mode: LaunchMode.externalApplication);
+    } else {
+      // Instagram not installed — copy to clipboard + system share
+      await Clipboard.setData(const ClipboardData(text: _shareText));
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Invite text copied! Share it anywhere.'),
+            backgroundColor: Color(0xFFE1306C),
+          ),
+        );
+      }
+    }
+  }
+
+  Future<void> _shareLinkedIn() async {
+    const appLink = 'https://pranaverse.app';
+    final uri = Uri.parse(
+      'https://www.linkedin.com/sharing/share-offsite/?url=${Uri.encodeComponent(appLink)}',
+    );
+    if (await canLaunchUrl(uri)) {
+      await launchUrl(uri, mode: LaunchMode.externalApplication);
+    } else {
+      await _shareOther();
+    }
+  }
+
+  Future<void> _shareTwitter() async {
+    final text = Uri.encodeComponent('$_shareText\n$_shareHashtags');
+    final uri = Uri.parse('https://twitter.com/intent/tweet?text=$text');
+    if (await canLaunchUrl(uri)) {
+      await launchUrl(uri, mode: LaunchMode.externalApplication);
+    } else {
+      await _shareOther();
+    }
+  }
+
+  Future<void> _shareTelegram() async {
+    final text = Uri.encodeComponent(_shareText);
+    final uri = Uri.parse(
+        'https://t.me/share/url?url=https://pranaverse.app&text=$text');
+    if (await canLaunchUrl(uri)) {
+      await launchUrl(uri, mode: LaunchMode.externalApplication);
+    } else {
+      await _shareOther();
+    }
+  }
+
+  Future<void> _shareOther() async {
+    await Share.share(
+      '$_shareText\n\n$_shareHashtags',
+      subject: 'Join me on Mindfulness Garden!',
+    );
+  }
+
+  Future<void> _copyInviteLink() async {
+    await Clipboard.setData(const ClipboardData(
+      text: 'https://pranaverse.app?invite=PRANA-ABCD-1234',
+    ));
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Invite link copied to clipboard!'),
+          backgroundColor: Color(0xFF9d4edd),
+          duration: Duration(seconds: 2),
+        ),
+      );
+    }
+  }
+
+  Future<void> _copyInviteCode() async {
+    await Clipboard.setData(const ClipboardData(text: 'PRANA-ABCD-1234'));
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Invite code copied!'),
+          backgroundColor: Color(0xFF00b4d8),
+          duration: Duration(seconds: 2),
+        ),
+      );
+    }
+  }
+
+  // ── Action methods ─────────────────────────────────────────────────────────
 
   // Action methods
   void _addFriend() {
@@ -676,7 +1047,8 @@ class _FriendsScreenState extends State<FriendsScreen> {
         actions: [
           TextButton(
             onPressed: () => Navigator.of(context).pop(),
-            child: const Text('Cancel', style: TextStyle(color: Colors.white70)),
+            child:
+                const Text('Cancel', style: TextStyle(color: Colors.white70)),
           ),
           ElevatedButton(
             onPressed: () {
@@ -732,7 +1104,9 @@ class _FriendsScreenState extends State<FriendsScreen> {
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
               decoration: BoxDecoration(
-                color: friend['isOnline'] ? Colors.green.withOpacity(0.2) : Colors.grey.withOpacity(0.2),
+                color: friend['isOnline']
+                    ? Colors.green.withOpacity(0.2)
+                    : Colors.grey.withOpacity(0.2),
                 borderRadius: BorderRadius.circular(12),
               ),
               child: Text(
@@ -779,7 +1153,8 @@ class _FriendsScreenState extends State<FriendsScreen> {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceEvenly,
       children: [
-        _buildStatCircle('${friend['streak']}', 'Day Streak', Icons.local_fire_department),
+        _buildStatCircle(
+            '${friend['streak']}', 'Day Streak', Icons.local_fire_department),
         _buildStatCircle('30', 'Total Hours', Icons.timer),
         _buildStatCircle('12', 'Meditations', Icons.self_improvement),
       ],
@@ -857,7 +1232,8 @@ class _FriendsScreenState extends State<FriendsScreen> {
         actions: [
           TextButton(
             onPressed: () => Navigator.of(context).pop(),
-            child: const Text('Cancel', style: TextStyle(color: Colors.white70)),
+            child:
+                const Text('Cancel', style: TextStyle(color: Colors.white70)),
           ),
           ElevatedButton(
             onPressed: () {
@@ -892,15 +1268,19 @@ class _FriendsScreenState extends State<FriendsScreen> {
         content: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            _buildChallengeOption('🧘 10-min Meditation Challenge', 'Complete 10 minutes of meditation'),
-            _buildChallengeOption('🔥 7-Day Streak Challenge', 'Maintain a 7-day meditation streak'),
-            _buildChallengeOption('😊 Mood Tracking Challenge', 'Log mood for 5 consecutive days'),
+            _buildChallengeOption('🧘 10-min Meditation Challenge',
+                'Complete 10 minutes of meditation'),
+            _buildChallengeOption('🔥 7-Day Streak Challenge',
+                'Maintain a 7-day meditation streak'),
+            _buildChallengeOption('😊 Mood Tracking Challenge',
+                'Log mood for 5 consecutive days'),
           ],
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(context).pop(),
-            child: const Text('Cancel', style: TextStyle(color: Colors.white70)),
+            child:
+                const Text('Cancel', style: TextStyle(color: Colors.white70)),
           ),
         ],
       ),
@@ -919,8 +1299,10 @@ class _FriendsScreenState extends State<FriendsScreen> {
         ),
         child: const Icon(Icons.emoji_events, size: 20, color: Colors.white70),
       ),
-      title: Text(title, style: const TextStyle(color: Colors.white, fontSize: 14)),
-      subtitle: Text(description, style: TextStyle(color: Colors.white.withOpacity(0.7), fontSize: 12)),
+      title: Text(title,
+          style: const TextStyle(color: Colors.white, fontSize: 14)),
+      subtitle: Text(description,
+          style: TextStyle(color: Colors.white.withOpacity(0.7), fontSize: 12)),
       onTap: () {
         Navigator.of(context).pop();
         ScaffoldMessenger.of(context).showSnackBar(
@@ -982,7 +1364,8 @@ class _FriendsScreenState extends State<FriendsScreen> {
                     trailing: Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        const Icon(Icons.local_fire_department, color: Colors.orange, size: 16),
+                        const Icon(Icons.local_fire_department,
+                            color: Colors.orange, size: 16),
                         const SizedBox(width: 4),
                         Text(
                           '${friend['streak']}d',
@@ -1015,7 +1398,10 @@ class _FriendsScreenState extends State<FriendsScreen> {
           children: [
             const Text(
               'Join a Challenge',
-              style: TextStyle(fontSize: 22, fontWeight: FontWeight.w700, color: Colors.white),
+              style: TextStyle(
+                  fontSize: 22,
+                  fontWeight: FontWeight.w700,
+                  color: Colors.white),
             ),
             const SizedBox(height: 16),
             _buildChallengeJoinOption(
@@ -1063,7 +1449,8 @@ class _FriendsScreenState extends State<FriendsScreen> {
     );
   }
 
-  Widget _buildChallengeJoinOption(String title, String description, String participants) {
+  Widget _buildChallengeJoinOption(
+      String title, String description, String participants) {
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
       padding: const EdgeInsets.all(16),
@@ -1116,7 +1503,8 @@ class _FriendsScreenState extends State<FriendsScreen> {
                 },
                 style: ElevatedButton.styleFrom(
                   backgroundColor: const Color(0xFF38b000).withOpacity(0.8),
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
                 ),
                 child: const Text('Join', style: TextStyle(fontSize: 12)),
               ),
@@ -1143,7 +1531,8 @@ class _FriendsScreenState extends State<FriendsScreen> {
         actions: [
           TextButton(
             onPressed: () => Navigator.of(context).pop(),
-            child: const Text('Cancel', style: TextStyle(color: Colors.white70)),
+            child:
+                const Text('Cancel', style: TextStyle(color: Colors.white70)),
           ),
           ElevatedButton(
             onPressed: () {
@@ -1176,3 +1565,17 @@ class _FriendsScreenState extends State<FriendsScreen> {
   }
 }
 
+// ── Data class for social platform buttons ─────────────────────────────────
+class _SocialPlatform {
+  final String name;
+  final String emoji;
+  final Color color;
+  final VoidCallback onTap;
+
+  const _SocialPlatform({
+    required this.name,
+    required this.emoji,
+    required this.color,
+    required this.onTap,
+  });
+}
