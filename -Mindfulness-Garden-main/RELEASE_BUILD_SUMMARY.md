@@ -1,12 +1,19 @@
 # PranaVerse: Healing Frequencies - Release Build Summary
 
 ## Build Information
-- **Build Date**: June 30, 2026
-- **Build Type**: Release App Bundle (AAB)
+- **Build Date**: July 2, 2026
+- **Build Type**: Release App Bundle (AAB) — Clean build
 - **Package Name**: com.universeinvedors.pranaverse
 - **Version**: 1.0.0 (1)
 - **Build Output**: `build\app\outputs\bundle\release\app-release.aab`
-- **File Size**: 199.9 MB
+- **File Size**: 197.6 MB
+- **Obfuscation**: Enabled (`--obfuscate --split-debug-info=build/debug-info`)
+- **Debug Symbols**: `build\debug-info\` (3 files — upload to Play Console for crash de-obfuscation)
+
+## Changes Included in This Build (vs. June 30 draft)
+- ✅ Static background elements removed (mountains, cacti, pillars, rocks) — only dynamic animated objects remain
+- ✅ Home background music restored after returning from Garden or Profile screens
+- ✅ Premium tab in Profile now links to the single SubscriptionScreen instead of duplicating content
 
 ## Signing Configuration
 - **Keystore File**: `android/app/release-keystore.jks`
